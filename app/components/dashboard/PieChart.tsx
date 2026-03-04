@@ -3,7 +3,7 @@
 import React, { useEffect } from "react";
 import ApexCharts from "apexcharts";
 
-type Status = " notFixed" | "in-progress" | "done";
+type Status = "notFixed" | "in-progress" | "fixed";
 
 interface Customer {
   id: number;
@@ -36,15 +36,15 @@ export default function PieChart({ queue }: ServicesPieChartProps) {
       "#ffffff";
 
     // Count by STATUS
-    const  notFixedCount = queue.filter((c) => c.status === " notFixed").length;
+    const  notFixedCount = queue.filter((c) => c.status === "notFixed").length;
     const inProgressCount = queue.filter(
       (c) => c.status === "in-progress",
     ).length;
-    const doneCount = queue.filter((c) => c.status === "done").length;
+    const doneCount = queue.filter((c) => c.status === "fixed").length;
 
     const options = {
       series: [ notFixedCount, inProgressCount, doneCount],
-      labels: [" not fixed", "In Progress", "fixed"],
+      labels: ["not fixed", "In Progress", "fixed"],
       colors: [ notFixedColor, progressColor, doneColor],
       chart: {
         type: "pie",

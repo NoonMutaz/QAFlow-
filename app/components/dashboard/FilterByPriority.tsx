@@ -1,6 +1,9 @@
 import React from 'react'
-
-export default function FilterByPriority({selectP,setSelectP}) {
+interface FilterByPriorityPrpos {
+  selectP: string;
+  setSelectP: (value: string) => void;
+}
+export default function FilterByPriority({selectP,setSelectP}:FilterByPriorityPrpos) {
   return (
     <div>
        <select

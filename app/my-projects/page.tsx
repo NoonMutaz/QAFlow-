@@ -99,6 +99,7 @@ export default function Page() {
                     >
                       Delete
                     </button>
+
                       {openModalId === project.id && (
                         <RemoveModal
                           removeQueue={deleteProject}
@@ -106,6 +107,12 @@ export default function Page() {
                           onClose={() => setOpenModalId(null)}
                         />
                       )}
+                              <button
+                    onClick={() => setOpenModalId(project.id)}
+                      className=" p-3  text-center justify-center items-center bg-purple-50 text-purple-600 rounded hover:bg-blue-100 transition"
+                    >
+                 ↪
+                    </button>
                   </td>
                 </tr>
               ))

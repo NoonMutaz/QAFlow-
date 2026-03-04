@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useState,useMemo } from "react";
 import FilterByStatus from "./FilterByStatus";
 import RemoveModal from "./RemoveModal";
 import FilterByPriority from "./FilterByPriority"; 
 import Link from "next/link";
 
-type Status = " notFixed" | "in-progress" | "done";
+type Status = "notFixed" | "in-progress" | "fixed";
 type Priority = "High" | "Medium" | "Low";
 
 interface Customer {
@@ -64,11 +64,11 @@ export default function TableOfQueue({
 
   const getStatusColor = (status: Status) => {
     switch (status) {
-      case " notFixed":
+      case "notFixed":
         return "bg-blue-100 text-blue-700 border-blue-200";
       case "in-progress":
         return "bg-purple-100 text-purple-700 border-purple-200";
-      case "done":
+      case "fixed":
         return "bg-emerald-100 text-emerald-700 border-emerald-200";
       default:
         return "bg-gray-100 text-gray-700 border-gray-200";
@@ -88,7 +88,21 @@ const columns: Column[] = [
   { key: "status", label: "Status" },
   { key: "createdAt", label: "Created At" },
 ];
-  return (
+
+const [currentPage, setCurrentPage] = useState(1);
+const itemsPerPage = 10; // 10 bugs per page
+const paginatedQueue = useMemo(() => {
+  // sort newest first without reverse()
+  const sortedQueue = [...filteredQueue].sort((a, b) => b.createdAt - a.createdAt);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  return sortedQueue.slice(startIndex, endIndex);
+}, [filteredQueue, currentPage]);
+
+
+
+
+  return (    <div>
     <div className="overflow-x-auto rounded-xl  shadow-md bg-white border border-gray-200">
       <div className="px-4 flex gap-4 flex-wrap items-center m-4">
         <FilterByStatus select={select} setSelect={setSelect} />
@@ -145,7 +159,7 @@ const columns: Column[] = [
               </td>
             </tr>
           ) : (
-            filteredQueue.map((customer, idx) => (
+            paginatedQueue.map((customer, idx) => (
               <tr
                 key={customer.id}
                
@@ -236,9 +250,9 @@ const columns: Column[] = [
                     {/* <option value="" disabled hidden>
                       Change status
                     </option> */}
-                    <option value=" notFixed"> not fixed</option>
+                    <option value="notFixed"> not fixed</option>
                     <option value="in-progress">In-progress</option>
-                    <option value="done">fixed</option>
+                    <option value="fixed">fixed</option>
                   </select>
                 </td>
 
@@ -331,6 +345,30 @@ const columns: Column[] = [
           )}
         </tbody>
       </table>
+          </div>
+      <div className="flex justify-between mt-4">
+  <button
+    onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+    disabled={currentPage === 1}
+    className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+  >
+    Prev
+  </button>
+
+  <span>
+    Page {currentPage} of {Math.ceil(filteredQueue.length / itemsPerPage)}
+  </span>
+
+  <button
+    onClick={() =>
+      setCurrentPage(p => Math.min(p + 1, Math.ceil(filteredQueue.length / itemsPerPage)))
+    }
+    disabled={currentPage === Math.ceil(filteredQueue.length / itemsPerPage)}
+    className="px-3 py-1 bg-blue-200 rounded disabled:opacity-50"
+  >
+    Next
+  </button>
+</div>
     </div>
   );
 }

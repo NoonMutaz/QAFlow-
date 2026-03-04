@@ -1,6 +1,10 @@
 import React from 'react'
 
-export default function DashboardSearchBar({searchTerm,setSearchTerm}) {
+interface DashboardSearchBarPrpos {
+  searchTerm: string;
+  setSearchTerm: (value: string) => void;
+}
+export default function DashboardSearchBar({searchTerm,setSearchTerm}:DashboardSearchBarPrpos) {
   return (
   
       

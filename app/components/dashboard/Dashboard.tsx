@@ -1,21 +1,22 @@
-'use client';
+"use client";
 
 import { useState, useMemo } from "react";
 import Header from "../header/Header";
-import { useProjects } from "../../context/ProjectContext"
+import { useProjects } from "../../context/ProjectContext";
 import QueueForm from "./QueueForm";
+import {QueueData} from "../../data/QueueData"
 import TableOfQueue from "./TableOfQueue";
 import Chart from "./Chart";
 import PieChart from "./PieChart";
-
+import { useQueue } from "../../hooks/useQueue";
 import KpiSection from "./KpiSection";
 import { useSearch } from "@/app/context/SearchContext";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import DashboardSearchBar from "./DashboardSearchBar";
 
-import { useParams } from 'next/navigation';
-type Status = " notFixed" | "in-progress" | "fixed";
+import { useParams } from "next/navigation";
+type Status = "notFixed" | "in-progress" | "fixed";
 type Priority = "High" | "Medium" | "Low";
 
 interface Customer {
@@ -24,13 +25,12 @@ interface Customer {
   priority: Priority;
   status: Status;
   createdAt: number;
-  bugId:string;
-  url:string;
-  expectedResult:string;
-  actualResult:string;
-  description:string;
-  note:string
-  
+  bugId: string;
+  url: string;
+  expectedResult: string;
+  actualResult: string;
+  description: string;
+  note: string;
 }
 
 interface NewCustomer {
@@ -39,57 +39,18 @@ interface NewCustomer {
 }
 
 export default function Dashboard() {
-     const params = useParams();
-   
-  const id = params.id;   
-   const { projects } = useProjects();
+  const params = useParams();
 
-  const [queue, setQueue] = useState<Customer[]>([
-    {
-      id: 1,
-      name: "Sara Smith",
-      priority: "High",
-      status: "in-progress",
-      bugId: "bug-001",
-      url: "https://example.com" ,
-      createdAt: new Date("2026-03-03T09:00:00").getTime(),
-      description:'',
+  const id = params.id;
+  const { projects } = useProjects();
+const {
+  queue,
+  addQueue,
+  updateQueue,
+  removeQueue,
+} = useQueue(QueueData);
  
-  expectedResult:'string',
-  actualResult:'string',
- 
-  note:'string'
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      priority: "Medium",
-      status: "in-progress",
-      bugId: "bug-002",
-      url: "https://example.com" ,
-      createdAt: new Date("2026-03-03T10:00:00").getTime(),
-        description:'',
-          expectedResult:'string',
-  actualResult:'string',
- 
-  note:'string'
-    },
-    {
-      id: 3,
-      name: "Michael Brown",
-      priority: "Low",
-      status: "fixed",
-         bugId: "bug-003",
-         url: "https://example.com" ,
-      createdAt: new Date("2026-03-03T11:00:00").getTime(),
-        description:'description',
-          expectedResult:'string',
-  actualResult:'string',
- 
-  note:'string'
-    },
-  ]);
-//const { searchTerm } = useSearch();
+  //const { searchTerm } = useSearch();
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [select, setSelect] = useState<Status | "">("");
   const [selectP, setSelectP] = useState<Priority | "">("");
@@ -99,54 +60,55 @@ export default function Dashboard() {
     return queue.filter((customer) => {
       const matchesSearch =
         customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.priority.toLowerCase().includes(searchTerm.toLowerCase())||
-customer.description.toLowerCase().includes(searchTerm.toLowerCase());
+        customer.priority.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.bugId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = select === "" || customer.status === select;
       const matchesPriority = selectP === "" || customer.priority === selectP;
+
       return matchesSearch && matchesStatus && matchesPriority;
     });
   }, [queue, searchTerm, select, selectP]);
-// const [queue, setQueue] = useState<Customer[]>([]);
-const exportToExcel = () => {
-  
-  const data = queue.map((customer) => ({
-    "Bug ID": customer.bugId,
-    "Reported By": customer.name,
-    Priority: customer.priority,
-    Status: customer.status,
-    URL: customer.url,
-    "Expected Result": customer.expectedResult,
-    "Actual Result": customer.actualResult,
-    Description: customer.description,
-    Note: customer.note,
-    "Created At": new Date(customer.createdAt).toLocaleString(),
-  }));
+  // const [queue, setQueue] = useState<Customer[]>([]);
+  const exportToExcel = () => {
+    const data = queue.map((customer) => ({
+      "Bug ID": customer.bugId,
+      "Reported By": customer.name,
+      Priority: customer.priority,
+      Status: customer.status,
+      URL: customer.url,
+      "Expected Result": customer.expectedResult,
+      "Actual Result": customer.actualResult,
+      Description: customer.description,
+      Note: customer.note,
+      "Created At": new Date(customer.createdAt).toLocaleString(),
+    }));
 
-  // Create a worksheet
-  const worksheet = XLSX.utils.json_to_sheet(data);
+    // Create a worksheet
+    const worksheet = XLSX.utils.json_to_sheet(data);
 
-  // Create a workbook and append the worksheet
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Queue");
+    // Create a workbook and append the worksheet
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Queue");
 
-  // Generate buffer
-  const excelBuffer = XLSX.write(workbook, {
-    bookType: "xlsx",
-    type: "array",
-  });
+    // Generate buffer
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
 
-  // Save file
-  const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-  saveAs(blob, "Queue.xlsx");
-};
-// Compute next bug ID dynamically
-const getNextBugId = () => {
-  if (queue.length === 0) return "BUG-001";
-  const lastBug = queue[queue.length - 1].bugId; // e.g., "BUG-007"
-  const number = parseInt(lastBug!.split("-")[1]) + 1;
-  return `BUG-${String(number).padStart(3, "0")}`; // "BUG-008"
-};
-const project = projects.find(p => p.id.toString() === id);
+    // Save file
+    const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
+    saveAs(blob, "Queue.xlsx");
+  };
+  // Compute next bug ID dynamically
+  const getNextBugId = () => {
+    if (queue.length === 0) return "BUG-001";
+    const lastBug = queue[queue.length - 1].bugId; // e.g., "BUG-007"
+    const number = parseInt(lastBug!.split("-")[1]) + 1;
+    return `BUG-${String(number).padStart(3, "0")}`; // "BUG-008"
+  };
+  const project = projects.find((p) => p.id.toString() === id);
 
   if (!project) {
     return (
@@ -156,31 +118,7 @@ const project = projects.find(p => p.id.toString() === id);
     );
   }
 
-  const addQueue = (customer: NewCustomer) => {
-      const bugId = getNextBugId();
-    setQueue([
-      ...queue,
-      {
-        ...customer,
-        id: Date.now(),
-        bugId,
-        status: " notFixed",
-        createdAt: Date.now(),
-      },
-    ]);
-  };
   
-  const updateQueue = (id: number, newStatus: Status) => {
-    setQueue(
-      queue.map((customer) =>
-        customer.id === id ? { ...customer, status: newStatus } : customer,
-      ),
-    );
-  };
-
-  const removeQueue = (id: number) => {
-    setQueue(queue.filter((customer) => customer.id !== id));
-  };
 
   const updatePriorityQueue = (id: number, newPriority: Priority) => {
     setQueue(
@@ -206,7 +144,7 @@ const project = projects.find(p => p.id.toString() === id);
 
   const getStatusColor = (status: Status) => {
     switch (status) {
-      case " notFixed":
+      case "notFixed":
         return "bg-blue-100 text-blue-700 border-blue-200";
       case "in-progress":
         return "bg-purple-100 text-purple-700 border-purple-200";
@@ -219,24 +157,18 @@ const project = projects.find(p => p.id.toString() === id);
 
   return (
     <>
-      
       <div className="min-h-screen   px-4 md:px-8 lg:px-12 py-8 space-y-8">
         {/* Page Header */}
         {/* <Header  searchTerm={searchTerm} setSearchTerm={setSearchTerm} /> */}
-        
 
-
-
-
-        
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-            
-              {project.name ||   'QA Dashboard'}
+              {project.name || "QA Dashboard"}
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-       {  project.description||   "  Monitor bugs, test cases, and status in real time"}
+              {project.description ||
+                "  Monitor bugs, test cases, and status in real time"}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -261,13 +193,14 @@ const project = projects.find(p => p.id.toString() === id);
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white rounded-2xl shadow-sm border flex flex-col gap-6 border-gray-100 p-6">
-             <button
-  onClick={exportToExcel}
-  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
->
-  Export to Excel
-</button> <Chart queue={queue} />
-              <PieChart  queue={queue}/>
+              <button
+                onClick={exportToExcel}
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+              >
+                Export to Excel
+              </button>{" "}
+              <Chart queue={queue} />
+              <PieChart queue={queue} />
             </div>
             {/* <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
               <PieChart queue={queue} />
@@ -285,10 +218,12 @@ const project = projects.find(p => p.id.toString() === id);
           </div>
         </div>
 
-{/* search bar */}
-<DashboardSearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm}/>
-      <div> 
-    </div>
+        {/* search bar */}
+        <DashboardSearchBar
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+        />
+        <div></div>
         {/* Table Section */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
@@ -325,8 +260,6 @@ const project = projects.find(p => p.id.toString() === id);
             getPriorityColor={getPriorityColor}
             getStatusColor={getStatusColor}
           />
-
-          
         </div>
       </div>
     </>

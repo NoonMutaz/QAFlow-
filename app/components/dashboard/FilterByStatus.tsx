@@ -1,7 +1,10 @@
 import React from 'react'
-type Status = " notFixed" | "in-progress" | "done";
-
-export default function FilterByStatus({select,setSelect}) {
+type Status = "notFixed" | "in-progress" | "fixed";
+interface FilterByStatusPrpos {
+  select: string;
+  setSelect: (value: string) => void;
+}
+export default function FilterByStatus({select,setSelect}:FilterByStatusPrpos) {
   return (
     <div>
        <form>
@@ -15,9 +18,9 @@ export default function FilterByStatus({select,setSelect}) {
                       Filter by status{" "}
                     </option>
                     <option value="">All</option>
-                    <option value=" notFixed"> not fixed</option>
+                    <option value="notFixed"> not fixed</option>
                     <option value="in-progress">In-progress</option>
-                    <option value="done">fixed</option>
+                    <option value="fixed">fixed</option>
                   </select>
                 </form>
     </div>

@@ -3,7 +3,7 @@
 import React, { useEffect } from "react";
 import ApexCharts from "apexcharts";
 
-type Status = " notFixed" | "in-progress" | "done";
+type Status = "notFixed" | "in-progress" | "fixed";
 
 interface Customer {
   id: number;
@@ -37,7 +37,7 @@ export default function ServicesStatusChart({
 
     const  notFixedData = services.map(
       (service) =>
-        queue.filter((c) => c.priority === service && c.status === " notFixed")
+        queue.filter((c) => c.priority === service && c.status === "notFixed")
           .length,
     );
 
@@ -49,7 +49,7 @@ export default function ServicesStatusChart({
 
     const doneData = services.map(
       (service) =>
-        queue.filter((c) => c.priority === service && c.status === "done")
+        queue.filter((c) => c.priority === service && c.status === "fixed")
           .length,
     );
 
@@ -77,7 +77,7 @@ export default function ServicesStatusChart({
           data: progressData,
         },
         {
-          name: "Done",
+          name: "Fixed",
           data: doneData,
         },
       ],

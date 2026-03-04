@@ -37,16 +37,82 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 ## Feature
 
-- Browse
-  - header
-  - Main movie
-    - trailer
-    - Title & description
-    - Suggestions
+Project-Based Architecture
 
-  - Login \signin
-    - signin\ signup form
-    - redirect to browse page
-  - GPT
-    - search bar
-    - return suggestions
+Dynamic routing (/dashboard/[id])
+
+Multiple projects support
+
+Isolated bug queue per project
+
+- Bug Management
+
+Add structured bug reports
+
+Auto-generated Bug ID
+
+Status tracking:
+
+Not Fixed
+
+In Progress
+
+Fixed
+
+Priority levels:
+
+High
+
+Medium
+
+Low
+
+Full bug metadata:
+
+Reporter
+
+URL
+
+Expected vs Actual Result
+
+Description
+
+Notes
+
+Attachment support
+
+- Advanced Filtering
+
+Search by:
+
+Reporter
+
+Bug ID
+
+Priority
+
+Description
+
+Filter by status
+
+Filter by priority
+
+Real-time filtering with useMemo
+
+- Dashboard Analytics
+
+Total bug count
+
+Active bug count
+
+KPI summary section
+
+Bar chart visualization
+
+Pie chart distribution
+
+ Export Functionality
+
+Export bug queue to Excel (.xlsx)
+
+Includes timestamps and metadata

@@ -16,7 +16,7 @@ const { searchTerm } = useSearch();
     <>
       <Header searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
       
-      ;
+      
     </>
   )
 }
