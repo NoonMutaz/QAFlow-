@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import Header from "../header/Header";
 import { useProjects } from "../../context/ProjectContext";
 import QueueForm from "./QueueForm";
-import {QueueData} from "../../data/QueueData"
+import { QueueData } from "../../data/QueueData";
 import TableOfQueue from "./TableOfQueue";
 import Chart from "./Chart";
 import PieChart from "./PieChart";
@@ -43,13 +43,9 @@ export default function Dashboard() {
 
   const id = params.id;
   const { projects } = useProjects();
-const {
-  queue,
-  addQueue,
-  updateQueue,
-  removeQueue,
-} = useQueue(QueueData);
- 
+  const { queue, addQueue, updateQueue, removeQueue, updatePriorityQueue } =
+    useQueue(QueueData);
+
   //const { searchTerm } = useSearch();
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [select, setSelect] = useState<Status | "">("");
@@ -117,16 +113,6 @@ const {
       </div>
     );
   }
-
-  
-
-  const updatePriorityQueue = (id: number, newPriority: Priority) => {
-    setQueue(
-      queue.map((customer) =>
-        customer.id === id ? { ...customer, priority: newPriority } : customer,
-      ),
-    );
-  };
 
   // Priority color mapping
   const getPriorityColor = (priority: Priority) => {

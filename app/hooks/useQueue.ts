@@ -43,11 +43,18 @@ export function useQueue(QueueData: Customer[]) {
   const removeQueue = (id: number) => {
     setQueue((prev) => prev.filter((c) => c.id !== id));
   };
-
+  const updatePriorityQueue = (id: number, newPriority: Priority) => {
+    setQueue(
+      queue.map((customer) =>
+        customer.id === id ? { ...customer, priority: newPriority } : customer,
+      ),
+    );
+  };
   return {
     queue,
     addQueue,
     updateQueue,
     removeQueue,
+    updatePriorityQueue
   };
 }
