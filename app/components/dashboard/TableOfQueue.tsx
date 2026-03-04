@@ -3,18 +3,24 @@
 import React, { useState } from "react";
 import FilterByStatus from "./FilterByStatus";
 import RemoveModal from "./RemoveModal";
-import FilterByPriority from "./FilterByPriority";
+import FilterByPriority from "./FilterByPriority"; 
+import Link from "next/link";
 
 type Status = " notFixed" | "in-progress" | "done";
 type Priority = "High" | "Medium" | "Low";
 
 interface Customer {
   id: number;
-  bugId: string; // Added Bug ID
+  bugId: string; 
   name: string;
   priority: Priority;
   status: Status;
   createdAt: number;
+  url:string;
+  expectedResult:string;
+  actualResult:string;
+  description:string;
+  note:string
 }
 
 interface TableProps {
@@ -174,14 +180,16 @@ const columns: Column[] = [
                 </td>
 
                 {/* URL */}
-                <td className=" ">
-                  <input
-                     value= {customer.url}
-                     readOnly
-                     type="url"
-                    placeholder="URL"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none text-sm transition-all"
-                  />
+                <td >
+           <Link
+  href={customer.url}
+  target="_blank"
+  className="block"
+>
+  <input value= {customer.url} readOnly className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50 hover:bg-gray-100 cursor-pointer transition">
+   
+  </input>
+</Link>
                 </td>
 
                 {/* Expected Result */}
@@ -235,7 +243,7 @@ const columns: Column[] = [
                 </td>
 
                 {/* Created At */}
-                <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
+                <td className="px-4 py-3 text-sm text-gray-700  ">
                   {new Date(customer.createdAt ).toLocaleDateString("en-US", {
                     month: "short",
                     day: "numeric",

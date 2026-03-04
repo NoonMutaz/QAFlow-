@@ -13,6 +13,7 @@ interface NewCustomer {
   actualResult: string;
   description: string;
   note: string;
+  bugId:string;
   attachment?: File | null;
 }
 

@@ -2,15 +2,20 @@
 
 import { useState, useMemo } from "react";
 import Header from "../header/Header";
+import { useProjects } from "../../context/ProjectContext"
 import QueueForm from "./QueueForm";
 import TableOfQueue from "./TableOfQueue";
 import Chart from "./Chart";
 import PieChart from "./PieChart";
+
 import KpiSection from "./KpiSection";
 import { useSearch } from "@/app/context/SearchContext";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-type Status = " notFixed" | "in-progress" | "done";
+import DashboardSearchBar from "./DashboardSearchBar";
+
+import { useParams } from 'next/navigation';
+type Status = " notFixed" | "in-progress" | "fixed";
 type Priority = "High" | "Medium" | "Low";
 
 interface Customer {
@@ -19,7 +24,12 @@ interface Customer {
   priority: Priority;
   status: Status;
   createdAt: number;
-  bugId:string
+  bugId:string;
+  url:string;
+  expectedResult:string;
+  actualResult:string;
+  description:string;
+  note:string
   
 }
 
@@ -29,6 +39,11 @@ interface NewCustomer {
 }
 
 export default function Dashboard() {
+     const params = useParams();
+   
+  const id = params.id;   
+   const { projects } = useProjects();
+
   const [queue, setQueue] = useState<Customer[]>([
     {
       id: 1,
@@ -36,7 +51,14 @@ export default function Dashboard() {
       priority: "High",
       status: "in-progress",
       bugId: "bug-001",
+      url: "https://example.com" ,
       createdAt: new Date("2026-03-03T09:00:00").getTime(),
+      description:'',
+ 
+  expectedResult:'string',
+  actualResult:'string',
+ 
+  note:'string'
     },
     {
       id: 2,
@@ -44,15 +66,27 @@ export default function Dashboard() {
       priority: "Medium",
       status: "in-progress",
       bugId: "bug-002",
+      url: "https://example.com" ,
       createdAt: new Date("2026-03-03T10:00:00").getTime(),
+        description:'',
+          expectedResult:'string',
+  actualResult:'string',
+ 
+  note:'string'
     },
     {
       id: 3,
       name: "Michael Brown",
       priority: "Low",
-      status: "done",
+      status: "fixed",
          bugId: "bug-003",
+         url: "https://example.com" ,
       createdAt: new Date("2026-03-03T11:00:00").getTime(),
+        description:'description',
+          expectedResult:'string',
+  actualResult:'string',
+ 
+  note:'string'
     },
   ]);
 //const { searchTerm } = useSearch();
@@ -60,12 +94,13 @@ export default function Dashboard() {
   const [select, setSelect] = useState<Status | "">("");
   const [selectP, setSelectP] = useState<Priority | "">("");
   const [priority, setPriority] = useState<Priority>("");
-
+  const [description, setDescription] = useState<Priority>("");
   const filteredQueue = useMemo(() => {
     return queue.filter((customer) => {
       const matchesSearch =
         customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.priority.toLowerCase().includes(searchTerm.toLowerCase());
+        customer.priority.toLowerCase().includes(searchTerm.toLowerCase())||
+customer.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = select === "" || customer.status === select;
       const matchesPriority = selectP === "" || customer.priority === selectP;
       return matchesSearch && matchesStatus && matchesPriority;
@@ -111,6 +146,16 @@ const getNextBugId = () => {
   const number = parseInt(lastBug!.split("-")[1]) + 1;
   return `BUG-${String(number).padStart(3, "0")}`; // "BUG-008"
 };
+const project = projects.find(p => p.id.toString() === id);
+
+  if (!project) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500 text-xl">Project not found.</p>
+      </div>
+    );
+  }
+
   const addQueue = (customer: NewCustomer) => {
       const bugId = getNextBugId();
     setQueue([
@@ -165,7 +210,7 @@ const getNextBugId = () => {
         return "bg-blue-100 text-blue-700 border-blue-200";
       case "in-progress":
         return "bg-purple-100 text-purple-700 border-purple-200";
-      case "done":
+      case "fixed":
         return "bg-emerald-100 text-emerald-700 border-emerald-200";
       default:
         return "bg-gray-100 text-gray-700 border-gray-200";
@@ -187,10 +232,11 @@ const getNextBugId = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-              QA Dashboard
+            
+              {project.name ||   'QA Dashboard'}
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              Monitor bugs, test cases, and status in real time
+       {  project.description||   "  Monitor bugs, test cases, and status in real time"}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -239,30 +285,9 @@ const getNextBugId = () => {
           </div>
         </div>
 
-
-<div  className="w-full sticky top-0 z-50 gap-4" >
-       <header className="flex w-full md:flex-row items-center justify-between px-4 md:px-8 py-4 bg-white shadow-md sticky top-0 z-50  ">
- 
-        
-       
-        <input
-         value={searchTerm}
-    onChange={(e) => setSearchTerm(e.target.value)}
-          type="text"
-          placeholder="Search user, bugs..."
-          aria-label="Search research"
-          className="w-full md:w-full px-4 py-2 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-        />
-        
-        
-      </header>
-      <div className='flex items-center justify-center  mt-3'>
-        {/* <div className='bg-amber-300   items-center  w-5xl max-h-36 overflow-auto pt-7'>
-           
-           <div> */}
-        
-      </div>
-      
+{/* search bar */}
+<DashboardSearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm}/>
+      <div> 
     </div>
         {/* Table Section */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">

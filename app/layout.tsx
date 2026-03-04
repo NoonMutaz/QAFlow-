@@ -5,6 +5,7 @@ import {SearchProvider} from "./context/SearchContext"
 
 import "./globals.css";
 import HeaderWrapper from "./components/header/HeaderWrapper";
+import { ProjectProvider } from "./context/ProjectContext";
  
 
 const geistSans = Geist({
@@ -34,8 +35,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >   
-      <SearchProvider><HeaderWrapper />
+      <SearchProvider>
+        <ProjectProvider>
+          <HeaderWrapper />
           {children}
+           </ProjectProvider>
+         
         </SearchProvider>
 
       </body>

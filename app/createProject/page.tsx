@@ -2,20 +2,27 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-
+import { useProjects } from "../context/ProjectContext"
 export default function Page() {
   const router = useRouter();
   const [projectName, setProjectName] = useState("");
   const [description, setDescription] = useState("");
   const [projectType, setProjectType] = useState("QA Dashboard");
 
-  const handleCreate = () => {
-    if (!projectName) return alert("Project name is required!");
-    // You can call API here to save project
-    console.log({ projectName, description, projectType });
-    router.push("/dashboard"); // navigate to project page
-  };
+const { addProject } = useProjects();
+ 
+const handleCreate = () => {
+  if (!projectName) return alert("Project name is required!");
 
+  addProject({
+    id: crypto.randomUUID(),
+    name: projectName,
+    description,
+    type: projectType,
+  });
+
+  router.push("/my-projects");
+};
   return (
     <div className="min-h-screen flex items-center justify-center  p-4">
       <div className="bg-white shadow-2xl rounded-2xl max-w-md w-full p-8">
@@ -60,7 +67,7 @@ export default function Page() {
             >
               <option value="QA Dashboard">QA Dashboard</option>
               <option value="Bug Tracking">Bug Tracking</option>
-              <option value="Test Management">Test Management</option>
+             
             </select>
           </div>
         </div>

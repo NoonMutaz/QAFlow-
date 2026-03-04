@@ -2,10 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-
+import { useProjects } from "../context/ProjectContext"
+import RemoveModal from "../components/RemoveModal"
 interface Project {
   id: number;
-  name: string;
+  projectName: string;
   bugs: number;
   status: 'active' | 'archived';
   lastUpdated: string;
@@ -13,19 +14,26 @@ interface Project {
 
 export default function Page() {
   const router = useRouter();
-  const [projects, setProjects] = useState<Project[]>([
-    { id: 1, name: 'QA Dashboard', bugs: 12, status: 'active', lastUpdated: '2026-03-03' },
-    { id: 2, name: 'Mobile App Tests', bugs: 5, status: 'active', lastUpdated: '2026-02-28' },
-    { id: 3, name: 'Website Redesign', bugs: 8, status: 'archived', lastUpdated: '2026-01-20' },
-  ]);
+  const { projects } = useProjects();
+     const { deleteProject } = useProjects();
+    const { handleOpenProject } = useProjects();
+    const [openModalId, setOpenModalId] = useState<number | null>(null);
+  
+    const [projectName, setProjectName] = useState("");
+  const [description, setDescription] = useState("");
+  const [projectType, setProjectType] = useState("QA Dashboard");
+    const [newProject, setNewproject] = useState([]);
+//   const [projects, setProjects] = useState<Project[]>([ ...newProject,
+//     { id: 1, projectName: 'QA Dashboard', bugs: 12, status: 'active', lastUpdated: '2026-03-03' },
+//     { id: 2, projectName: 'Mobile App Tests', bugs: 5, status: 'active', lastUpdated: '2026-02-28' },
+//     { id: 3, projectName: 'Website Redesign', bugs: 8, status: 'archived', lastUpdated: '2026-01-20' },
+//   ]);
 
-  const handleOpenProject = (id: number) => {
-    router.push(`/dashboard/${id}`); // Navigate to project dashboard
-  };
 
-  const handleDeleteProject = (id: number) => {
-    setProjects(projects.filter(p => p.id !== id));
-  };
+
+//   const handleDeleteProject = (id: number) => {
+//     setProjects(projects.filter(p => p.id !== id));
+//   };
 
   const handleCreateProject = () => {
     router.push('/createProject');
@@ -64,20 +72,20 @@ export default function Page() {
                 </td>
               </tr>
             ) : (
-              projects.map(project => (
+              projects.map((project,id) => (
                 <tr key={project.id} className="hover:bg-gray-50 transition">
                   <td className="px-6 py-4 font-medium text-gray-900">{project.name}</td>
-                  <td className="px-6 py-4">{project.bugs}</td>
+                  <td className="px-6 py-4">{project.bugs||0}</td>
                   <td className="px-6 py-4">
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-semibold ${
                         project.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
                       }`}
                     >
-                      {project.status}
+                      {project.status|| 'new'}
                     </span>
                   </td>
-                  <td className="px-6 py-4">{project.lastUpdated}</td>
+                  <td className="px-6 py-4">{project.lastUpdated || '-'}</td>
                   <td className="px-6 py-4 flex justify-end gap-2">
                     <button
                       onClick={() => handleOpenProject(project.id)}
@@ -86,11 +94,18 @@ export default function Page() {
                       Open
                     </button>
                     <button
-                      onClick={() => handleDeleteProject(project.id)}
+                    onClick={() => setOpenModalId(project.id)}
                       className="px-3 py-1 bg-red-50 text-red-600 rounded hover:bg-red-100 transition"
                     >
                       Delete
                     </button>
+                      {openModalId === project.id && (
+                        <RemoveModal
+                          removeQueue={deleteProject}
+                          customer={project}
+                          onClose={() => setOpenModalId(null)}
+                        />
+                      )}
                   </td>
                 </tr>
               ))

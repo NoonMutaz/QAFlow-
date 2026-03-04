@@ -73,25 +73,25 @@ export default function RemoveModal({ customer, removeQueue, onClose }: RemoveMo
             </svg>
           </div>
           <h3 className="font-bold text-lg text-gray-900">
-            Delete Bug
+            Delete Project
           </h3>
         </div>
 
         {/* Body */}
         <div className="mb-6">
           <p className="text-gray-600 mb-4">
-            Are you sure you want to delete this bug? This action cannot be undone.
+            Are you sure you want to delete this project? This action cannot be undone.
           </p>
           
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm font-semibold text-gray-700">Bug ID:</span>
+              <span className="text-sm font-semibold text-gray-700">Project ID:</span>
               <span className="font-mono text-sm text-gray-900 bg-gray-200 px-2 py-0.5 rounded">
-                {customer.bugId}
+                {customer.id}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-gray-700">Reported By:</span>
+              <span className="text-sm font-semibold text-gray-700">Project name:</span>
               <span className="text-sm text-gray-900 font-medium">
                 {customer.name}
               </span>

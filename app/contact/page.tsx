@@ -37,7 +37,7 @@ export default function Page() {
             <div className="space-y-4">
               <div>
                 <p className="font-semibold">Email</p>
-                <a href="mailto:support@scholaratlas.com" className="text-blue-100 hover:text-white">
+                <a href="mailto:support@qaflow.com" className="text-blue-100 hover:text-white">
                   support@scholaratlas.com
                 </a>
               </div>
@@ -49,7 +49,7 @@ export default function Page() {
               </div>
               <div>
                 <p className="font-semibold">Address</p>
-                <p className="text-blue-100">123 QA Street, Tech City, USA</p>
+                <p className="text-blue-100">123 QA Street, Hail City, KSA</p>
               </div>
             </div>
           </div>
