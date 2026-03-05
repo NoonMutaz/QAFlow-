@@ -41,8 +41,8 @@ interface NewCustomer {
 
 export default function Dashboard() {
   const params = useParams();
-
-  const id = params.id;
+const id = Array.isArray(params.id) ? params.id[0] : params.id;
+  // const id = params.id;
   const { projects } = useProjects();
   const { queue, addQueue, removeQueue, updateQueue,updatePriorityQueue  } = useQueueContext();
   
@@ -57,7 +57,7 @@ export default function Dashboard() {
   //const [description, setDescription] = useState<Priority>("");
 
  const filteredQueue = useMemo(() => {
-  const projectQueue = queue[id] || []; // <-- get the array for this project
+  const projectQueue = queue[id] || []; //  get the array for this project
   return projectQueue.filter((customer) => {
     const matchesSearch =
       customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
