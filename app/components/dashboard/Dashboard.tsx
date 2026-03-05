@@ -156,10 +156,23 @@ export default function Dashboard() {
             <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
               {project.name || "QA Dashboard"}
             </h1>
-            <p className="text-sm text-gray-500 mt-1">
-              {project.description ||
-                "  Monitor bugs, test cases, and status in real time"}
-            </p>
+   <div className="w-full">
+  <p
+    className="
+      text-xs
+      sm:text-sm
+      md:text-base
+      text-gray-500
+      mt-1
+      leading-snug
+      break-words
+    "
+  >
+    {project.description ||
+      "Monitor bugs, test cases, and status in real time"}
+  </p>
+</div>
+
           </div>
           <div className="flex items-center gap-3">
             <div className="text-right">
