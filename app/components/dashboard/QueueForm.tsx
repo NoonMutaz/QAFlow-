@@ -64,22 +64,12 @@ export default function QueueForm({ onAdd }: QueueFormProps) {
   onAdd({
     ...formData,
     bugId,
+    
   });
 
 
     // reset form
-    setFormData({
-      name: "",
-      priority: "Medium",
-      url: "",
-      expectedResult: "",
-      actualResult: "",
-      description: "",
-      note: "",
-      attachment: null,
-    });
-
-    setError("");
+   
   };
 
   return (
@@ -209,7 +199,7 @@ export default function QueueForm({ onAdd }: QueueFormProps) {
         {error && (
           <p className="text-red-600 text-sm">{error}</p>
         )}
-
+   
         <button
           type="submit"
           className="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition"

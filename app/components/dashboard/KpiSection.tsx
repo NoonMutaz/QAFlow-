@@ -25,6 +25,7 @@ export default function KpiSection({ queue }:KpiSectionProps) {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <p className="text-sm text-gray-500"> not fixed</p>
           <h2 className="text-2xl font-semibold mt-2 text-yellow-600">
+            {/* {queue.filter((q) => q.status === "notFixed").length} */}
             {queue.filter((q) => q.status === "notFixed").length}
           </h2>
         </div>

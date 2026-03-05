@@ -23,8 +23,9 @@ export function useQueue(QueueData: Customer[]) {
 
   const addQueue = (customer: Omit<Customer, "id" | "status" | "createdAt" | "bugId">) => {
     setQueue((prev) => {
-      
-      const lastNumber =
+          // const projectQueue = prev[projectId] || [];
+
+     const lastNumber =
         prev.length > 0
           ? Math.max(...prev.map((b) => Number(b.bugId.split("-")[1])))
           : 0;

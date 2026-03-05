@@ -25,6 +25,7 @@ interface Customer {
 
 interface TableProps {
   filteredQueue: Customer[];
+   projectId: string; 
   updateQueue: (id: number, status: Status) => void;
   removeQueue: (id: number) => void;
   select: Status | "";
@@ -46,6 +47,7 @@ export default function TableOfQueue({
   selectP,
   setSelectP,
   updatePriorityQueue,
+  projectId
 }: TableProps) {
   const [openModalId, setOpenModalId] = useState<number | null>(null);
 
@@ -80,7 +82,8 @@ export default function TableOfQueue({
     const currentIndex = priorityOrder.indexOf(currentPriority);
     const nextPriority =
       priorityOrder[(currentIndex + 1) % priorityOrder.length];
-    updatePriorityQueue(id, nextPriority);
+    // updatePriorityQueue(id, nextPriority);
+    updatePriorityQueue(projectId, id, nextPriority);
   };
   const columns: Column[] = [
     { key: "bugId", label: "Bug ID" },
@@ -184,14 +187,12 @@ export default function TableOfQueue({
 
                   {/* Priority */}
                   <td className="px-4 py-3 text-sm font-medium relative group">
-                    <button
-                      onClick={() =>
-                        handlePriorityToggle(customer.id, customer.priority)
-                      }
-                      className={`px-3 py-1 rounded-full text-white text-xs font-semibold border ${getPriorityColor(
+                   <button className={`px-3 py-1 rounded-full text-white text-xs font-semibold border ${getPriorityColor(
                         customer.priority,
-                      )} transition-all hover:scale-125`}
-                    >
+                      )} transition-all hover:scale-125`} onClick={() =>
+  handlePriorityToggle(customer.id, customer.priority)
+
+}>
                       {customer.priority}
                     </button>
                     <span className="absolute bottom-16   left-1/2 transform -translate-x-1/2 px-2 py-1 text-xs bg-gray-800 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">

@@ -56,19 +56,21 @@ export default function Dashboard() {
   const [priority, setPriority] = useState<Priority>("");
   const [description, setDescription] = useState<Priority>("");
 
-  const filteredQueue = useMemo(() => {
-    return queue.filter((customer) => {
-      const matchesSearch =
-        customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.priority.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.bugId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = select === "" || customer.status === select;
-      const matchesPriority = selectP === "" || customer.priority === selectP;
+ const filteredQueue = useMemo(() => {
+  const projectQueue = queue[id] || []; // <-- get the array for this project
+  return projectQueue.filter((customer) => {
+    const matchesSearch =
+      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.priority.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.bugId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.description.toLowerCase().includes(searchTerm.toLowerCase());
 
-      return matchesSearch && matchesStatus && matchesPriority;
-    });
-  }, [queue, searchTerm, select, selectP]);
+    const matchesStatus = select === "" || customer.status === select;
+    const matchesPriority = selectP === "" || customer.priority === selectP;
+
+    return matchesSearch && matchesStatus && matchesPriority;
+  });
+}, [queue, id, searchTerm, select, selectP]);
   // const [queue, setQueue] = useState<Customer[]>([]);
   const exportToExcel = () => {
     const data = queue.map((customer) => ({
@@ -183,14 +185,15 @@ export default function Dashboard() {
             <div className="text-right">
               <p className="text-xs text-gray-500">Active</p>
               <p className="text-2xl font-bold text-purple-600">
-                {queue.filter((c) => c.status === "in-progress").length}
+                {/* {queue.filter((c) => c.status === "in-progress").length} */}
+                 {(queue[id] || []).filter((c) => c.status === "in-progress").length}
               </p>
             </div>
           </div>
         </div>
 
         {/* KPI Section */}
-        <KpiSection queue={queue} />
+        <KpiSection queue={queue[id] || []}/>
 
         {/* Charts + Form Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -202,8 +205,8 @@ export default function Dashboard() {
               >
                 Export to Excel
               </button>{" "}
-              <Chart queue={queue} />
-              <PieChart queue={queue} />
+              <Chart queue={queue[id] || []} />
+              <PieChart queue={queue[id] || []}/>
             </div>
             {/* <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
               <PieChart queue={queue} />
@@ -213,7 +216,7 @@ export default function Dashboard() {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-8">
               <QueueForm
-                onAdd={addQueue}
+              onAdd={(customer) => addQueue(project.id, customer)} 
                 priority={priority}
                 setPriority={setPriority}
               />
@@ -252,6 +255,7 @@ export default function Dashboard() {
           </div>
 
           <TableOfQueue
+           projectId={project.id}
             filteredQueue={filteredQueue}
             updateQueue={updateQueue}
             removeQueue={removeQueue}

@@ -72,7 +72,7 @@ const projectTypes = ["Web App", "Mobile App", "API Project"];
               projects.map((project,id) => (
                 <tr key={project.id} className="hover:bg-gray-50 transition">
                   <td className="px-6 py-4 font-medium text-gray-900">{project.name}</td>
-                  <td className="px-6 py-4">{queue.length}</td>
+                  <td className="px-6 py-4">{queue[project.id]?.length || 0}</td>
                   <td className="px-6 py-4">
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-semibold ${

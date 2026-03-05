@@ -15,6 +15,7 @@
     "flowbite": "^4.0.1",
     "flowbite-react": "^0.12.17",
     "next": "16.1.6",
+    "openai": "^6.26.0",
     "react": "19.2.3",
     "react-apexcharts": "^2.0.1",
     "react-dom": "19.2.3",
