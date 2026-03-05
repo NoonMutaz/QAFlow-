@@ -1,74 +1,106 @@
 "use client";
-import { createContext, useContext, useState } from "react";
-import { QueueData } from "../data/QueueData";
-type Status = "notFixed" | "in-progress" | "fixed";
-type Priority = "High" | "Medium" | "Low";
-const QueueContext = createContext<any>(null);
+import { createContext, useContext, useState, ReactNode } from "react";
 
-export function QueueProvider({ children }) {
-const [queue, setQueue] = useState<{ [projectId: string]: Customer[] }>({});
-const addQueue = (projectId: string, customer: Omit<Customer, "id" | "status" | "createdAt" | "bugId">) => {
-  setQueue((prev) => {
-    const projectQueue = prev[projectId] || [];
+export type Status = "notFixed" | "in-progress" | "fixed";
+export type Priority = "High" | "Medium" | "Low";
+
+export interface Customer {
+  id: number;
+  name: string;
+  priority: Priority;
+  status: Status;
+  bugId: string;
+  createdAt: number;
+}
+
+interface QueueContextType {
+  queue: Record<string, Customer[]>;
+  addQueue: (projectId: string, customer: Omit<Customer, "id" | "status" | "createdAt" | "bugId">) => void;
+  removeQueue: (projectId: string, id: number) => void;
+  updateQueue: (projectId: string, id: number, status: Status) => void;
+  updatePriorityQueue: (projectId: string, id: number, newPriority: Priority) => void;
+}
+
+const QueueContext = createContext<QueueContextType | undefined>(undefined);
+
+interface ProviderProps {
+  children: ReactNode;
+}
+
+export const QueueProvider = ({ children }: ProviderProps) => {
+  const [queue, setQueue] = useState<Record<string, Customer[]>>({});
+
+  const addQueue = (
+    projectId: string,
+    customer: Omit<Customer, "id" | "status" | "createdAt" | "bugId">
+  ) => {
+    setQueue((prev) => {
+      const projectQueue = prev[projectId] || [];
+
+      // Generate next bugId
       const lastNumber =
-        prev.length > 0
-          ? Math.max(...prev.map((b) => Number(b.bugId.split("-")[1])))
+        projectQueue.length > 0
+          ? Math.max(...projectQueue.map((b) => Number(b.bugId.split("-")[1])))
           : 0;
 
       const bugId = `BUG-${String(lastNumber + 1).padStart(3, "0")}`;
 
-    return {
+      return {
+        ...prev,
+        [projectId]: [
+          ...projectQueue,
+          {
+            ...customer,
+            id: Date.now(),
+            bugId,
+            status: "notFixed",
+            createdAt: Date.now(),
+          },
+        ],
+      };
+    });
+  };
+
+  const removeQueue = (projectId: string, id: number) => {
+    setQueue((prev) => ({
       ...prev,
-      [projectId]: [
-        ...projectQueue,
-        {
-          ...customer,
-          id: Date.now(),
-          bugId,
-          status: "notFixed",
-          createdAt: Date.now(),
-        },
-      ],
-    };
-  });
-};
-  const removeQueue = (id) => {
-    setQueue((prev) => prev.filter((b) => b.id !== id));
+      [projectId]: (prev[projectId] || []).filter((b) => b.id !== id),
+    }));
   };
 
-  const updateQueue = (id, status) => {
-    setQueue((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, status } : b))
-    );
+  const updateQueue = (projectId: string, id: number, status: Status) => {
+    setQueue((prev) => ({
+      ...prev,
+      [projectId]: (prev[projectId] || []).map((b) =>
+        b.id === id ? { ...b, status } : b
+      ),
+    }));
   };
-function similarity(a: string, b: string) {
-  a = a.toLowerCase();
-  b = b.toLowerCase();
 
-  const wordsA = new Set(a.split(" "));
-  const wordsB = new Set(b.split(" "));
-
-  const common = [...wordsA].filter((w) => wordsB.has(w));
-
-  return common.length / Math.max(wordsA.size, wordsB.size);
-}
-  
-const updatePriorityQueue = (projectId: string, id: number, newPriority: Priority) => {
-  setQueue((prev) => ({
-    ...prev,
-    [projectId]: (prev[projectId] || []).map((customer) =>
-      customer.id === id ? { ...customer, priority: newPriority } : customer
-    ),
-  }));
-};
+  const updatePriorityQueue = (
+    projectId: string,
+    id: number,
+    newPriority: Priority
+  ) => {
+    setQueue((prev) => ({
+      ...prev,
+      [projectId]: (prev[projectId] || []).map((b) =>
+        b.id === id ? { ...b, priority: newPriority } : b
+      ),
+    }));
+  };
 
   return (
     <QueueContext.Provider
-      value={{ queue, addQueue, removeQueue, updateQueue ,updatePriorityQueue}}
+      value={{ queue, addQueue, removeQueue, updateQueue, updatePriorityQueue }}
     >
       {children}
     </QueueContext.Provider>
   );
-}
+};
 
-export const useQueueContext = () => useContext(QueueContext);
+export const useQueueContext = () => {
+  const context = useContext(QueueContext);
+  if (!context) throw new Error("useQueueContext must be used within QueueProvider");
+  return context;
+};
