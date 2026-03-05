@@ -53,8 +53,8 @@ export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [select, setSelect] = useState<Status | "">("");
   const [selectP, setSelectP] = useState<Priority | "">("");
-  const [priority, setPriority] = useState<Priority>("");
-  const [description, setDescription] = useState<Priority>("");
+  //const [priority, setPriority] = useState<Priority>("");
+  //const [description, setDescription] = useState<Priority>("");
 
  const filteredQueue = useMemo(() => {
   const projectQueue = queue[id] || []; // <-- get the array for this project
