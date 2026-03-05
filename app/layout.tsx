@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Header from "./components/header/Header";
 import {SearchProvider} from "./context/SearchContext" 
-
+import {QueueProvider} from "./context/QueueContext" 
 import "./globals.css";
 import HeaderWrapper from "./components/header/HeaderWrapper";
 import { ProjectProvider } from "./context/ProjectContext";
@@ -38,8 +38,11 @@ export default function RootLayout({
       <SearchProvider>
         <ProjectProvider>
           <HeaderWrapper />
-          {children}
-           </ProjectProvider>
+          <QueueProvider>
+             {children}
+           
+          </QueueProvider>
+        </ProjectProvider>
          
         </SearchProvider>
 

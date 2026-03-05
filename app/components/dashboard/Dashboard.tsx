@@ -3,12 +3,13 @@
 import { useState, useMemo } from "react";
 import Header from "../header/Header";
 import { useProjects } from "../../context/ProjectContext";
+import { useQueueContext } from "../../context/QueueContext";
 import QueueForm from "./QueueForm";
 import { QueueData } from "../../data/QueueData";
 import TableOfQueue from "./TableOfQueue";
 import Chart from "./Chart";
 import PieChart from "./PieChart";
-import { useQueue } from "../../hooks/useQueue";
+// import { useQueue } from "../../hooks/useQueue";
 import KpiSection from "./KpiSection";
 import { useSearch } from "@/app/context/SearchContext";
 import * as XLSX from "xlsx";
@@ -43,8 +44,10 @@ export default function Dashboard() {
 
   const id = params.id;
   const { projects } = useProjects();
-  const { queue, addQueue, updateQueue, removeQueue, updatePriorityQueue } =
-    useQueue(QueueData);
+  const { queue, addQueue, removeQueue, updateQueue,updatePriorityQueue  } = useQueueContext();
+  
+//   const { queue, addQueue, updateQueue, removeQueue, updatePriorityQueue } =
+//     useQueue(QueueData);
 
   //const { searchTerm } = useSearch();
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -52,6 +55,7 @@ export default function Dashboard() {
   const [selectP, setSelectP] = useState<Priority | "">("");
   const [priority, setPriority] = useState<Priority>("");
   const [description, setDescription] = useState<Priority>("");
+
   const filteredQueue = useMemo(() => {
     return queue.filter((customer) => {
       const matchesSearch =
@@ -98,12 +102,12 @@ export default function Dashboard() {
     saveAs(blob, "Queue.xlsx");
   };
   // Compute next bug ID dynamically
-  const getNextBugId = () => {
-    if (queue.length === 0) return "BUG-001";
-    const lastBug = queue[queue.length - 1].bugId; // e.g., "BUG-007"
-    const number = parseInt(lastBug!.split("-")[1]) + 1;
-    return `BUG-${String(number).padStart(3, "0")}`; // "BUG-008"
-  };
+//   const getNextBugId = () => {
+//     if (queue.length === 0) return "BUG-001";
+//     const lastBug = queue[queue.length - 1].bugId; // e.g., "BUG-007"
+//     const number = parseInt(lastBug!.split("-")[1]) + 1;
+//     return `BUG-${String(number).padStart(3, "0")}`; // "BUG-008"
+//   };
   const project = projects.find((p) => p.id.toString() === id);
 
   if (!project) {

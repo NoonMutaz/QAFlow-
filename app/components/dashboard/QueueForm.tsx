@@ -129,6 +129,7 @@ export default function QueueForm({ onAdd }: QueueFormProps) {
             name="url"
             value={formData.url}
             onChange={handleChange}
+            required
             type="url"
             placeholder="Enter page URL"
             className="w-full mt-1 px-3 py-2 border rounded-lg text-sm"

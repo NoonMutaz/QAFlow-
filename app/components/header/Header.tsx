@@ -35,7 +35,7 @@ export default function Header({searchTerm ,setSearchTerm}:HeaderProps) {
          value={searchTerm}
     onChange={(e) => setSearchTerm(e.target.value)}
           type="text"
-          placeholder="Search user, bugs..."
+          placeholder="Search user, project..."
           aria-label="Search research"
           className="w-full md:w-1/3 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
         />

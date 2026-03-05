@@ -1,25 +1,12 @@
-// hooks/useQueue.ts
-
-import { useState, useMemo } from "react";
-
+"use client";
+import { createContext, useContext, useState } from "react";
+import { QueueData } from "../data/QueueData";
 type Status = "notFixed" | "in-progress" | "fixed";
 type Priority = "High" | "Medium" | "Low";
+const QueueContext = createContext<any>(null);
 
-interface Customer {
-  id: number;
-  name: string;
-  priority: Priority;
-  status: Status;
-  createdAt: number;
-  bugId: string;
-  url: string;
-  expectedResult: string;
-  actualResult: string;
-  description: string;
-  note: string;
-}
-export function useQueue(QueueData: Customer[]) {
-  const [queue, setQueue] = useState<Customer[]>(QueueData);
+export function QueueProvider({ children }) {
+  const [queue, setQueue] = useState(QueueData);
 
   const addQueue = (customer: Omit<Customer, "id" | "status" | "createdAt" | "bugId">) => {
     setQueue((prev) => {
@@ -43,17 +30,17 @@ export function useQueue(QueueData: Customer[]) {
       ];
     });
   };
+  const removeQueue = (id) => {
+    setQueue((prev) => prev.filter((b) => b.id !== id));
+  };
 
-  const updateQueue = (id: number, newStatus: Status) => {
+  const updateQueue = (id, status) => {
     setQueue((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, status: newStatus } : c))
+      prev.map((b) => (b.id === id ? { ...b, status } : b))
     );
   };
 
-  const removeQueue = (id: number) => {
-    setQueue((prev) => prev.filter((c) => c.id !== id));
-  };
-
+  
   const updatePriorityQueue = (id: number, newPriority: Priority) => {
     setQueue((prev) =>
       prev.map((customer) =>
@@ -62,11 +49,13 @@ export function useQueue(QueueData: Customer[]) {
     );
   };
 
-  return {
-    queue,
-    addQueue,
-    updateQueue,
-    removeQueue,
-    updatePriorityQueue,
-  };
+  return (
+    <QueueContext.Provider
+      value={{ queue, addQueue, removeQueue, updateQueue ,updatePriorityQueue}}
+    >
+      {children}
+    </QueueContext.Provider>
+  );
 }
+
+export const useQueueContext = () => useContext(QueueContext);

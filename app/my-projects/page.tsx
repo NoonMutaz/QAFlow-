@@ -3,7 +3,10 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useProjects } from "../context/ProjectContext"
-import RemoveModal from "../components/RemoveModal"
+import InviteModal from "../components/InviteModal"
+import RemoveModal from '../components/RemoveModal';
+import {useQueueContext} from "../context/QueueContext";
+import {QueueData} from "../data/QueueData"
 interface Project {
   id: number;
   projectName: string;
@@ -18,18 +21,12 @@ export default function Page() {
      const { deleteProject } = useProjects();
     const { handleOpenProject } = useProjects();
     const [openModalId, setOpenModalId] = useState<number | null>(null);
+  const [inviteModal, setInviteModal] = useState(false);
+const projectTypes = ["Web App", "Mobile App", "API Project"];
   
-    const [projectName, setProjectName] = useState("");
-  const [description, setDescription] = useState("");
-  const [projectType, setProjectType] = useState("QA Dashboard");
-    const [newProject, setNewproject] = useState([]);
-//   const [projects, setProjects] = useState<Project[]>([ ...newProject,
-//     { id: 1, projectName: 'QA Dashboard', bugs: 12, status: 'active', lastUpdated: '2026-03-03' },
-//     { id: 2, projectName: 'Mobile App Tests', bugs: 5, status: 'active', lastUpdated: '2026-02-28' },
-//     { id: 3, projectName: 'Website Redesign', bugs: 8, status: 'archived', lastUpdated: '2026-01-20' },
-//   ]);
-
-
+  const { queue } = useQueueContext();
+//   const { queue, addQueue, updateQueue, removeQueue, updatePriorityQueue } =
+//     useQueue(QueueData);
 
 //   const handleDeleteProject = (id: number) => {
 //     setProjects(projects.filter(p => p.id !== id));
@@ -75,14 +72,14 @@ export default function Page() {
               projects.map((project,id) => (
                 <tr key={project.id} className="hover:bg-gray-50 transition">
                   <td className="px-6 py-4 font-medium text-gray-900">{project.name}</td>
-                  <td className="px-6 py-4">{project.bugs||0}</td>
+                  <td className="px-6 py-4">{queue.length}</td>
                   <td className="px-6 py-4">
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-semibold ${
                         project.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
                       }`}
                     >
-                      {project.status|| 'new'}
+                      {queue.length== 0? 'new':"Active"}
                     </span>
                   </td>
                   <td className="px-6 py-4">{project.lastUpdated || '-'}</td>
@@ -107,12 +104,30 @@ export default function Page() {
                           onClose={() => setOpenModalId(null)}
                         />
                       )}
-                              <button
-                    onClick={() => setOpenModalId(project.id)}
+
+              
+     
+                        <InviteModal
+                         
+                    isOpen={inviteModal}
+  onClose={() => setInviteModal(false)}
+    customer={project}
+  onSend={(email, type) => {
+    console.log("Send invite to:", email, "for project type:", type);
+    // call your API to send invitation here
+  }}
+  projectTypes={projectTypes}
+                        />
+                     
+     <button
+                   onClick={() => setInviteModal(true)}
                       className=" p-3  text-center justify-center items-center bg-purple-50 text-purple-600 rounded hover:bg-blue-100 transition"
                     >
                  ↪
                     </button>
+
+                      
+           
                   </td>
                 </tr>
               ))
