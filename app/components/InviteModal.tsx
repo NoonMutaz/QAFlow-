@@ -5,7 +5,7 @@ import { useState } from "react";
 
 interface InviteModalProps {
    customer: {
-    id: number;
+    id: string;
     name: string;
     bugId: string;
   };

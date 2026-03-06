@@ -8,7 +8,7 @@ import RemoveModal from '../components/RemoveModal';
 import {useQueueContext} from "../context/QueueContext";
 import {QueueData} from "../data/QueueData"
 
-type Status = 'active' | 'archived';
+// type Status = 'active' | 'archived';
 
 // interface Project {
 //   id: number;
@@ -23,8 +23,8 @@ export default function Page() {
   const { projects } = useProjects();
      const { deleteProject } = useProjects();
     const { handleOpenProject } = useProjects();
-   const [openModalId, setOpenModalId] = useState<string | null>(null);
- const [inviteModal, setInviteModal] = useState<number | null>(null);
+ const [openModalId, setOpenModalId] = useState<string | null>(null);
+ const [inviteModal, setInviteModal] = useState<string | null>(null);
   
 const projectTypes = ["Web App", "Mobile App", "API Project"];
   
@@ -95,7 +95,7 @@ const projectTypes = ["Web App", "Mobile App", "API Project"];
                       Open
                     </button>
                     <button
-                  onClick={() => setOpenModalId(project.id)}
+                onClick={() => setOpenModalId(project.id)}
                       className="px-3 py-1 bg-red-50 text-red-600 rounded hover:bg-red-100 transition"
                     >
                       Delete
@@ -111,17 +111,17 @@ const projectTypes = ["Web App", "Mobile App", "API Project"];
 
               
      
-                        <InviteModal
-                     isOpen={inviteModal === project.id}      
-                  
-  onClose={() => setInviteModal(null)}
+                      {inviteModal === project.id && (
+  <InviteModal
+    isOpen={inviteModal === project.id}
     customer={project}
-  onSend={(email, type) => {
-    console.log("Send invite to:", email, "for project type:", type);
-    // call your API to send invitation here
-  }}
-  projectTypes={projectTypes}
-                        />
+    projectTypes={projectTypes}
+    onClose={() => setInviteModal(null)}
+    onSend={(email, type) => {
+      console.log("Send invite to:", email, "for project type:", type);
+    }}
+  />
+)}
                      
      <button
                   onClick={() => setInviteModal(project.id)}

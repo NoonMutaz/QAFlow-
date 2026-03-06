@@ -4,11 +4,11 @@ import React, { useEffect, useRef } from 'react';
 
 interface RemoveModalProps {
   customer: {
-    id: number;
+    id: string;
     name: string;
     bugId: string;
   };
-  removeQueue: (id: number) => void;
+  removeQueue: (id: string) => void;
   onClose: () => void;
 }
 
