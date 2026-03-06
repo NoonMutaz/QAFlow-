@@ -82,7 +82,7 @@ const projectTypes = ["Web App", "Mobile App", "API Project"];
                       {queue.length== 0? 'new':"Active"}
                     </span>
                   </td>
-                  <td className="px-6 py-4">{project.lastUpdated || '-'}</td>
+                  <td className="px-6 py-4">--</td>
                   <td className="px-6 py-4 flex justify-end gap-2">
                     <button
                       onClick={() => handleOpenProject(project.id)}

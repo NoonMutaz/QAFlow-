@@ -56,7 +56,7 @@ const id = Array.isArray(params.id) ? params.id[0] : params.id ?? "";
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [select, setSelect] = useState<Status | "">("");
   const [selectP, setSelectP] = useState<Priority | "">("");
-  const [priority, setPriority] = useState<Priority>("");
+  const [priority, setPriority] = useState<Priority| "">("");
   //const [description, setDescription] = useState<Priority>("");
 const filteredQueue = useMemo(() => {
   return projectQueue.filter((customer) => {
