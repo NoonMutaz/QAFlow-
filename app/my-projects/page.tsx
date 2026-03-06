@@ -95,7 +95,7 @@ const projectTypes = ["Web App", "Mobile App", "API Project"];
                       Open
                     </button>
                     <button
-                    onClick={() => setOpenModalId(customer.id.toString())}
+                    onClick={() => setOpenModalId(project.id.toString())}
                       className="px-3 py-1 bg-red-50 text-red-600 rounded hover:bg-red-100 transition"
                     >
                       Delete
