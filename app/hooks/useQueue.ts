@@ -17,6 +17,7 @@ interface Customer {
   actualResult: string;
   description: string;
   note: string;
+  
 }
 export function useQueue(QueueData: Customer[]) {
   const [queue, setQueue] = useState<Customer[]>(QueueData);

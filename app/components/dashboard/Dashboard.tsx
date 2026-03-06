@@ -48,7 +48,7 @@ const id = Array.isArray(params.id) ? params.id[0] : params.id ?? "";
   // const id = params.id;
   const { projects } = useProjects();
   const { queue, addQueue, removeQueue, updateQueue,updatePriorityQueue  } = useQueueContext();
-  
+  const projectQueue = queue[id] || [];
 //   const { queue, addQueue, updateQueue, removeQueue, updatePriorityQueue } =
 //     useQueue(QueueData);
 
@@ -56,11 +56,9 @@ const id = Array.isArray(params.id) ? params.id[0] : params.id ?? "";
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [select, setSelect] = useState<Status | "">("");
   const [selectP, setSelectP] = useState<Priority | "">("");
-  //const [priority, setPriority] = useState<Priority>("");
+  const [priority, setPriority] = useState<Priority>("");
   //const [description, setDescription] = useState<Priority>("");
-
- const filteredQueue = useMemo(() => {
-  const projectQueue = queue[id] || []; //  get the array for this project
+const filteredQueue = useMemo(() => {
   return projectQueue.filter((customer) => {
     const matchesSearch =
       customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -73,10 +71,10 @@ const id = Array.isArray(params.id) ? params.id[0] : params.id ?? "";
 
     return matchesSearch && matchesStatus && matchesPriority;
   });
-}, [queue, id, searchTerm, select, selectP]);
+}, [projectQueue, searchTerm, select, selectP]);
   // const [queue, setQueue] = useState<Customer[]>([]);
   const exportToExcel = () => {
-    const data = queue.map((customer) => ({
+    const data = projectQueue.map((customer) => ({
       "Bug ID": customer.bugId,
       "Reported By": customer.name,
       Priority: customer.priority,
@@ -182,7 +180,7 @@ const id = Array.isArray(params.id) ? params.id[0] : params.id ?? "";
           <div className="flex items-center gap-3">
             <div className="text-right">
               <p className="text-xs text-gray-500">Total Queue</p>
-              <p className="text-2xl font-bold text-gray-900">{queue.length}</p>
+              <p className="text-2xl font-bold text-gray-900">  {(queue[id] || []).filter((c) => c.status === "in-progress").length}</p>
             </div>
             <div className="h-12 w-px bg-gray-200"></div>
             <div className="text-right">
@@ -241,7 +239,7 @@ const id = Array.isArray(params.id) ? params.id[0] : params.id ?? "";
             </h2>
             <div className="flex items-center gap-3">
               <span className="text-sm text-gray-500">
-                Showing {filteredQueue.length} of {queue.length} items
+                Showing  {filteredQueue.length} of {projectQueue.length}items
               </span>
               {(select || selectP) && (
                 <button

@@ -11,6 +11,12 @@ export interface Customer {
   status: Status;
   bugId: string;
   createdAt: number;
+   description: string;
+   url:string;
+     expectedResult: string;
+  actualResult: string;
+  note:string;
+  
 }
 
 interface QueueContextType {
