@@ -23,8 +23,8 @@ export default function Page() {
   const { projects } = useProjects();
      const { deleteProject } = useProjects();
     const { handleOpenProject } = useProjects();
-    const [openModalId, setOpenModalId] = useState<number | null>(null);
-  const [inviteModal, setInviteModal]= useState<number | null>(null);
+   const [openModalId, setOpenModalId] = useState<string | null>(null);
+ const [inviteModal, setInviteModal] = useState<number | null>(null);
   
 const projectTypes = ["Web App", "Mobile App", "API Project"];
   
@@ -95,19 +95,19 @@ const projectTypes = ["Web App", "Mobile App", "API Project"];
                       Open
                     </button>
                     <button
-                    onClick={() => setOpenModalId(project.id.toString())}
+                  onClick={() => setOpenModalId(project.id)}
                       className="px-3 py-1 bg-red-50 text-red-600 rounded hover:bg-red-100 transition"
                     >
                       Delete
                     </button>
 
-                      {openModalId === project.id && (
+                      {openModalId === project.id &&  
                         <RemoveModal
                           removeQueue={deleteProject}
                           customer={project}
                           onClose={() => setOpenModalId(null)}
                         />
-                      )}
+                      }
 
               
      
@@ -124,7 +124,7 @@ const projectTypes = ["Web App", "Mobile App", "API Project"];
                         />
                      
      <button
-                   onClick={() => setInviteModal(project.id)}
+                  onClick={() => setInviteModal(project.id)}
                       className=" p-3  text-center justify-center items-center bg-purple-50 text-purple-600 rounded hover:bg-blue-100 transition"
                     >
                  ↪
