@@ -1,8 +1,8 @@
 import React from 'react'
 type Status = "notFixed" | "in-progress" | "fixed";
 interface FilterByStatusPrpos {
-  select: string;
-  setSelect: (value: string) => void;
+ select: Status | "";
+  setSelect: React.Dispatch<React.SetStateAction<Status | "">>;
 }
 export default function FilterByStatus({select,setSelect}:FilterByStatusPrpos) {
   return (

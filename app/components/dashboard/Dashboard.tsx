@@ -37,6 +37,7 @@ interface Customer {
 interface NewCustomer {
   name: string;
   priority: Priority;
+   bugId: string; 
 }
 
 export default function Dashboard() {
@@ -56,7 +57,7 @@ const id = Array.isArray(params.id) ? params.id[0] : params.id ?? "";
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [select, setSelect] = useState<Status | "">("");
   const [selectP, setSelectP] = useState<Priority | "">("");
-  const [priority, setPriority] = useState<Priority| "">("");
+  //const [priority, setPriority] = useState<Priority| "">("");
   //const [description, setDescription] = useState<Priority>("");
 const filteredQueue = useMemo(() => {
   return projectQueue.filter((customer) => {
@@ -218,8 +219,8 @@ const filteredQueue = useMemo(() => {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-8">
               <QueueForm
               onAdd={(customer) => addQueue(project.id, customer)} 
-                priority={priority}
-                setPriority={setPriority}
+                // priority={priority}
+                // setPriority={setPriority}
               />
             </div>
           </div>
@@ -255,19 +256,17 @@ const filteredQueue = useMemo(() => {
             </div>
           </div>
 
-          <TableOfQueue
-           projectId={project.id}
-            filteredQueue={filteredQueue}
-            updateQueue={updateQueue}
-            removeQueue={removeQueue}
-            setSelect={setSelect}
-            select={select}
-            setSelectP={setSelectP}
-            selectP={selectP}
-            updatePriorityQueue={updatePriorityQueue}
-            getPriorityColor={getPriorityColor}
-            getStatusColor={getStatusColor}
-          />
+        <TableOfQueue
+  projectId={project.id}
+  filteredQueue={filteredQueue}
+  select={select}
+  setSelect={setSelect}
+  selectP={selectP}
+  setSelectP={setSelectP}
+  updateQueue={updateQueue}
+  removeQueue={removeQueue}
+  updatePriorityQueue={updatePriorityQueue}
+/>
         </div>
       </div>
     </>

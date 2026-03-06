@@ -7,13 +7,16 @@ import InviteModal from "../components/InviteModal"
 import RemoveModal from '../components/RemoveModal';
 import {useQueueContext} from "../context/QueueContext";
 import {QueueData} from "../data/QueueData"
-interface Project {
-  id: number;
-  projectName: string;
-  bugs: number;
-  status: 'active' | 'archived';
-  lastUpdated: string;
-}
+
+type Status = 'active' | 'archived';
+
+// interface Project {
+//   id: number;
+//   name: string;
+//   bugs: number;
+//   status: Status;
+//   lastUpdated: string;
+// }
 
 export default function Page() {
   const router = useRouter();
@@ -21,7 +24,8 @@ export default function Page() {
      const { deleteProject } = useProjects();
     const { handleOpenProject } = useProjects();
     const [openModalId, setOpenModalId] = useState<number | null>(null);
-  const [inviteModal, setInviteModal] = useState(false);
+  const [inviteModal, setInviteModal]= useState<number | null>(null);
+  
 const projectTypes = ["Web App", "Mobile App", "API Project"];
   
   const { queue } = useQueueContext();
@@ -79,7 +83,7 @@ const projectTypes = ["Web App", "Mobile App", "API Project"];
                         project.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
                       }`}
                     >
-                      {queue.length== 0? 'new':"Active"}
+                   {(queue[project.id]?.length || 0) === 0 ? 'New' : 'Active'}
                     </span>
                   </td>
                   <td className="px-6 py-4">--</td>
@@ -108,9 +112,9 @@ const projectTypes = ["Web App", "Mobile App", "API Project"];
               
      
                         <InviteModal
-                         
-                    isOpen={inviteModal}
-  onClose={() => setInviteModal(false)}
+                     isOpen={inviteModal === project.id}      
+                  
+  onClose={() => setInviteModal(null)}
     customer={project}
   onSend={(email, type) => {
     console.log("Send invite to:", email, "for project type:", type);
@@ -120,7 +124,7 @@ const projectTypes = ["Web App", "Mobile App", "API Project"];
                         />
                      
      <button
-                   onClick={() => setInviteModal(true)}
+                   onClick={() => setInviteModal(project.id)}
                       className=" p-3  text-center justify-center items-center bg-purple-50 text-purple-600 rounded hover:bg-blue-100 transition"
                     >
                  ↪

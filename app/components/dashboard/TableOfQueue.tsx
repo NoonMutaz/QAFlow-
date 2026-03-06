@@ -5,7 +5,7 @@ import FilterByStatus from "./FilterByStatus";
 import RemoveModal from "./RemoveModal";
 import FilterByPriority from "./FilterByPriority";
 import Link from "next/link";
-
+import { useQueueContext } from "../../context/QueueContext";
 type Status = "notFixed" | "in-progress" | "fixed";
 type Priority = "High" | "Medium" | "Low";
 
@@ -25,14 +25,14 @@ interface Customer {
 
 interface TableProps {
   filteredQueue: Customer[];
-   projectId: string; 
-  updateQueue: (id: number, status: Status) => void;
-  removeQueue: (id: number) => void;
+  projectId: string; 
+  updateQueue: (projectId: string, id: number, status: Status) => void;
+  removeQueue: (projectId: string, id: number) => void;
   select: Status | "";
   setSelect: React.Dispatch<React.SetStateAction<Status | "">>;
   selectP: Priority | "";
   setSelectP: React.Dispatch<React.SetStateAction<Priority | "">>;
-  updatePriorityQueue: (id: number, newPriority: Priority) => void;
+  updatePriorityQueue: (projectId: string, id: number, newPriority: Priority) => void;
 }
 interface Column {
   key: string;
@@ -40,13 +40,13 @@ interface Column {
 }
 export default function TableOfQueue({
   filteredQueue,
-  updateQueue,
-  removeQueue,
+  // updateQueue,
+  // removeQueue,
   select,
   setSelect,
   selectP,
   setSelectP,
-  updatePriorityQueue,
+  // updatePriorityQueue,
   projectId
 }: TableProps) {
   const [openModalId, setOpenModalId] = useState<number | null>(null);
@@ -63,7 +63,7 @@ export default function TableOfQueue({
         return "bg-gray-100 text-gray-700 border-gray-200";
     }
   };
-
+const {  removeQueue, updateQueue,updatePriorityQueue  } = useQueueContext();
   const getStatusColor = (status: Status) => {
     switch (status) {
       case "notFixed":
@@ -246,7 +246,7 @@ export default function TableOfQueue({
                     <select
                       value={customer.status}
                       onChange={(e) =>
-                        updateQueue(customer.id, e.target.value as Status)
+                        updateQueue(projectId, customer.id, e.target.value as Status)
                       }
                       className={`w-full   py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none text-sm bg-white transition-all ${getStatusColor(
                         customer.status,
@@ -336,7 +336,7 @@ export default function TableOfQueue({
 
                     {openModalId === customer.id && (
                       <RemoveModal
-                        removeQueue={removeQueue}
+                        removeQueue={(id) => removeQueue(projectId, id)}
                         customer={customer}
                         onClose={() => setOpenModalId(null)}
                       />

@@ -30,6 +30,7 @@ export default function QueueForm({ onAdd }: QueueFormProps) {
     actualResult: "",
     description: "",
     note: "",
+     bugId:"",
     attachment: null,
   });
 

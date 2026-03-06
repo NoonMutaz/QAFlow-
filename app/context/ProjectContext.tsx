@@ -8,6 +8,7 @@ interface Project {
   name: string;
   description: string;
   type: string;
+  bugId:string;
 }
 
 interface ProjectContextType {
