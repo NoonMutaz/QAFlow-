@@ -49,7 +49,7 @@ export default function TableOfQueue({
   // updatePriorityQueue,
   projectId
 }: TableProps) {
-  const [openModalId, setOpenModalId] = useState<number | null>(null);
+  const [openModalId, setOpenModalId] =  useState<string | null>(null);
 
   const getPriorityColor = (priority: Priority) => {
     switch (priority) {
