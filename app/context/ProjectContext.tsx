@@ -9,6 +9,7 @@ interface Project {
   description: string;
   type: string;
   bugId:string;
+  status: 'active',
 }
 
 interface ProjectContextType {

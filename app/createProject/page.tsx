@@ -42,6 +42,7 @@ export default function Page() {
         name: projectName,
         description,
         type: projectType,
+        status:"active",
           bugId: "",
       });
 
