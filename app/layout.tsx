@@ -6,7 +6,7 @@ import {QueueProvider} from "./context/QueueContext"
 import "./globals.css";
 import HeaderWrapper from "./components/header/HeaderWrapper";
 import { ProjectProvider } from "./context/ProjectContext";
- 
+ import Footer from "./components/Footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,7 +40,7 @@ export default function RootLayout({
           <HeaderWrapper />
           <QueueProvider>
              {children}
-           
+              <Footer/>
           </QueueProvider>
         </ProjectProvider>
          

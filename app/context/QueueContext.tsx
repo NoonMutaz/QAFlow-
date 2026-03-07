@@ -42,6 +42,16 @@ export const QueueProvider = ({ children }: ProviderProps) => {
   ) => {
     setQueue((prev) => {
       const projectQueue = prev[projectId] || [];
+   const similarBug = projectQueue.find((b) => {
+      const expectedSim = b.expectedResult.trim().toLowerCase() === customer.expectedResult.trim().toLowerCase();
+      const actualSim = b.actualResult.trim().toLowerCase() === customer.actualResult.trim().toLowerCase();
+      return expectedSim && actualSim;
+    });
+
+    if (similarBug) {
+      alert(`A similar bug already exists in : ${similarBug.bugId}`);
+      return prev; // don't add the new bug
+    }
 
       // Generate next bugId
       const lastNumber =
