@@ -37,21 +37,21 @@ interface Customer {
 interface NewCustomer {
   name: string;
   priority: Priority;
-   bugId: string; 
+  bugId: string;
 }
 
 export default function Dashboard() {
- 
-// const id = Array.isArray(params.id) ? params.id[0] : params.id;
+  // const id = Array.isArray(params.id) ? params.id[0] : params.id;
 
-const params = useParams();
-const id = Array.isArray(params.id) ? params.id[0] : params.id ?? "";
+  const params = useParams();
+  const id = Array.isArray(params.id) ? params.id[0] : (params.id ?? "");
   // const id = params.id;
   const { projects } = useProjects();
-  const { queue, addQueue, removeQueue, updateQueue,updatePriorityQueue  } = useQueueContext();
+  const { queue, addQueue, removeQueue, updateQueue, updatePriorityQueue } =
+    useQueueContext();
   const projectQueue = queue[id] || [];
-//   const { queue, addQueue, updateQueue, removeQueue, updatePriorityQueue } =
-//     useQueue(QueueData);
+  //   const { queue, addQueue, updateQueue, removeQueue, updatePriorityQueue } =
+  //     useQueue(QueueData);
 
   //const { searchTerm } = useSearch();
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -59,31 +59,32 @@ const id = Array.isArray(params.id) ? params.id[0] : params.id ?? "";
   const [selectP, setSelectP] = useState<Priority | "">("");
   //const [priority, setPriority] = useState<Priority| "">("");
   //const [description, setDescription] = useState<Priority>("");
-const filteredQueue = useMemo(() => {
-  return projectQueue.filter((customer) => {
-    const matchesSearch =
-      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.priority.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.bugId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.description.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredQueue = useMemo(() => {
+    return projectQueue.filter((customer) => {
+      const matchesSearch =
+        customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.priority.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.bugId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.description.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStatus = select === "" || customer.status === select;
-    const matchesPriority = selectP === "" || customer.priority === selectP;
+      const matchesStatus = select === "" || customer.status === select;
+      const matchesPriority = selectP === "" || customer.priority === selectP;
 
-    return matchesSearch && matchesStatus && matchesPriority;
-  });
-}, [projectQueue, searchTerm, select, selectP]);
+      return matchesSearch && matchesStatus && matchesPriority;
+    });
+  }, [projectQueue, searchTerm, select, selectP]);
   // const [queue, setQueue] = useState<Customer[]>([]);
   const exportToExcel = () => {
     const data = projectQueue.map((customer) => ({
       "Bug ID": customer.bugId,
       "Reported By": customer.name,
+      Description: customer.description,
       Priority: customer.priority,
-      Status: customer.status,
       URL: customer.url,
       "Expected Result": customer.expectedResult,
       "Actual Result": customer.actualResult,
-      Description: customer.description,
+      Status: customer.status,
+
       Note: customer.note,
       "Created At": new Date(customer.createdAt).toLocaleString(),
     }));
@@ -106,12 +107,12 @@ const filteredQueue = useMemo(() => {
     saveAs(blob, "Queue.xlsx");
   };
   // Compute next bug ID dynamically
-//   const getNextBugId = () => {
-//     if (queue.length === 0) return "BUG-001";
-//     const lastBug = queue[queue.length - 1].bugId; // e.g., "BUG-007"
-//     const number = parseInt(lastBug!.split("-")[1]) + 1;
-//     return `BUG-${String(number).padStart(3, "0")}`; // "BUG-008"
-//   };
+  //   const getNextBugId = () => {
+  //     if (queue.length === 0) return "BUG-001";
+  //     const lastBug = queue[queue.length - 1].bugId; // e.g., "BUG-007"
+  //     const number = parseInt(lastBug!.split("-")[1]) + 1;
+  //     return `BUG-${String(number).padStart(3, "0")}`; // "BUG-008"
+  //   };
   const project = projects.find((p) => p.id.toString() === id);
 
   if (!project) {
@@ -160,9 +161,9 @@ const filteredQueue = useMemo(() => {
             <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
               {project.name || "QA Dashboard"}
             </h1>
-   <div className="w-full">
-  <p
-    className="
+            <div className="w-full">
+              <p
+                className="
       text-xs
       sm:text-sm
       md:text-base
@@ -171,31 +172,39 @@ const filteredQueue = useMemo(() => {
       leading-snug
       break-words
     "
-  >
-    {project.description ||
-      "Monitor bugs, test cases, and status in real time"}
-  </p>
-</div>
-
+              >
+                {project.description ||
+                  "Monitor bugs, test cases, and status in real time"}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="text-right">
               <p className="text-xs text-gray-500">Total Queue</p>
-              <p className="text-2xl font-bold text-gray-900">  {(queue[id] || []).filter((c) => c.status === "in-progress").length}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {" "}
+                {
+                  (queue[id] || []).filter((c) => c.status === "in-progress")
+                    .length
+                }
+              </p>
             </div>
             <div className="h-12 w-px bg-gray-200"></div>
             <div className="text-right">
               <p className="text-xs text-gray-500">Active</p>
               <p className="text-2xl font-bold text-purple-600">
                 {/* {queue.filter((c) => c.status === "in-progress").length} */}
-                 {(queue[id] || []).filter((c) => c.status === "in-progress").length}
+                {
+                  (queue[id] || []).filter((c) => c.status === "in-progress")
+                    .length
+                }
               </p>
             </div>
           </div>
         </div>
 
         {/* KPI Section */}
-        <KpiSection queue={queue[id] || []}/>
+        <KpiSection queue={queue[id] || []} />
 
         {/* Charts + Form Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -208,7 +217,7 @@ const filteredQueue = useMemo(() => {
                 Export to Excel
               </button>{" "}
               <Chart queue={queue[id] || []} />
-              <PieChart queue={queue[id] || []}/>
+              <PieChart queue={queue[id] || []} />
             </div>
             {/* <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
               <PieChart queue={queue} />
@@ -218,7 +227,7 @@ const filteredQueue = useMemo(() => {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-8">
               <QueueForm
-              onAdd={(customer) => addQueue(project.id, customer)} 
+                onAdd={(customer) => addQueue(project.id, customer)}
                 // priority={priority}
                 // setPriority={setPriority}
               />
@@ -240,7 +249,7 @@ const filteredQueue = useMemo(() => {
             </h2>
             <div className="flex items-center gap-3">
               <span className="text-sm text-gray-500">
-                Showing  {filteredQueue.length} of {projectQueue.length}items
+                Showing {filteredQueue.length} of {projectQueue.length}items
               </span>
               {(select || selectP) && (
                 <button
@@ -256,17 +265,17 @@ const filteredQueue = useMemo(() => {
             </div>
           </div>
 
-        <TableOfQueue
-  projectId={project.id}
-  filteredQueue={filteredQueue}
-  select={select}
-  setSelect={setSelect}
-  selectP={selectP}
-  setSelectP={setSelectP}
-  updateQueue={updateQueue}
-  removeQueue={removeQueue}
-  updatePriorityQueue={updatePriorityQueue}
-/>
+          <TableOfQueue
+            projectId={project.id}
+            filteredQueue={filteredQueue}
+            select={select}
+            setSelect={setSelect}
+            selectP={selectP}
+            setSelectP={setSelectP}
+            updateQueue={updateQueue}
+            removeQueue={removeQueue}
+            updatePriorityQueue={updatePriorityQueue}
+          />
         </div>
       </div>
     </>

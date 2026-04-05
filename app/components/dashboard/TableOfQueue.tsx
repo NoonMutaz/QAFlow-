@@ -1,6 +1,5 @@
 "use client";
-
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import FilterByStatus from "./FilterByStatus";
 import RemoveModal from "./RemoveModal";
 import FilterByPriority from "./FilterByPriority";
@@ -94,6 +93,9 @@ const {  removeQueue, updateQueue,updatePriorityQueue  } = useQueueContext();
   // ];
 
   const [currentPage, setCurrentPage] = useState(1);
+  useEffect(() => {
+  setCurrentPage(1);
+}, [filteredQueue]);
   const itemsPerPage = 10; // 10 bugs per page
   // const paginatedQueue = useMemo(() => {
 
