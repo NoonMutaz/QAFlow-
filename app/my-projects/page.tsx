@@ -6,8 +6,7 @@ import { useProjects } from "../context/ProjectContext"
 import InviteModal from "../components/InviteModal"
 import RemoveModal from '../components/RemoveModal';
 import {useQueueContext} from "../context/QueueContext";
-import {QueueData} from "../data/QueueData"
-
+ 
 // type Status = 'active' | 'archived';
 
 // interface Project {

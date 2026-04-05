@@ -85,13 +85,13 @@ const {  removeQueue, updateQueue,updatePriorityQueue  } = useQueueContext();
     // updatePriorityQueue(id, nextPriority);
     updatePriorityQueue(projectId, id, nextPriority);
   };
-  const columns: Column[] = [
-    { key: "bugId", label: "Bug ID" },
-    { key: "name", label: "Reported By" },
-    { key: "priority", label: "Priority" },
-    { key: "status", label: "Status" },
-    { key: "createdAt", label: "Created At" },
-  ];
+  // const columns: Column[] = [
+  //   { key: "bugId", label: "Bug ID" },
+  //   { key: "name", label: "Reported By" },
+  //   { key: "priority", label: "Priority" },
+  //   { key: "status", label: "Status" },
+  //   { key: "createdAt", label: "Created At" },
+  // ];
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10; // 10 bugs per page

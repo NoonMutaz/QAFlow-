@@ -1,6 +1,6 @@
 "use client";
 import { createContext, useContext, useState, ReactNode } from "react";
-
+import Fuse from "fuse.js";
 export type Status = "notFixed" | "in-progress" | "fixed";
 export type Priority = "High" | "Medium" | "Low";
 
@@ -42,17 +42,34 @@ export const QueueProvider = ({ children }: ProviderProps) => {
   ) => {
     setQueue((prev) => {
       const projectQueue = prev[projectId] || [];
-   const similarBug = projectQueue.find((b) => {
-      const expectedSim = b.expectedResult.trim().toLowerCase() === customer.expectedResult.trim().toLowerCase();
-      const actualSim = b.actualResult.trim().toLowerCase() === customer.actualResult.trim().toLowerCase();
-      return expectedSim && actualSim;
-    });
+  //  const similarBug = projectQueue.find((b) => {
+  //     const expectedSim = b.expectedResult.trim().toLowerCase() === customer.expectedResult.trim().toLowerCase();
+  //     const actualSim = b.actualResult.trim().toLowerCase() === customer.actualResult.trim().toLowerCase();
+  //     return expectedSim && actualSim;
+  //   });
 
-    if (similarBug) {
-      alert(`A similar bug already exists in : ${similarBug.bugId}`);
-      return prev; // don't add the new bug
-    }
+  //   if (similarBug) {
+  //     alert(`A similar bug already exists in : ${similarBug.bugId}`);
+  //     return prev; // don't add the new bug
+  //   }
+const fuse = new Fuse(projectQueue, {
+  keys: ["expectedResult", "actualResult", "description"],
+  threshold: 0.4,
+});
 
+const searchText =
+  customer.expectedResult +
+  " " +
+  customer.actualResult +
+  " " +
+  customer.description;
+
+const results = fuse.search(searchText);
+
+if (results.length > 0) {
+  alert(`Possible duplicate bug: ${results[0].item.bugId}`);
+  return prev;
+}
       // Generate next bugId
       const lastNumber =
         projectQueue.length > 0

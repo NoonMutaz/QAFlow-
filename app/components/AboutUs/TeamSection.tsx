@@ -24,7 +24,7 @@ export default function TeamSection() {
       ],
     },
     {
-      name: "Michael Brown",
+      name: "Taif Alrashidi",
       role: "QA Engineer",
       photo:
         "https://tse4.mm.bing.net/th/id/OIP._CaPhpRAjmgPpYL4Y9vXkwHaE8?rs=1&pid=ImgDetMain&o=7&rm=3",

@@ -38,7 +38,7 @@ export default function Contact() {
               <div>
                 <p className="font-semibold">Email</p>
                 <a href="mailto:support@qaflow.com" className="text-blue-100 hover:text-white">
-                  support@scholaratlas.com
+                  support@qaflow.com
                 </a>
               </div>
               <div>
