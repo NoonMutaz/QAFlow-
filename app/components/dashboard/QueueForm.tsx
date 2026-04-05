@@ -67,7 +67,8 @@ export default function QueueForm({ onAdd }: QueueFormProps) {
     bugId,
     
   });
-
+  
+setError("")
 
     // reset form
    

@@ -1,15 +1,16 @@
 'use client';
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
 interface Project {
   id: string;
   name: string;
   description: string;
   type: string;
-  bugId:string;
-  status: 'active',
+  bugId: string;
+  status: 'active';
 }
 
 interface ProjectContextType {
@@ -23,8 +24,11 @@ const ProjectContext = createContext<ProjectContextType | null>(null);
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [isReady, setIsReady] = useState(false);
 
+  const [projects, setProjects] = useLocalStorage<Project[]>("projects", []);
+
+  // Define functions BEFORE the early return
   const addProject = (project: Project) => {
     setProjects(prev => [...prev, project]);
   };
@@ -36,6 +40,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const handleOpenProject = (id: string) => {
     router.push(`/dashboard/${id}`);
   };
+
+  useEffect(() => {
+    setIsReady(true);
+  }, []);
+
+  if (!isReady) return null;
 
   return (
     <ProjectContext.Provider value={{ projects, addProject, deleteProject, handleOpenProject }}>

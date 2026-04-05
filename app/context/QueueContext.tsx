@@ -1,6 +1,7 @@
 "use client";
 import { createContext, useContext, useState, ReactNode } from "react";
 import Fuse from "fuse.js";
+import { useLocalStorage } from '../hooks/useLocalStorage';
 export type Status = "notFixed" | "in-progress" | "fixed";
 export type Priority = "High" | "Medium" | "Low";
 
@@ -34,8 +35,8 @@ interface ProviderProps {
 }
 
 export const QueueProvider = ({ children }: ProviderProps) => {
-  const [queue, setQueue] = useState<Record<string, Customer[]>>({});
-
+  // const [queue, setQueue] = useState<Record<string, Customer[]>>({});
+ const [queue, setQueue] = useLocalStorage<Record<string, Customer[]>>("queue", {});  
   const addQueue = (
     projectId: string,
     customer: Omit<Customer, "id" | "status" | "createdAt" | "bugId">
