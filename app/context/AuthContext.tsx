@@ -23,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
+    // Rehydrate from localStorage on mount
     const storedToken = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
     if (storedToken && storedUser) {
@@ -37,8 +38,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(token);
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(user));
-    // save to cookie for middleware
-    document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}`;
   };
 
   const clearAuth = () => {
@@ -46,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    document.cookie = "token=; path=/; max-age=0";
+    
   };
 
   return (

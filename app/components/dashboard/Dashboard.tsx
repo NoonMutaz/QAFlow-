@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Header from "../header/Header";
 import { useProjects } from "../../context/ProjectContext";
 import { useQueueContext } from "../../context/QueueContext";
@@ -17,6 +17,7 @@ import { saveAs } from "file-saver";
 import DashboardSearchBar from "./DashboardSearchBar";
 
 import { useParams } from "next/navigation";
+
 type Status = "notFixed" | "in-progress" | "fixed";
 type Priority = "High" | "Medium" | "Low";
 
@@ -42,23 +43,33 @@ interface NewCustomer {
 
 export default function Dashboard() {
   // const id = Array.isArray(params.id) ? params.id[0] : params.id;
+  // add fetchBugs to your destructuring
 
   const params = useParams();
   const id = Array.isArray(params.id) ? params.id[0] : (params.id ?? "");
-  // const id = params.id;
+
   const { projects } = useProjects();
-  const { queue, addQueue, removeQueue, updateQueue, updatePriorityQueue } =
+  const { queue, addQueue, removeQueue, updateQueue, updatePriorityQueue, fetchBugs } =
     useQueueContext();
+
   const projectQueue = queue[id] || [];
-  //   const { queue, addQueue, updateQueue, removeQueue, updatePriorityQueue } =
+
+  // const { queue, addQueue, updateQueue, removeQueue, updatePriorityQueue } =
   //     useQueue(QueueData);
 
-  //const { searchTerm } = useSearch();
+  // const { searchTerm } = useSearch();
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [select, setSelect] = useState<Status | "">("");
   const [selectP, setSelectP] = useState<Priority | "">("");
-  //const [priority, setPriority] = useState<Priority| "">("");
-  //const [description, setDescription] = useState<Priority>("");
+
+  // FIX: Hook must run BEFORE any conditional return
+  useEffect(() => {
+    if (id) {
+      fetchBugs(id);
+    }
+  }, [id]);
+
+  // Compute filtered queue
   const filteredQueue = useMemo(() => {
     return projectQueue.filter((customer) => {
       const matchesSearch =
@@ -73,7 +84,8 @@ export default function Dashboard() {
       return matchesSearch && matchesStatus && matchesPriority;
     });
   }, [projectQueue, searchTerm, select, selectP]);
-  // const [queue, setQueue] = useState<Customer[]>([]);
+
+  // Excel export
   const exportToExcel = () => {
     const data = projectQueue.map((customer) => ({
       "Bug ID": customer.bugId,
@@ -84,37 +96,27 @@ export default function Dashboard() {
       "Expected Result": customer.expectedResult,
       "Actual Result": customer.actualResult,
       Status: customer.status,
-
       Note: customer.note,
       "Created At": new Date(customer.createdAt).toLocaleString(),
     }));
 
-    // Create a worksheet
     const worksheet = XLSX.utils.json_to_sheet(data);
-
-    // Create a workbook and append the worksheet
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Queue");
 
-    // Generate buffer
     const excelBuffer = XLSX.write(workbook, {
       bookType: "xlsx",
       type: "array",
     });
 
-    // Save file
     const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
     saveAs(blob, "Queue.xlsx");
   };
-  // Compute next bug ID dynamically
-  //   const getNextBugId = () => {
-  //     if (queue.length === 0) return "BUG-001";
-  //     const lastBug = queue[queue.length - 1].bugId; // e.g., "BUG-007"
-  //     const number = parseInt(lastBug!.split("-")[1]) + 1;
-  //     return `BUG-${String(number).padStart(3, "0")}`; // "BUG-008"
-  //   };
+
+  // Find project
   const project = projects.find((p) => p.id.toString() === id);
 
+  // SAFE: conditional return AFTER all hooks
   if (!project) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -152,9 +154,9 @@ export default function Dashboard() {
 
   return (
     <>
-      <div className="min-h-screen   px-4 md:px-8 lg:px-12 py-8 space-y-8">
+      <div className="min-h-screen px-4 md:px-8 lg:px-12 py-8 space-y-8">
         {/* Page Header */}
-        {/* <Header  searchTerm={searchTerm} setSearchTerm={setSearchTerm} /> */}
+        {/* <Header searchTerm={searchTerm} setSearchTerm={setSearchTerm} /> */}
 
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
@@ -162,42 +164,25 @@ export default function Dashboard() {
               {project.name || "QA Dashboard"}
             </h1>
             <div className="w-full">
-              <p
-                className="
-      text-xs
-      sm:text-sm
-      md:text-base
-      text-gray-500
-      mt-1
-      leading-snug
-      break-words
-    "
-              >
+              <p className="text-xs sm:text-sm md:text-base text-gray-500 mt-1 leading-snug break-words">
                 {project.description ||
                   "Monitor bugs, test cases, and status in real time"}
               </p>
             </div>
           </div>
+
           <div className="flex items-center gap-3">
             <div className="text-right">
               <p className="text-xs text-gray-500">Total Queue</p>
               <p className="text-2xl font-bold text-gray-900">
-                {" "}
-                {
-                  (queue[id] || []).filter((c) => c.status === "in-progress")
-                    .length
-                }
+                {(queue[id] || []).filter((c) => c.status === "in-progress").length}
               </p>
             </div>
             <div className="h-12 w-px bg-gray-200"></div>
             <div className="text-right">
               <p className="text-xs text-gray-500">Active</p>
               <p className="text-2xl font-bold text-purple-600">
-                {/* {queue.filter((c) => c.status === "in-progress").length} */}
-                {
-                  (queue[id] || []).filter((c) => c.status === "in-progress")
-                    .length
-                }
+                {(queue[id] || []).filter((c) => c.status === "in-progress").length}
               </p>
             </div>
           </div>
@@ -215,41 +200,29 @@ export default function Dashboard() {
                 className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
               >
                 Export to Excel
-              </button>{" "}
+              </button>
               <Chart queue={queue[id] || []} />
               <PieChart queue={queue[id] || []} />
             </div>
-            {/* <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <PieChart queue={queue} />
-            </div> */}
           </div>
 
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-8">
-              <QueueForm
-                onAdd={(customer) => addQueue(project.id, customer)}
-                // priority={priority}
-                // setPriority={setPriority}
-              />
+              <QueueForm onAdd={(customer) => addQueue(project.id, customer)} />
             </div>
           </div>
         </div>
 
         {/* search bar */}
-        <DashboardSearchBar
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-        />
-        <div></div>
+        <DashboardSearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+
         {/* Table Section */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Queue Management
-            </h2>
+            <h2 className="text-lg font-semibold text-gray-900">Queue Management</h2>
             <div className="flex items-center gap-3">
               <span className="text-sm text-gray-500">
-                Showing {filteredQueue.length} of {projectQueue.length}items
+                Showing {filteredQueue.length} of {projectQueue.length} items
               </span>
               {(select || selectP) && (
                 <button

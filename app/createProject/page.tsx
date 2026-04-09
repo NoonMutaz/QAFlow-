@@ -31,30 +31,68 @@ export default function Page() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleCreate = async () => {
-    if (!validateForm()) return;
+  // const handleCreate = async () => {
+  //   if (!validateForm()) return;
 
-    setIsSubmitting(true);
+  //   setIsSubmitting(true);
 
-    try {
-      addProject({
-        id: crypto.randomUUID(),
+  //   try {
+  //     addProject({
+  //       id: crypto.randomUUID(),
+  //       name: projectName,
+  //       description,
+  //       type: projectType,
+  //       status:"active",
+  //         bugId: "",
+  //     });
+
+  //     router.push("/my-projects");
+  //   } catch (error) {
+  //     console.error("Error creating project:", error);
+  //     setErrors({ submit: "Failed to create project. Please try again." });
+  //   } finally {
+  //     setIsSubmitting(false);
+  //   }
+  // };
+const handleCreate = async () => {
+  if (!validateForm()) return;
+
+  setIsSubmitting(true);
+
+  try {
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
         name: projectName,
         description,
         type: projectType,
-        status:"active",
-          bugId: "",
-      });
+      }),
+    });
 
-      router.push("/my-projects");
-    } catch (error) {
-      console.error("Error creating project:", error);
-      setErrors({ submit: "Failed to create project. Please try again." });
-    } finally {
-      setIsSubmitting(false);
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || "Failed to create project");
     }
-  };
 
+    const newProject = await res.json();
+
+    // update context AFTER backend success
+    addProject(newProject);
+
+    router.push("/my-projects");
+  } catch (error: any) {
+    console.error("Error creating project:", error);
+    setErrors({ submit: error.message || "Failed to create project" });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
   const handleCancel = () => {
     router.push("/my-projects");
   };

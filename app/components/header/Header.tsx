@@ -11,11 +11,11 @@ interface HeaderProps {
 
 export default function Header({ searchTerm, setSearchTerm }: HeaderProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const { user, isReady } = useAuthContext()   // 👈 use context, not localStorage directly
+  const { user, isReady } = useAuthContext()   //   use context, not localStorage directly
   const { signOut } = useAuth()
 
   const navLinks = [
-    { href: "/",            label: "Home" },
+    { href: "/", label: "Home" },
     { href: "/my-projects", label: "Projects" },
     { href: "/aboutUs",     label: "About Us" },
     { href: "/contact",     label: "Contact" },
@@ -90,26 +90,28 @@ export default function Header({ searchTerm, setSearchTerm }: HeaderProps) {
             />
           </div>
 
-          {/* 👇 wait for isReady to avoid hydration flash */}
-          {!isReady ? null : user ? (
-            <div className="flex items-center gap-3">
-              <span className="hidden md:block text-sm text-gray-500">
-                Hi, <span className="font-medium text-gray-800">{user.name}</span>
-              </span>
-              <button
-                onClick={signOut}
-                className="btn btn-secondary btn-sm md:btn-md hover:scale-105 transition-transform"
-              >
-                Logout
-              </button>
-            </div>
-          ) : (
-            <Link href="/login">
-              <button className="btn btn-primary btn-sm md:btn-md hover:scale-105 transition-transform">
-                Sign In
-              </button>
-            </Link>
-          )}
+          {/*   wait for isReady to avoid hydration flash */}
+    {!isReady ? (
+  <div className="w-20 h-8 bg-gray-200 rounded animate-pulse" />
+) : user ? (
+  <div className="flex items-center gap-3">
+    <span className="hidden md:block text-sm text-gray-500">
+      Hi, <span className="font-medium text-gray-800">{user.name}</span>
+    </span>
+    <button
+      onClick={signOut}
+      className="btn btn-secondary btn-sm md:btn-md hover:scale-105 transition-transform"
+    >
+      Logout
+    </button>
+  </div>
+) : (
+  <Link href="/login">
+    <button className="btn btn-primary btn-sm md:btn-md hover:scale-105 transition-transform">
+      Sign In
+    </button>
+  </Link>
+)}
         </div>
 
       </div>

@@ -38,13 +38,13 @@ export default function RootLayout({
       >   
        <AuthProvider> 
       <SearchProvider>
-        <ProjectProvider>
+        <QueueProvider>  <ProjectProvider>
           <HeaderWrapper />
-          <QueueProvider>
+        
              {children}
               <Footer/>
-          </QueueProvider>
-        </ProjectProvider>
+         
+        </ProjectProvider> </QueueProvider>
          
         </SearchProvider>
  </AuthProvider>

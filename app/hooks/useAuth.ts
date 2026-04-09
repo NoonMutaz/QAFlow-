@@ -1,62 +1,74 @@
-"use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuthContext } from "../context/AuthContext"; //  import context
+import { useAuthContext } from "../context/AuthContext"; // adjust path
+import { useQueueContext } from "../context/QueueContext";
+import { useProjects } from '../context/ProjectContext';
 
-const API = "https://localhost:7295/api/auth";
-
+const API = `${process.env.NEXT_PUBLIC_API_URL}/api/auth`;
 export function useAuth() {
   const router = useRouter();
-  const { setAuth, clearAuth } = useAuthContext(); //  get setAuth
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const register = async (name: string, email: string, password: string) => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch(`${API}/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      router.push("/login");
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+  const { clearAuth } = useAuthContext();
+  const { setAuth } = useAuthContext();
+  const { clearQueue } = useQueueContext();
+  const { clearProjects } = useProjects();
+ const login = async (email: string, password: string) => {
+  setLoading(true);
+  try {
+    const res = await fetch(`${API}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+  clearQueue(); 
+   clearProjects();
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || "Invalid credentials");
     }
-  };
 
-  const login = async (email: string, password: string) => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch(`${API}/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+    const data = await res.json();
 
-      if (!res.ok) throw new Error("Invalid email or password");
+    setAuth(data.user, data.token); //   update context + storage
 
-      const data = await res.json();
-      console.log("API response:", data); //  check what shape comes back
+    document.cookie = `token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}`;
 
-      //  this updates context + localStorage + cookie all at once
-      setAuth(data.user, data.token);
+    router.push("/my-projects");
+  } catch (err: any) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
-      router.push("/");
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+const register = async (name: string, email: string, password: string) => {
+  setLoading(true);
+  try {
+    const res = await fetch(`${API}/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password }),
+    });
+
+    //  log the actual error
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("Register error:", text);
+      throw new Error(text || "Registration failed");
     }
-  };
 
+    router.push("/login");
+  } catch (err: any) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
   const signOut = () => {
-    clearAuth(); // clears context + localStorage + cookie
+    clearAuth(); //   clears state + localStorage
+    document.cookie = "token=; path=/; max-age=0"; // 
+    clearQueue();
     router.push("/login");
   };
 
