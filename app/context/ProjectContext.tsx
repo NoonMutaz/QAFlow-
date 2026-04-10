@@ -1,74 +1,11 @@
-// 'use client';
-
-// import { createContext, useContext, useState, useEffect } from "react";
-// import { useRouter } from 'next/navigation';
-// import { useLocalStorage } from '../hooks/useLocalStorage';
-
-// interface Project {
-//   id: string;
-//   name: string;
-//   description: string;
-//   type: string;
-//   bugId: string;
-//   status: 'active';
-// }
-
-// interface ProjectContextType {
-//   projects: Project[];
-//   addProject: (project: Project) => void;
-//   deleteProject: (id: string) => void;
-//   handleOpenProject: (id: string) => void;
-// }
-
-// const ProjectContext = createContext<ProjectContextType | null>(null);
-
-// export function ProjectProvider({ children }: { children: React.ReactNode }) {
-//   const router = useRouter();
-//   const [isReady, setIsReady] = useState(false);
-
-//   const [projects, setProjects] = useLocalStorage<Project[]>("projects", []);
-
-//   // Define functions BEFORE the early return
-//   const addProject = (project: Project) => {
-//     setProjects(prev => [...prev, project]);
-//   };
-
-//   const deleteProject = (id: string) => {
-//     setProjects(prev => prev.filter(d => d.id !== id));
-//   };
-
-//   const handleOpenProject = (id: string) => {
-//     router.push(`/dashboard/${id}`);
-//   };
-
-//   useEffect(() => {
-//     setIsReady(true);
-//   }, []);
-
-//   if (!isReady) return null;
-
-//   return (
-//     <ProjectContext.Provider value={{ projects, addProject, deleteProject, handleOpenProject }}>
-//       {children}
-//     </ProjectContext.Provider>
-//   );
-// }
-
-// export const useProjects = () => {
-//   const context = useContext(ProjectContext);
-//   if (!context) {
-//     throw new Error("useProjects must be used within a ProjectProvider");
-//   }
-//   return context;
-// };
 'use client';
 
-import { useAuthContext } from "./AuthContext";
 import { createContext, useContext, useState, useEffect } from "react";
-import { useRouter } from 'next/navigation';
-
+import { useRouter } from "next/navigation";
+import { useAuthContext } from "./AuthContext";
+import { useQueueContext } from "./QueueContext";
 interface Project {
-  id: string;
+  id: number;
   name: string;
   description: string;
   type: string;
@@ -77,9 +14,11 @@ interface Project {
 interface ProjectContextType {
   projects: Project[];
   addProject: (project: Project) => void;
-  deleteProject: (id: string) => Promise<void>;
-  handleOpenProject: (id: string) => void;
+  deleteProject: (id: number) => Promise<void>;
+  handleOpenProject: (id: number) => void;
   clearProjects: () => void;
+  fetchProjects: () => Promise<void>; 
+  isLoading: boolean;  
 }
 
 const ProjectContext = createContext<ProjectContextType | null>(null);
@@ -90,72 +29,114 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [isReady, setIsReady] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);  
+const { queue, fetchQueue } = useQueueContext();
+  const API = process.env.NEXT_PUBLIC_API_URL!;
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-      if (!token) {
+  const fetchProjects = async () => {
+    if (!token) {
+      setProjects([]);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API}/api/projects`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store', // ✅ Always fresh
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setProjects(data);
+        console.log(`✅ Fetched ${data.length} projects`);
+      } else {
+        console.error('Projects fetch failed:', res.status);
         setProjects([]);
-        setIsReady(true);
-        return;
       }
+    } catch (err) {
+      console.error("Failed to fetch projects:", err);
+      setProjects([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+  // ✅ 1. INITIAL LOAD + TOKEN CHANGE
+  useEffect(() => {
+    if (token) {
+      fetchProjects();
+    }
+    setIsReady(true); // ✅ Always ready after first run
+  }, [token]);
 
-        if (res.ok) {
-          const data = await res.json();
-          setProjects(data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch projects:", err);
-      } finally {
-        setIsReady(true);
-      }
+  // ✅ 2. GLOBAL REFRESH EVENTS
+  useEffect(() => {
+    const handleRefresh = () => {
+      console.log('🔄 Event refresh');
+      fetchProjects();
+       fetchQueue();
     };
 
-    fetchProjects();
+    window.addEventListener('projects-refresh', handleRefresh);
+    return () => window.removeEventListener('projects-refresh', handleRefresh);
+  }, []);
+
+  //   BACKGROUND POLLING (tab visible only)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible' && token) {
+        fetchProjects();
+      }
+    }, 30000); // 30s
+
+    return () => clearInterval(interval);
   }, [token]);
 
   const addProject = (project: Project) => {
     setProjects(prev => [...prev, project]);
   };
 
-  const deleteProject = async (id: string) => {
-    const token = localStorage.getItem("token");
-
+  const deleteProject = async (id: number) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${id}`, {
+      const res = await fetch(`${API}/api/projects/${id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (res.ok) {
         setProjects(prev => prev.filter(p => p.id !== id));
       }
     } catch (err) {
-      console.error("Delete error:", err);
+      console.error("Delete failed:", err);
     }
   };
 
-  const handleOpenProject = (id: string) => {
+  const handleOpenProject = (id: number) => {
     router.push(`/dashboard/${id}`);
   };
 
   const clearProjects = () => setProjects([]);
 
   return (
-    <ProjectContext.Provider value={{ projects, addProject, deleteProject, handleOpenProject, clearProjects }}>
-      {!isReady ? null : children}
+    <ProjectContext.Provider
+      value={{
+        projects,
+        addProject,
+        deleteProject,
+        handleOpenProject,
+        clearProjects,
+        fetchProjects,
+        isLoading, // ✅ Expose loading
+      }}
+    >
+      {children} {/* ✅ Always render - no isReady gate */}
     </ProjectContext.Provider>
   );
 }
 
 export const useProjects = () => {
-  const context = useContext(ProjectContext);
-  if (!context) throw new Error("useProjects must be used within a ProjectProvider");
-  return context;
+  const ctx = useContext(ProjectContext);
+  if (!ctx) throw new Error("useProjects must be used within provider");
+  return ctx;
 };

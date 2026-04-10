@@ -5,6 +5,8 @@ import {SearchProvider} from "./context/SearchContext"
 import { AuthProvider } from "./context/AuthContext";
 import {QueueProvider} from "./context/QueueContext" 
 import "./globals.css";
+import InviteNotifications from "./components/InviteNotifications";
+
 import HeaderWrapper from "./components/header/HeaderWrapper";
 import { ProjectProvider } from "./context/ProjectContext";
  import Footer from "./components/Footer";
@@ -40,7 +42,7 @@ export default function RootLayout({
       <SearchProvider>
         <QueueProvider>  <ProjectProvider>
           <HeaderWrapper />
-        
+        <InviteNotifications /> 
              {children}
               <Footer/>
          

@@ -13,15 +13,16 @@ interface NewCustomer {
   actualResult: string;
   description: string;
   note: string;
-  bugId:string;
+  bugId: string;
   attachment?: File | null;
 }
 
 interface QueueFormProps {
-  onAdd: (data: NewCustomer) => void;
+  onAdd: (data: NewCustomer) => Promise<number>;
+  projectId: string;
 }
 
-export default function QueueForm({ onAdd }: QueueFormProps) {
+export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
   const [formData, setFormData] = useState<NewCustomer>({
     name: "",
     priority: "Medium",
@@ -30,19 +31,17 @@ export default function QueueForm({ onAdd }: QueueFormProps) {
     actualResult: "",
     description: "",
     note: "",
-     bugId:"",
+    bugId: "",
     attachment: null,
   });
 
   const [error, setError] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,7 +51,7 @@ export default function QueueForm({ onAdd }: QueueFormProps) {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.name.trim()) {
@@ -60,33 +59,53 @@ export default function QueueForm({ onAdd }: QueueFormProps) {
       return;
     }
 
- const bugId = `BUG-${Date.now()}`;
+    setUploading(true);
 
-  onAdd({
-    ...formData,
-    bugId,
-    
-  });
-  
-setError("")
+    try {
+      const newBugId = await onAdd({ ...formData, bugId: "" });
 
-    // reset form
-   
+      if (formData.attachment && newBugId) {
+        const token = localStorage.getItem("token");
+        const fd = new FormData();
+        fd.append("file", formData.attachment);
+
+        await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/bugs/${newBugId}/upload`,
+          {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            body: fd,
+          }
+        );
+      }
+
+      setFormData({
+        name: "",
+        priority: "Medium",
+        url: "",
+        expectedResult: "",
+        actualResult: "",
+        description: "",
+        note: "",
+        bugId: "",
+        attachment: null,
+      });
+      setError("");
+    } catch (err) {
+      setError("Failed to add bug");
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
     <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
       <form onSubmit={handleSubmit} className="space-y-5">
-
-        <h2 className="text-lg font-semibold text-gray-800">
-          Add New Bug
-        </h2>
+        <h2 className="text-lg font-semibold text-gray-800">Add New Bug</h2>
 
         {/* Reported By */}
         <div>
-          <label className="text-sm font-medium text-gray-700">
-            Reported By
-          </label>
+          <label className="text-sm font-medium text-gray-700">Reported By</label>
           <input
             name="name"
             value={formData.name}
@@ -99,9 +118,7 @@ setError("")
 
         {/* Priority */}
         <div>
-          <label className="text-sm font-medium text-gray-700">
-            Priority
-          </label>
+          <label className="text-sm font-medium text-gray-700">Priority</label>
           <select
             name="priority"
             value={formData.priority}
@@ -130,9 +147,7 @@ setError("")
 
         {/* Expected Result */}
         <div>
-          <label className="text-sm font-medium text-gray-700">
-            Expected Result
-          </label>
+          <label className="text-sm font-medium text-gray-700">Expected Result</label>
           <textarea
             name="expectedResult"
             value={formData.expectedResult}
@@ -144,9 +159,7 @@ setError("")
 
         {/* Actual Result */}
         <div>
-          <label className="text-sm font-medium text-gray-700">
-            Actual Result
-          </label>
+          <label className="text-sm font-medium text-gray-700">Actual Result</label>
           <textarea
             name="actualResult"
             value={formData.actualResult}
@@ -158,9 +171,7 @@ setError("")
 
         {/* Description */}
         <div>
-          <label className="text-sm font-medium text-gray-700">
-            Description
-          </label>
+          <label className="text-sm font-medium text-gray-700">Description</label>
           <textarea
             name="description"
             value={formData.description}
@@ -172,9 +183,7 @@ setError("")
 
         {/* Note */}
         <div>
-          <label className="text-sm font-medium text-gray-700">
-            Note
-          </label>
+          <label className="text-sm font-medium text-gray-700">Note</label>
           <textarea
             name="note"
             value={formData.note}
@@ -186,27 +195,41 @@ setError("")
 
         {/* Attachment */}
         <div>
-          <label className="text-sm font-medium text-gray-700">
-            Image / Video
-          </label>
+          <label className="text-sm font-medium text-gray-700">Image / Video</label>
           <input
             type="file"
             accept="image/*,video/*"
             onChange={handleFileChange}
             className="mt-1 text-sm"
           />
+          {formData.attachment && (
+            <div className="mt-2">
+              {formData.attachment.type.startsWith("video/") ? (
+                <video
+                  src={URL.createObjectURL(formData.attachment)}
+                  controls
+                  className="max-h-32 rounded border"
+                />
+              ) : (
+                <img
+                  src={URL.createObjectURL(formData.attachment)}
+                  alt="preview"
+                  className="max-h-32 object-cover rounded border"
+                />
+              )}
+              <p className="text-xs text-gray-400 mt-1">{formData.attachment.name}</p>
+            </div>
+          )}
         </div>
 
-        {/* Error */}
-        {error && (
-          <p className="text-red-600 text-sm">{error}</p>
-        )}
-   
+        {error && <p className="text-red-600 text-sm">{error}</p>}
+
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition"
+          disabled={uploading}
+          className="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
         >
-          Add Bug
+          {uploading ? "Adding..." : "Add Bug"}
         </button>
       </form>
     </div>

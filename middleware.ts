@@ -1,28 +1,32 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const ALWAYS_PUBLIC = ["/", "/contact", "/aboutUs"];
+const PUBLIC_ROUTES = ["/", "/contact", "/aboutUs"];
 const AUTH_ROUTES = ["/login", "/register"];
 
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get("token")?.value;
   const path = request.nextUrl.pathname;
 
-  const isAlwaysPublic = ALWAYS_PUBLIC.includes(path);
-  const isAuthRoute = AUTH_ROUTES.includes(path);
+  const isPublic = PUBLIC_ROUTES.includes(path);
+  const isAuthPage = AUTH_ROUTES.includes(path);
 
-  //   Allow always public routes for everyone
-  if (isAlwaysPublic) {
+  // Allow public pages
+  if (isPublic) {
     return NextResponse.next();
   }
 
-  //   Block logged-in users from login/register
-  if (token && isAuthRoute) {
+  // Read token from Authorization header OR cookie fallback
+  const token =
+    request.headers.get("authorization")?.replace("Bearer ", "") ||
+    request.cookies.get("token")?.value;
+
+  // Redirect logged-in users away from auth pages
+  if (token && isAuthPage) {
     return NextResponse.redirect(new URL("/my-projects", request.url));
   }
 
-  //   Protect private routes
-  if (!token && !isAuthRoute) {
+  // Block protected routes if no token
+  if (!token && !isAuthPage) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 

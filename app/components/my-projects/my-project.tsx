@@ -1,153 +1,227 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { useProjects } from "../../context/ProjectContext"
-import InviteModal from "../../components/InviteModal"
+import { useState, useEffect } from 'react';
+import { useProjects } from "../../context/ProjectContext";
+import InviteModal from "../../components/InviteModal";
 import RemoveModal from '../../components/RemoveModal';
-import {useQueueContext} from "../../context/QueueContext";
- 
-// type Status = 'active' | 'archived';
-
-// interface Project {
-//   id: number;
-//   name: string;
-//   bugs: number;
-//   status: Status;
-//   lastUpdated: string;
-// }
+import { useQueueContext } from "../../context/QueueContext";
 
 export default function MyProjects() {
   const router = useRouter();
-  const { projects } = useProjects();
-     const { deleteProject } = useProjects();
-    const { handleOpenProject } = useProjects();
- const [openModalId, setOpenModalId] = useState<string | null>(null);
- const [inviteModal, setInviteModal] = useState<string | null>(null);
-  
-const projectTypes = ["Web App", "Mobile App", "API Project"];
-  
-  const { queue } = useQueueContext();
-//   const { queue, addQueue, updateQueue, removeQueue, updatePriorityQueue } =
-//     useQueue(QueueData);
+  const { projects, deleteProject, handleOpenProject, fetchProjects, isLoading } = useProjects();
+  const { queue, fetchBugs } = useQueueContext();
+  const [openModalId, setOpenModalId] = useState<number | null>(null);
+  const [inviteModal, setInviteModal] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
-//   const handleDeleteProject = (id: number) => {
-//     setProjects(projects.filter(p => p.id !== id));
-//   };
+  // Filter projects based on search
+  const filteredProjects = projects.filter(project =>
+    project.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    project.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    project.type?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const projectTypes = ["Web App", "Mobile App", "API Project"];
 
   const handleCreateProject = () => {
     router.push('/createProject');
   };
 
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  useEffect(() => {
+    if (projects.length > 0) {
+      projects.forEach(project => fetchBugs(String(project.id)));
+    }
+  }, [projects]);
+
   return (
-    <div className="min-h-screen  p-6">
+    <div className="max-w-6xl mx-auto p-6 space-y-8">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+        <div className="flex-1">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">My Projects</h1>
+          <p className="text-gray-600">
+            {filteredProjects.length} of {projects.length} project{projects.length !== 1 ? 's' : ''}
+            {isLoading && <span className="ml-2 text-green-600">• loading</span>}
+          </p>
+        </div>
 
+        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto lg:flex-row">
+          <div className="relative flex-1 sm:w-72">
+            <input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              type="text"
+              placeholder="Search projects..."
+              className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+            />
+            <svg 
+              className="h-5 w-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
 
-      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
-        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse delay-1000"></div>
-        <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse delay-2000"></div>
+          <button
+            onClick={handleCreateProject}
+            className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
+          >
+            + New Project
+          </button>
+        </div>
       </div>
 
+      {/* Projects Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {isLoading ? (
+          Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className="h-48 bg-gray-100 rounded-xl animate-pulse" />
+          ))
+        ) : filteredProjects.length === 0 && searchTerm ? (
+          <div className="col-span-full flex flex-col items-center justify-center py-20 text-center text-gray-500">
+            <svg className="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <h3 className="text-xl font-semibold mb-2">No results for "{searchTerm}"</h3>
+            <p className="mb-6">Try a different search term</p>
+            <button 
+              onClick={() => setSearchTerm("")}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
+            >
+              Clear search
+            </button>
+          </div>
+        ) : projects.length === 0 ? (
+          <div className="col-span-full flex flex-col items-center justify-center py-20 text-center text-gray-500">
+            <div className="w-20 h-20 bg-gray-200 rounded-2xl flex items-center justify-center mb-4">
+              <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l6 6 6-6" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold mb-2">No Projects Yet</h3>
+            <p>Create your first project to get started</p>
+          </div>
+        ) : (
+          filteredProjects.map((project) => (
+            <div key={project.id} className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all hover:-translate-y-1">
+              {/* Project Avatar */}
+              <div className="flex items-start gap-4 mb-4">
+                <div className="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center justify-center font-bold text-lg flex-shrink-0">
+                  {(project.name || '?')[0]?.toUpperCase() || '?'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-lg text-gray-900 truncate">{project.name}</h3>
+                  <p className="text-sm text-gray-600 line-clamp-2 mt-1">{project.description || 'No description'}</p>
+                </div>
+              </div>
 
+              {/* Stats */}
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Bugs</span>
+                  <span className="text-2xl font-bold text-gray-900">
+                    {queue?.[project.id]?.length ?? 0}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Type</span>
+                  <span className="px-3 py-1 bg-gray-100 text-xs font-medium rounded-full">
+                    {project.type || 'General'}
+                  </span>
+                </div>
+              </div>
 
-      {/* Page header */}
-      
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">My Projects</h1>
-        <button
-          onClick={handleCreateProject}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-        >
-          + Create New Project
-        </button>
-      </div>
+              {/* Status Badge */}
+              <div className={`w-fit px-3 py-1 rounded-full text-xs font-semibold mb-6 ${
+                (queue?.[project.id]?.length ?? 0) === 0
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-yellow-100 text-yellow-800'
+              }`}>
+                {(queue?.[project.id]?.length ?? 0) === 0 ? 'New' : `${queue?.[project.id]?.length} Active`}
+              </div>
 
-      {/* Project Table */}
-      <div className="overflow-x-auto bg-white rounded-xl shadow border border-gray-200">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gradient-to-r from-blue-50 to-indigo-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Project Name</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Bugs</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Last Updated</th>
-              <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-100">
-            {projects.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="text-center py-8 text-gray-400">
-                  No projects found. Create a new project to get started.
-                </td>
-              </tr>
-            ) : (
-              projects.map((project,id) => (
-                <tr key={project.id} className="hover:bg-gray-50 transition">
-                  <td className="px-6 py-4 font-medium text-gray-900">{project.name}</td>
-                  <td className="px-6 py-4">{queue[project.id]?.length || 0}</td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                        project.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
-                      }`}
-                    >
-                   {(queue[project.id]?.length || 0) === 0 ? 'New' : 'Active'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">--</td>
-                  <td className="px-6 py-4 flex justify-end gap-2">
-                    <button
-                      onClick={() => handleOpenProject(project.id)}
-                      className="px-3 py-1 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition"
-                    >
-                      Open
-                    </button>
-                    <button
-                onClick={() => setOpenModalId(project.id)}
-                      className="px-3 py-1 bg-red-50 text-red-600 rounded hover:bg-red-100 transition"
-                    >
-                      Delete
-                    </button>
-
-                      {openModalId === project.id &&  
-                        <RemoveModal
-                          removeQueue={deleteProject}
-                          customer={project}
-                          onClose={() => setOpenModalId(null)}
-                        />
-                      }
-
-              
-     
-                      {inviteModal === project.id && (
-  <InviteModal
-    isOpen={inviteModal === project.id}
-    customer={project}
-    projectTypes={projectTypes}
-    onClose={() => setInviteModal(null)}
-    onSend={(email, type) => {
-      console.log("Send invite to:", email, "for project type:", type);
-    }}
-  />
-)}
-                     
-     <button
+              {/* Actions */}
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  onClick={() => handleOpenProject(project.id)}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                >
+                  Open Project
+                </button>
+                <button
                   onClick={() => setInviteModal(project.id)}
-                      className=" p-3  text-center justify-center items-center bg-purple-50 text-purple-600 rounded hover:bg-blue-100 transition"
-                    >
-                 ↪
-                    </button>
+                  className="p-2 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                  title="Invite Team"
+                >
+                  👥
+                </button>
+                <button
+                  onClick={() => setOpenModalId(project.id)}
+                  className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Delete"
+                >
+                  🗑️
+                </button>
+              </div>
 
-                      
-           
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              {/* Modals */}
+              {openModalId === project.id && (
+                <RemoveModal
+                  removeQueue={deleteProject}
+                  customer={project}
+                  onClose={() => setOpenModalId(null)}
+                />
+              )}
+              {inviteModal === project.id && (
+                <InviteModal
+                  isOpen={true}
+                  customer={project}
+                  projectTypes={projectTypes}
+                  onClose={() => setInviteModal(null)}
+                  onSend={async (email) => {
+                    const trimmedEmail = email?.trim();
+                    if (!trimmedEmail || !trimmedEmail.includes('@')) {
+                      alert('⚠️ Please enter valid email!');
+                      return;
+                    }
+                    try {
+                      const token = localStorage.getItem('token');
+                      const API = process.env.NEXT_PUBLIC_API_URL!;
+                      const res = await fetch(`${API}/api/projects/${project.id}/invite`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          Authorization: `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({ email: trimmedEmail }),
+                      });
+                      if (res.status !== 200) {
+                        const text = await res.text();
+                        if (text.includes('already')) {
+                          alert('ℹ️ User already invited');
+                        } else {
+                          alert(`❌ ${res.status}: ${text}`);
+                        }
+                        return;
+                      }
+                      alert('✅ Invite sent successfully!');
+                      setInviteModal(null);
+                    } catch (error) {
+                      alert('❌ Network error');
+                    }
+                  }}
+                />
+              )}
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
