@@ -221,12 +221,13 @@ export default function TableOfQueue({
                       className="w-full py-1 px-2 border border-gray-300 rounded-md text-sm resize-none" />
                   </td>
 
-                  {/* Attachment */}
-                  <td className="px-4 py-3">
-                    <div className="flex flex-col items-start gap-2">
-
-                      {/* Show thumbnail — click to fullscreen */}
-                      {customer.attachmentUrl && (
+              {/* Attachment */}
+<td className="px-4 py-3">
+  {/* DEBUG — remove after fixing */}
+  {/* <p className="text-xs text-red-500">{customer.attachmentUrl || "NO URL"}</p>
+   */}
+  <div className="flex flex-col items-start gap-2">
+    {customer.attachmentUrl && (
                         customer.attachmentUrl.match(/\.(mp4|webm)$/i) ? (
                           <video
                             src={`${process.env.NEXT_PUBLIC_API_URL}${customer.attachmentUrl}`}

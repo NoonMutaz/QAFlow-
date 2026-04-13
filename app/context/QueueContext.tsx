@@ -162,11 +162,12 @@ export interface Customer {
   expectedResult: string;
   actualResult: string;
   note: string;
+   attachmentUrl?: string; 
 }
 
 interface QueueContextType {
   queue: Record<string, Customer[]>;
-  addQueue: (projectId: string, customer: Omit<Customer, "id" | "status" | "createdAt" | "bugId">) => Promise<void>;
+  addQueue: (projectId: string, customer: Omit<Customer, "id" | "status" | "createdAt" | "bugId">) => Promise<number>;
   removeQueue: (projectId: string, id: number) => Promise<void>;
   updateQueue: (projectId: string, id: number, status: Status) => Promise<void>;
   updatePriorityQueue: (projectId: string, id: number, newPriority: Priority) => Promise<void>;
@@ -202,36 +203,46 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const addQueue = async (
-    projectId: string,
-    customer: Omit<Customer, "id" | "status" | "createdAt" | "bugId">
-  ) => {
-    // Duplicate check
-    const projectQueue = queue[projectId] || [];
-    const fuse = new Fuse(projectQueue, {
-      keys: ["expectedResult", "actualResult", "description"],
-      threshold: 0.4,
-    });
-    const results = fuse.search(`${customer.expectedResult} ${customer.actualResult} ${customer.description}`);
-    if (results.length > 0) {
-      alert(`Possible duplicate bug: ${results[0].item.bugId}`);
-      return;
-    }
+ const addQueue = async (
+  projectId: string,
+  customer: Omit<Customer, "id" | "status" | "createdAt" | "bugId">
+): Promise<number> => { // ← return number
+  const projectQueue = queue[projectId] || [];
+  const fuse = new Fuse(projectQueue, {
+    keys: ["expectedResult", "actualResult", "description"],
+    threshold: 0.4,
+  });
+  const results = fuse.search(`${customer.expectedResult} ${customer.actualResult} ${customer.description}`);
+  if (results.length > 0) {
+    alert(`Possible duplicate bug: ${results[0].item.bugId}`);
+    return 0; // ← return 0 instead of void
+  }
 
+  try {
     const res = await fetch(`${API}/api/projects/${projectId}/bugs`, {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify(customer),
     });
 
-    if (res.ok) {
-      const newBug = await res.json();
-      setQueue(prev => ({
-        ...prev,
-        [projectId]: [...(prev[projectId] || []), newBug],
-      }));
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("Failed to create bug:", res.status, text);
+      return 0; // ← return 0 on failure
     }
-  };
+
+    const newBug = await res.json();
+    setQueue(prev => ({
+      ...prev,
+      [projectId]: [...(prev[projectId] || []), newBug],
+    }));
+
+    return newBug.id; // ← return the new bug id
+  } catch (err) {
+    console.error("addQueue error:", err);
+    return 0;
+  }
+};
 
   const removeQueue = async (projectId: string, id: number) => {
     const res = await fetch(`${API}/api/projects/${projectId}/bugs/${id}`, {

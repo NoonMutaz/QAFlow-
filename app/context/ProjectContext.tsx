@@ -9,6 +9,7 @@ interface Project {
   name: string;
   description: string;
   type: string;
+    role?: string;
 }
 
 interface ProjectContextType {
@@ -18,6 +19,7 @@ interface ProjectContextType {
   handleOpenProject: (id: number) => void;
   clearProjects: () => void;
   fetchProjects: () => Promise<void>; 
+  updateProject: (project: Project) => void;
   isLoading: boolean;  
 }
 
@@ -32,45 +34,60 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);  
 const { queue, fetchQueue } = useQueueContext();
   const API = process.env.NEXT_PUBLIC_API_URL!;
+// ProjectContext.tsx - Updated fetchProjects
+const fetchProjects = async () => {
+  if (!token) {
+    console.log('❌ No token, skipping projects fetch');
+    setProjects([]);
+    return;
+  }
 
-  const fetchProjects = async () => {
-    if (!token) {
+  setIsLoading(true);
+  try {
+    console.log(' Fetching projects from:', `${API}/api/projects`); // DEBUG
+    console.log('  Token exists:', !!token); // DEBUG
+
+    const res = await fetch(`${API}/api/projects`, {
+      method: 'GET', //   Explicit method
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json', //   Required for some backends
+      },
+      cache: 'no-store',
+    });
+
+    console.log('  Projects response:', res.status, res.statusText); // DEBUG
+
+    if (res.ok) {
+      const data = await res.json();
+      setProjects(data);
+      console.log(`  Fetched ${data.length} projects`);
+    } else if (res.status === 401) {
+      console.log('  Unauthorized - token expired');
+      // Optionally clear token and redirect to login
+      localStorage.removeItem('token');
+      router.push('/login');
       setProjects([]);
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const res = await fetch(`${API}/api/projects`, {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: 'no-store', // ✅ Always fresh
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setProjects(data);
-        console.log(`✅ Fetched ${data.length} projects`);
-      } else {
-        console.error('Projects fetch failed:', res.status);
-        setProjects([]);
-      }
-    } catch (err) {
-      console.error("Failed to fetch projects:", err);
+    } else {
+      console.error('❌ Projects fetch failed:', res.status, await res.text());
       setProjects([]);
-    } finally {
-      setIsLoading(false);
     }
-  };
-
-  // ✅ 1. INITIAL LOAD + TOKEN CHANGE
+  } catch (err) {
+    console.error("❌ Network error fetching projects:", err);
+    setProjects([]);
+  } finally {
+    setIsLoading(false);
+  }
+};
+  //  INITIAL LOAD   TOKEN CHANGE
   useEffect(() => {
     if (token) {
       fetchProjects();
     }
-    setIsReady(true); // ✅ Always ready after first run
+    setIsReady(true); //  Always ready after first run
   }, [token]);
 
-  // ✅ 2. GLOBAL REFRESH EVENTS
+  //  GLOBAL REFRESH EVENTS
   useEffect(() => {
     const handleRefresh = () => {
       console.log('🔄 Event refresh');
@@ -96,6 +113,11 @@ const { queue, fetchQueue } = useQueueContext();
   const addProject = (project: Project) => {
     setProjects(prev => [...prev, project]);
   };
+
+const updateProject = (updated: Project) => {
+  setProjects(prev => prev.map(p => p.id === updated.id ? updated : p));
+};
+
 
   const deleteProject = async (id: number) => {
     try {
@@ -127,10 +149,12 @@ const { queue, fetchQueue } = useQueueContext();
         handleOpenProject,
         clearProjects,
         fetchProjects,
-        isLoading, // ✅ Expose loading
+        isLoading, 
+        updateProject,
+        
       }}
     >
-      {children} {/* ✅ Always render - no isReady gate */}
+      {children}  
     </ProjectContext.Provider>
   );
 }

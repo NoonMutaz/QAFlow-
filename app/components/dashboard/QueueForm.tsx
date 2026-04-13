@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from "react";
-import React from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useAuthContext } from "@/app/context/AuthContext";
 
 type Priority = "High" | "Medium" | "Low";
 
@@ -23,6 +23,7 @@ interface QueueFormProps {
 }
 
 export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
+  const { user } = useAuthContext();
   const [formData, setFormData] = useState<NewCustomer>({
     name: "",
     priority: "Medium",
@@ -34,13 +35,25 @@ export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
     bugId: "",
     attachment: null,
   });
-
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
+
+  //   Store current user name
+  const currentUserName = user?.name || "Current User";
+
+  //  Update formData when user changes
+  useEffect(() => {
+    setFormData(prev => ({ 
+      ...prev, 
+      name: currentUserName 
+    }));
+  }, [currentUserName]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
+    if (e.target.name === "name") return; // Prevent changing name
+    
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -51,6 +64,22 @@ export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
     });
   };
 
+  //   Reset function that preserves user name
+  const resetForm = useCallback(() => {
+    setFormData({
+      name: currentUserName,  //   Always use current user
+      priority: "Medium",
+      url: "",
+      expectedResult: "",
+      actualResult: "",
+      description: "",
+      note: "",
+      bugId: "",
+      attachment: null,
+    });
+    setError("");
+  }, [currentUserName]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -60,6 +89,7 @@ export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
     }
 
     setUploading(true);
+    setError("");
 
     try {
       const newBugId = await onAdd({ ...formData, bugId: "" });
@@ -79,20 +109,9 @@ export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
         );
       }
 
-      setFormData({
-        name: "",
-        priority: "Medium",
-        url: "",
-        expectedResult: "",
-        actualResult: "",
-        description: "",
-        note: "",
-        bugId: "",
-        attachment: null,
-      });
-      setError("");
-    } catch (err) {
-      setError("Failed to add bug");
+      resetForm(); //   Use reset function
+    } catch (err: any) {
+      setError(err.message || "Failed to add bug");
     } finally {
       setUploading(false);
     }
@@ -103,17 +122,17 @@ export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
       <form onSubmit={handleSubmit} className="space-y-5">
         <h2 className="text-lg font-semibold text-gray-800">Add New Bug</h2>
 
-        {/* Reported By */}
+        {/* Reported By - READ ONLY */}
         <div>
           <label className="text-sm font-medium text-gray-700">Reported By</label>
           <input
             name="name"
             value={formData.name}
-            onChange={handleChange}
-            type="text"
-            placeholder="Enter reporter name"
-            className="w-full mt-1 px-3 py-2 border rounded-lg text-sm"
+            readOnly
+            className="w-full mt-1 px-3 py-2 border rounded-lg text-sm bg-gray-50 cursor-not-allowed border-gray-300 font-medium"
+            placeholder="Loading..."
           />
+          <p className="text-xs text-gray-500 mt-1">Auto-filled with current user</p>
         </div>
 
         {/* Priority */}
@@ -123,7 +142,8 @@ export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
             name="priority"
             value={formData.priority}
             onChange={handleChange}
-            className="w-full mt-1 px-3 py-2 border rounded-lg text-sm"
+            className="w-full mt-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+            disabled={uploading}
           >
             <option value="High">High</option>
             <option value="Medium">Medium</option>
@@ -131,21 +151,21 @@ export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
           </select>
         </div>
 
-        {/* URL */}
+        {/* Rest of form unchanged... */}
         <div>
-          <label className="text-sm font-medium text-gray-700">URL</label>
+          <label className="text-sm font-medium text-gray-700">URL <span className="text-red-500">*</span></label>
           <input
             name="url"
             value={formData.url}
             onChange={handleChange}
             required
             type="url"
-            placeholder="Enter page URL"
-            className="w-full mt-1 px-3 py-2 border rounded-lg text-sm"
+            placeholder="https://example.com/broken-page"
+            className="w-full mt-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+            disabled={uploading}
           />
         </div>
 
-        {/* Expected Result */}
         <div>
           <label className="text-sm font-medium text-gray-700">Expected Result</label>
           <textarea
@@ -153,11 +173,12 @@ export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
             value={formData.expectedResult}
             onChange={handleChange}
             rows={2}
-            className="w-full mt-1 px-3 py-2 border rounded-lg text-sm"
+            placeholder="What should happen..."
+            className="w-full mt-1 px-3 py-2 border rounded-lg text-sm resize-vertical focus:ring-2 focus:ring-blue-500"
+            disabled={uploading}
           />
         </div>
 
-        {/* Actual Result */}
         <div>
           <label className="text-sm font-medium text-gray-700">Actual Result</label>
           <textarea
@@ -165,11 +186,12 @@ export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
             value={formData.actualResult}
             onChange={handleChange}
             rows={2}
-            className="w-full mt-1 px-3 py-2 border rounded-lg text-sm"
+            placeholder="What actually happened..."
+            className="w-full mt-1 px-3 py-2 border rounded-lg text-sm resize-vertical focus:ring-2 focus:ring-blue-500"
+            disabled={uploading}
           />
         </div>
 
-        {/* Description */}
         <div>
           <label className="text-sm font-medium text-gray-700">Description</label>
           <textarea
@@ -177,11 +199,12 @@ export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
             value={formData.description}
             onChange={handleChange}
             rows={3}
-            className="w-full mt-1 px-3 py-2 border rounded-lg text-sm"
+            placeholder="Detailed steps to reproduce..."
+            className="w-full mt-1 px-3 py-2 border rounded-lg text-sm resize-vertical focus:ring-2 focus:ring-blue-500"
+            disabled={uploading}
           />
         </div>
 
-        {/* Note */}
         <div>
           <label className="text-sm font-medium text-gray-700">Note</label>
           <textarea
@@ -189,47 +212,52 @@ export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
             value={formData.note}
             onChange={handleChange}
             rows={2}
-            className="w-full mt-1 px-3 py-2 border rounded-lg text-sm"
+            placeholder="Additional notes..."
+            className="w-full mt-1 px-3 py-2 border rounded-lg text-sm resize-vertical focus:ring-2 focus:ring-blue-500"
+            disabled={uploading}
           />
         </div>
 
-        {/* Attachment */}
         <div>
-          <label className="text-sm font-medium text-gray-700">Image / Video</label>
+          <label className="text-sm font-medium text-gray-700">Screenshot / Video (Optional)</label>
           <input
             type="file"
             accept="image/*,video/*"
             onChange={handleFileChange}
-            className="mt-1 text-sm"
+            disabled={uploading}
+            className="mt-1 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 w-full text-sm"
           />
           {formData.attachment && (
-            <div className="mt-2">
+            <div className="mt-2 p-2 bg-gray-50 rounded-lg">
               {formData.attachment.type.startsWith("video/") ? (
-                <video
-                  src={URL.createObjectURL(formData.attachment)}
-                  controls
-                  className="max-h-32 rounded border"
-                />
+                <video src={URL.createObjectURL(formData.attachment)} controls className="max-h-32 w-full rounded border object-contain" />
               ) : (
-                <img
-                  src={URL.createObjectURL(formData.attachment)}
-                  alt="preview"
-                  className="max-h-32 object-cover rounded border"
-                />
+                <img src={URL.createObjectURL(formData.attachment)} alt="Preview" className="max-h-32 w-full object-contain rounded border" />
               )}
-              <p className="text-xs text-gray-400 mt-1">{formData.attachment.name}</p>
+              <p className="text-xs text-gray-500 mt-1 truncate">{formData.attachment.name}</p>
             </div>
           )}
         </div>
 
-        {error && <p className="text-red-600 text-sm">{error}</p>}
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700 text-sm">{error}</p>
+          </div>
+        )}
 
         <button
           type="submit"
           disabled={uploading}
-          className="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
         >
-          {uploading ? "Adding..." : "Add Bug"}
+          {uploading ? (
+            <span className="flex items-center justify-center gap-2">
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              Adding Bug...
+            </span>
+          ) : (
+            "Add Bug"
+          )}
         </button>
       </form>
     </div>
