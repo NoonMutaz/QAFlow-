@@ -1,155 +1,225 @@
-import React from 'react'
+'use client';
 
-export default function ProjectCard({handleDeleteClick,handleInviteClick,handleOpenProject,openProjectSettings,isLoading,filteredProjects,searchTerm,setSearchTerm,projects,getProjectStatus,queue,isOwner}) {
+import React from 'react';
+
+export default function ProjectCard({
+  handleDeleteClick,
+  handleInviteClick,
+  handleOpenProject,
+  openProjectSettings,
+  isLoading,
+  filteredProjects,
+  searchTerm,
+  setSearchTerm,
+  projects,
+  getProjectStatus,
+  queue,
+  isOwner,
+}) {
+
+  const renderEmptyState = () => {
+    if (projects.length === 0) {
+      return (
+        <div className="col-span-full py-20 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-100 flex items-center justify-center">
+           
+          </div>
+          <h3 className="text-lg font-semibold text-gray-700">
+            No Projects Yet
+          </h3>
+          <p className="text-sm text-gray-400 mt-1">
+            Create your first project to start tracking bugs
+          </p>
+        </div>
+      );
+    }
+
+    if (filteredProjects.length === 0 && searchTerm) {
+      return (
+        <div className="col-span-full py-20 text-center">
+          <p className="text-gray-500 font-medium">
+            No results for “{searchTerm}”
+          </p>
+
+          <button
+            onClick={() => setSearchTerm("")}
+            className="mt-4 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm"
+          >
+            Clear search
+          </button>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   return (
-    <div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {isLoading ? (
-                  Array.from({ length: 6 }, (_, i) => (
-                    <div key={i} className="h-56 bg-white/70 rounded-2xl animate-pulse border border-gray-100 shadow-sm" />
-                  ))
-                ) : filteredProjects.length === 0 && searchTerm ? (
-                  <div className="col-span-full py-20 text-center">
-                    <p className="text-gray-500 text-lg font-medium">No results for "{searchTerm}"</p>
-                    <button onClick={() => setSearchTerm("")} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Clear</button>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+
+      {isLoading &&
+        Array.from({ length: 6 }).map((_, i) => (
+          <div
+            key={i}
+            className="h-56 rounded-2xl bg-white border border-gray-100 animate-pulse"
+          />
+        ))}
+
+      {!isLoading && renderEmptyState()}
+
+      {!isLoading &&
+        filteredProjects.map((project) => {
+          const status = getProjectStatus(project.id);
+          const bugCount = queue?.[project.id]?.length ?? 0;
+          const fixedCount =
+            queue?.[project.id]?.filter((b) => b.status === "fixed").length ?? 0;
+
+          const owner = isOwner(project.role);
+
+          return (
+            <div
+              key={project.id}
+              className="group rounded-2xl border border-gray-100 bg-white p-5 shadow-sm
+                         hover:shadow-md hover:-translate-y-1 transition-all flex flex-col"
+            >
+
+              {/* Header */}
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold">
+                    {project.name?.[0]?.toUpperCase() || "?"}
                   </div>
-                ) : projects.length === 0 ? (
-                  <div className="col-span-full py-20 text-center">
-                    <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                      </svg>
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-700">No Projects Yet</h3>
-                    <p className="text-gray-400 text-sm mt-1">Create your first project to get started</p>
+
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-gray-900 truncate">
+                      {project.name}
+                    </h3>
+                    <p className="text-xs text-gray-500 line-clamp-2">
+                      {project.description || "No description"}
+                    </p>
                   </div>
-                ) : (
-                  filteredProjects.map(project => {
-                    const status = getProjectStatus(project.id);
-                    const bugCount = queue?.[project.id]?.length ?? 0;
-                    const fixedCount = (queue?.[project.id] || []).filter((b: any) => b.status === 'fixed').length;
-                    const isProjectOwner = isOwner(project.role);
-      
-                    return (
-                      <div
-                        key={project.id}
-                        className="group bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col"
-                      >
-                        {/* Top row */}
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex items-start gap-3 flex-1">
-                            <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl flex items-center justify-center font-bold text-lg flex-shrink-0 shadow-md">
-                              {(project.name || '?')[0].toUpperCase()}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-bold text-gray-900 truncate">{project.name}</h3>
-                              <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{project.description || 'No description'}</p>
-                            </div>
-                          </div>
-                          
-                          {/*   Role Badge */}
-                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                            isProjectOwner 
-                              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md' 
-                              : 'bg-gray-100 text-gray-700'
-                          }`}>
-                            {isProjectOwner ? 'Owner' : '👤Member'}
-                          </span>
-                        </div>
-      
-                        {/* Status pill */}
-                        <span className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold mb-5 block ${
-                          status.color === 'emerald' ? 'bg-emerald-100 text-emerald-700' :
-                          status.color === 'green' ? 'bg-green-100 text-green-700' :
-                          status.color === 'amber' ? 'bg-amber-100 text-amber-700' :
-                          'bg-blue-100 text-blue-700'
-                        }`}>
-                          {status.label}
-                        </span>
-      
-                        {/* Stats row */}
-                        <div className="grid grid-cols-3 gap-2 mb-5">
-                          <div className="bg-gray-50 rounded-xl p-2.5 text-center">
-                            <p className="text-xl font-bold text-gray-900">{bugCount}</p>
-                            <p className="text-xs text-gray-500">Total</p>
-                          </div>
-                          <div className="bg-red-50 rounded-xl p-2.5 text-center">
-                            <p className="text-xl font-bold text-red-600">{bugCount - fixedCount}</p>
-                            <p className="text-xs text-red-400">Open</p>
-                          </div>
-                          <div className="bg-emerald-50 rounded-xl p-2.5 text-center">
-                            <p className="text-xl font-bold text-emerald-600">{fixedCount}</p>
-                            <p className="text-xs text-emerald-400">Fixed</p>
-                          </div>
-                        </div>
-      
-                        {/* Type badge */}
-                        <div className="mb-5">
-                          <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-full">
-                            {project.type || 'General'}
-                          </span>
-                        </div>
-      
-                        {/*   OWNER-ONLY Actions */}
-                        <div className="mt-auto flex flex-wrap gap-1.5">
-                          <button
-                            onClick={() => handleOpenProject(project.id)}
-                            className="flex-1 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-xl shadow-sm hover:shadow-md transition-all duration-200 min-w-[60px]"
-                          >
-                            Open
-                          </button>
-                          
-                   {/* ✅ Owner/Member buttons - ALWAYS SHOW, DISABLED for members */}
-      <div className="mt-auto flex flex-wrap gap-1.5">
-       
-        
-        {/*   ALWAYS SHOW - Disabled for non-owners */}
-        <button
-          onClick={() => handleInviteClick(project)}
-          disabled={!isProjectOwner}
-          className={`p-2 rounded-xl transition-all flex items-center justify-center hover:scale-110 ${
-            isProjectOwner
-              ? 'text-gray-500 hover:text-purple-600 hover:bg-purple-50 shadow-sm hover:shadow-md'
-              : 'text-gray-300 bg-gray-100 cursor-not-allowed opacity-50'
-          }`}
-          title={isProjectOwner ? "Invite members" : "Only owners can invite members"}
-        >
-          👥
-        </button>
-        
-        <button
-          onClick={() => openProjectSettings(project)}
-          disabled={!isProjectOwner}
-          className={`p-2 rounded-xl transition-all flex items-center justify-center hover:scale-110 ${
-            isProjectOwner
-              ? 'text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 shadow-sm hover:shadow-md'
-              : 'text-gray-300 bg-gray-100 cursor-not-allowed opacity-50'
-          }`}
-          title={isProjectOwner ? "Edit project" : "Only owners can edit projects"}
-        >
-          ⚙️
-        </button>
-        
-        <button
-          onClick={() => handleDeleteClick(project)}
-          disabled={!isProjectOwner}
-          className={`p-2 rounded-xl transition-all flex items-center justify-center hover:scale-110 ${
-            isProjectOwner
-              ? 'text-gray-500 hover:text-red-600 hover:bg-red-50 shadow-sm hover:shadow-md'
-              : 'text-gray-300 bg-gray-100 cursor-not-allowed opacity-50'
-          }`}
-          title={isProjectOwner ? "Delete project" : "Only owners can delete projects"}
-        >
-          🗑️
-        </button>
-      </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
+                </div>
+
+     {/* ✅ FIXED Role Badge - Shows ALL 3 roles */}
+<div className="flex items-center gap-2">
+  <span
+    className={`text-xs px-2 py-1 rounded-full font-medium ${
+      project.role === 'owner'
+        ? 'bg-red-100 text-red-800 border border-red-200'
+        : project.role === 'member'
+        ? 'bg-blue-100 text-blue-800 border border-blue-200'
+        : 'bg-gray-100 text-gray-800 border border-gray-200'
+    }`}
+  >
+    {project.role ? project.role.charAt(0).toUpperCase() + project.role.slice(1) : 'Member'}
+  </span>
+</div>
+              </div>
+
+              {/* Status */}
+              <div className="mt-4">
+                <span
+                  className={`text-xs px-3 py-1 rounded-full font-medium ${
+                    status.color === "green"
+                      ? "bg-green-100 text-green-700"
+                      : status.color === "amber"
+                      ? "bg-amber-100 text-amber-700"
+                      : "bg-blue-100 text-blue-700"
+                  }`}
+                >
+                  {status.label}
+                </span>
+              </div>
+
+              {/* Metrics */}
+              <div className="grid grid-cols-3 gap-2 mt-4">
+                <Metric label="Bugs" value={bugCount} />
+                <Metric label="Open" value={bugCount - fixedCount} danger />
+                <Metric label="Fixed" value={fixedCount} success />
+              </div>
+
+              {/* Type */}
+              <div className="mt-4">
+                <span className="text-xs px-2 py-1 rounded-full bg-indigo-50 text-indigo-700">
+                  {project.type || "General"}
+                </span>
+              </div>
+
+              {/* Actions */}
+              <div className="mt-5 flex items-center gap-2">
+
+                <button
+                  onClick={() => handleOpenProject(project.id)}
+                  className="flex-1 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold
+                             hover:bg-blue-700 transition"
+                >
+                  Open
+                </button>
+
+                <ActionBtn
+                  label="Invite"
+                  icon="👥"
+                  disabled={!owner}
+                  onClick={() => handleInviteClick(project)}
+                />
+
+                <ActionBtn
+                  label="Settings"
+                  icon="⚙️"
+                
+                  disabled={!owner}
+                  onClick={() => openProjectSettings(project)}
+                />
+
+                <ActionBtn
+                  label="Delete"
+                  icon="🗑️"
+                  disabled={!owner}
+                  danger
+                  onClick={() => handleDeleteClick(project)}
+                />
+
               </div>
             </div>
-   
-  )
+          );
+        })}
+    </div>
+  );
+}
+
+/* ---------- small reusable UI pieces ---------- */
+
+function Metric({ label, value, danger, success }) {
+  return (
+    <div className="bg-gray-50 rounded-xl p-2 text-center">
+      <p
+        className={`text-lg font-bold ${
+          danger ? "text-red-600" : success ? "text-green-600" : "text-gray-900"
+        }`}
+      >
+        {value}
+      </p>
+      <p className="text-xs text-gray-500">{label}</p>
+    </div>
+  );
+}
+
+function ActionBtn({ label, icon, onClick, disabled, danger }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={label}
+      className={`w-10 h-10 rounded-xl flex items-center justify-center transition
+        ${
+          disabled
+            ? "bg-gray-300 text-gray-300 cursor-not-allowed opacity-47"
+            : "danger bg-gray-300"
+            ? " hover:bg-gray-200 bg-red-50 hover:text-red-600 text-gray-600"
+            : "hover:bg-gray-600 text-gray-600"
+        }`}
+    >
+      {icon}
+    </button>
+  );
 }

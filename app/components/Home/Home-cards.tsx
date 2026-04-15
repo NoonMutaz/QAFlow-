@@ -1,67 +1,77 @@
-import React from 'react'
-import { useRouter } from "next/navigation";
-export default function HomeCard() {
+'use client';
 
+import { useRouter } from "next/navigation";
+
+export default function HomeCard() {
   const router = useRouter();
 
-  const handleCreateProject = () => {
-    router.push("/createProject");
-  };
-
-  const handleOpenProject = () => {
-    router.push("/my-projects");
-  };
-
-
   return (
-    <div>
-       <div className="relative px-6 pb-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl mx-auto">
-          
-          {/* Create New Project Card */}
-          <div
-            onClick={handleCreateProject}
-            className="group cursor-pointer bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl p-8 flex flex-col items-center justify-center gap-4 transition-all duration-300 border border-gray-100 hover:border-indigo-200 hover:-translate-y-2"
-          >
-            <div className="w-20 h-20 flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
-              Create New Project
-            </h2>
-            <p className="text-sm text-gray-600 text-center leading-relaxed">
-              Start a fresh QA project with automatic bug tracking, charts, and reports.
-            </p>
-            <div className="mt-2 text-blue-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-              Start Now →
-            </div>
-          </div>
+    <section className="px-6 pb-16">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
 
-          {/* Open Existing Project Card */}
-          <div
-            onClick={handleOpenProject}
-            className="group cursor-pointer bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl p-8 flex flex-col items-center justify-center gap-4 transition-all duration-300 border border-gray-100 hover:border-purple-200 hover:-translate-y-2"
-          >
-            <div className="w-20 h-20 flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7H3z" />
-              </svg>
+        {/* Create Project */}
+        <button
+          onClick={() => router.push("/createProject")}
+          className="group text-left rounded-2xl bg-white/80 backdrop-blur-sm border border-gray-100 p-8 shadow-sm
+                     hover:shadow-xl hover:-translate-y-1 transition-all duration-300
+                     focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <div className="flex gap-5 items-start">
+
+            <div className="w-14 h-14 rounded-xl bg-blue-600 flex items-center justify-center text-white
+                            group-hover:scale-105 transition-transform">
+              +
             </div>
-            <h2 className="text-xl font-bold text-gray-900 group-hover:text-purple-600 transition-colors">
-              Open Existing Project
-            </h2>
-            <p className="text-sm text-gray-600 text-center leading-relaxed">
-              Access your saved projects and continue your QA work seamlessly.
-            </p>
-            <div className="mt-2 text-purple-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-              Browse Projects →
+
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                Create New Project
+              </h3>
+
+              <p className="mt-1 text-sm text-gray-600 leading-relaxed">
+                Start a fresh QA project with bug tracking, analytics, and reports.
+              </p>
+
+              <span className="mt-3 inline-block text-sm font-medium text-blue-600 opacity-0 group-hover:opacity-100 transition">
+                Start now →
+              </span>
             </div>
+
           </div>
-        </div>
+        </button>
+
+        {/* Open Projects */}
+        <button
+          onClick={() => router.push("/my-projects")}
+          className="group text-left rounded-2xl bg-white/80 backdrop-blur-sm border border-gray-100 p-8 shadow-sm
+                     hover:shadow-xl hover:-translate-y-1 transition-all duration-300
+                     focus:outline-none focus:ring-2 focus:ring-purple-500"
+        >
+          <div className="flex gap-5 items-start">
+
+            <div className="w-14 h-14 rounded-xl bg-purple-600 flex items-center justify-center text-white
+                            group-hover:scale-105 transition-transform">
+              →
+            </div>
+
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900 group-hover:text-purple-600 transition-colors">
+                Open Existing Project
+              </h3>
+
+              <p className="mt-1 text-sm text-gray-600 leading-relaxed">
+                Continue working on your saved QA projects anytime.
+              </p>
+
+              <span className="mt-3 inline-block text-sm font-medium text-purple-600 opacity-0 group-hover:opacity-100 transition">
+                Browse projects →
+              </span>
+            </div>
+
+          </div>
+        </button>
+
       </div>
-
-    </div>
-  )
+    </section>
+  );
 }

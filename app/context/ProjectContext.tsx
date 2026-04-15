@@ -4,23 +4,24 @@ import { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthContext } from "./AuthContext";
 import { useQueueContext } from "./QueueContext";
+
 interface Project {
   id: number;
   name: string;
   description: string;
   type: string;
-    role?: string;
+  role?: string;
 }
 
 interface ProjectContextType {
   projects: Project[];
-  addProject: (project: Project) => void;
+  addProject: (project: any) => void;
   deleteProject: (id: number) => Promise<void>;
   handleOpenProject: (id: number) => void;
   clearProjects: () => void;
-  fetchProjects: () => Promise<void>; 
-  updateProject: (project: Project) => void;
-  isLoading: boolean;  
+  fetchProjects: () => Promise<void>;
+  updateProject: (project: any) => void;
+  isLoading: boolean;
 }
 
 const ProjectContext = createContext<ProjectContextType | null>(null);
@@ -28,116 +29,151 @@ const ProjectContext = createContext<ProjectContextType | null>(null);
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { token } = useAuthContext();
+  const { fetchQueue } = useQueueContext();
 
   const [projects, setProjects] = useState<Project[]>([]);
-  const [isReady, setIsReady] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);  
-const { queue, fetchQueue } = useQueueContext();
+  const [isLoading, setIsLoading] = useState(false);
+
   const API = process.env.NEXT_PUBLIC_API_URL!;
-// ProjectContext.tsx - Updated fetchProjects
-const fetchProjects = async () => {
-  if (!token) {
-    console.log('❌ No token, skipping projects fetch');
-    setProjects([]);
-    return;
+
+  // ✅ NORMALIZER (single source of truth)
+ // ✅ NORMALIZER (single source of truth) - FIXED
+const normalizeProject = (p: any): Project | null => {
+  // Convert ID to number safely
+  const id = Number(p?.id ?? p?.projectId ?? p?.project?.id);
+  
+  const normalized: Project = {
+    id: isNaN(id) ? 0 : id,  // Ensure it's a valid number
+    name: p?.name ?? p?.project?.name ?? "",
+    description: p?.description ?? p?.project?.description ?? "",
+    type: p?.type ?? p?.project?.type ?? "",
+    role: p?.role ?? p?.project?.role,
+  };
+
+  // Check for valid numeric ID
+  if (normalized.id === 0 || normalized.id == null || isNaN(normalized.id)) {
+    console.error("❌ Invalid project ID from API:", p);
+    return null;
   }
 
-  setIsLoading(true);
-  try {
-    console.log(' Fetching projects from:', `${API}/api/projects`); // DEBUG
-    console.log('  Token exists:', !!token); // DEBUG
-
-    const res = await fetch(`${API}/api/projects`, {
-      method: 'GET', //   Explicit method
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json', //   Required for some backends
-      },
-      cache: 'no-store',
-    });
-
-    console.log('  Projects response:', res.status, res.statusText); // DEBUG
-
-    if (res.ok) {
-      const data = await res.json();
-      setProjects(data);
-      console.log(`  Fetched ${data.length} projects`);
-    } else if (res.status === 401) {
-      console.log('  Unauthorized - token expired');
-      // Optionally clear token and redirect to login
-      localStorage.removeItem('token');
-      router.push('/login');
-      setProjects([]);
-    } else {
-      console.error('❌ Projects fetch failed:', res.status, await res.text());
-      setProjects([]);
-    }
-  } catch (err) {
-    console.error("❌ Network error fetching projects:", err);
-    setProjects([]);
-  } finally {
-    setIsLoading(false);
-  }
+  return normalized;
 };
-  //  INITIAL LOAD   TOKEN CHANGE
-  useEffect(() => {
-    if (token) {
-      fetchProjects();
+
+  // ✅ FETCH PROJECTS (SAFE)
+  const fetchProjects = async () => {
+    if (!token) {
+      setProjects([]);
+      return;
     }
-    setIsReady(true); //  Always ready after first run
+
+    setIsLoading(true);
+
+    try {
+      const res = await fetch(`${API}/api/projects`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+      });
+
+      if (res.ok) {
+        const raw = await res.json();
+
+        const list = Array.isArray(raw)
+          ? raw
+          : raw.projects || [];
+
+        const normalized = list
+          .map(normalizeProject)
+          .filter(Boolean) as Project[];
+
+        setProjects(normalized);
+
+        console.log("✅ Projects loaded:", normalized);
+      } else if (res.status === 401) {
+        localStorage.removeItem("token");
+        router.push("/login");
+        setProjects([]);
+      } else {
+        console.error("❌ Fetch failed:", await res.text());
+        setProjects([]);
+      }
+    } catch (err) {
+      console.error("❌ Network error:", err);
+      setProjects([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ✅ INITIAL LOAD
+  useEffect(() => {
+    if (token) fetchProjects();
   }, [token]);
 
-  //  GLOBAL REFRESH EVENTS
+  // ✅ GLOBAL REFRESH
   useEffect(() => {
     const handleRefresh = () => {
-      console.log('🔄 Event refresh');
       fetchProjects();
-       fetchQueue();
+      fetchQueue();
     };
 
-    window.addEventListener('projects-refresh', handleRefresh);
-    return () => window.removeEventListener('projects-refresh', handleRefresh);
+    window.addEventListener("projects-refresh", handleRefresh);
+    return () => window.removeEventListener("projects-refresh", handleRefresh);
   }, []);
 
-  //   BACKGROUND POLLING (tab visible only)
+  // ✅ POLLING
   useEffect(() => {
     const interval = setInterval(() => {
-      if (document.visibilityState === 'visible' && token) {
+      if (document.visibilityState === "visible" && token) {
         fetchProjects();
       }
-    }, 30000); // 30s
+    }, 30000);
 
     return () => clearInterval(interval);
   }, [token]);
 
-  const addProject = (project: Project) => {
-    setProjects(prev => [...prev, project]);
-  };
-
-const updateProject = (updated: Project) => {
-  setProjects(prev => prev.map(p => p.id === updated.id ? updated : p));
+const addProject = (project: any) => {
+  console.log(" Raw project from API:", JSON.stringify(project, null, 2));
+  const normalized = normalizeProject(project);
+  if (!normalized) return;
+  setProjects(prev => [...prev, normalized]);
 };
 
+  //  SAFE UPDATE
+  const updateProject = (updated: any) => {
+    const normalized = normalizeProject(updated);
+    if (!normalized) return;
 
+    setProjects(prev =>
+      prev.map(p => (p.id === normalized.id ? normalized : p))
+    );
+  };
+
+  // ✅ DELETE
   const deleteProject = async (id: number) => {
     try {
       const res = await fetch(`${API}/api/projects/${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (res.ok) {
         setProjects(prev => prev.filter(p => p.id !== id));
       }
     } catch (err) {
-      console.error("Delete failed:", err);
+      console.error("❌ Delete failed:", err);
     }
   };
 
-  const handleOpenProject = (id: number) => {
-    router.push(`/dashboard/${id}`);
-  };
-
+const handleOpenProject = (id: number | string) => {
+  const numericId = typeof id === 'string' ? parseInt(id, 10) : id;
+  if (!numericId || isNaN(numericId)) return;
+  router.push(`/dashboard/${numericId}`);
+};
   const clearProjects = () => setProjects([]);
 
   return (
@@ -149,12 +185,11 @@ const updateProject = (updated: Project) => {
         handleOpenProject,
         clearProjects,
         fetchProjects,
-        isLoading, 
         updateProject,
-        
+        isLoading,
       }}
     >
-      {children}  
+      {children}
     </ProjectContext.Provider>
   );
 }

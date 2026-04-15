@@ -8,6 +8,7 @@ interface Member {
   email: string;
   role: 'owner' | 'member' | 'viewer';
   joinedAt: string;
+   
 }
 
 interface InviteModalProps {
@@ -15,6 +16,7 @@ interface InviteModalProps {
     id: string;
     name: string;
      removingMemberId?: string | null;
+        onRemoveMember: (memberId: string) => Promise<void>;
   };
   members: Member[]; // Existing members
   onClose: () => void;
@@ -32,8 +34,10 @@ export default function InviteModal({
   onRemoveMember,
   customer,
   members,
- 
-  removingMemberId
+ projectId,
+  handleRemoveMember,
+  removingMemberId,
+  handleUpdateRole
 }: InviteModalProps) {
   const [activeTab, setActiveTab] = useState<'invite' | 'members'>('invite');
   const [email, setEmail] = useState("");
@@ -65,34 +69,48 @@ export default function InviteModal({
    const currentUserId = localStorage.getItem('userId') || '';
 
 const isOwnerOrSelf = (member: Member) => {
-   // return member.role === 'owner' || member.userId === currentUserId;
-      return member.userId === currentUserId; 
-  };
-  const handleUpdateRole = async (memberId: string, role: Member['role']) => {
-    setUpdatingMemberId(memberId);
-    try {
-      await onUpdateMember(memberId, role);
-    } catch (error) {
-      console.error("Update failed:", error);
-    } finally {
-      setUpdatingMemberId(null);
-    }
-  };
+  return member.userId === currentUserId;
+};
+  // const handleUpdateRole = async (memberId: string, role: Member['role']) => {
+  //   setUpdatingMemberId(memberId);
+  //   try {
+  //     await onUpdateMember(memberId, role);
+  //   } catch (error) {
+  //     console.error("Update failed:", error);
+  //   } finally {
+  //     setUpdatingMemberId(null);
+  //   }
+  // };
+// const handleRemoveMember = async (memberId: string) => {
+//   if (!projectId) return;
 
-  const handleRemoveMember = async (memberId: string) => {
-    if (!confirm(`Remove ${members.find(m => m.id === memberId)?.email} from this project?`)) {
-      return;
-    }
+//   const token = localStorage.getItem('token');
 
-    setUpdatingMemberId(memberId);
-    try {
-      await onRemoveMember(memberId);
-    } catch (error) {
-      console.error("Remove failed:", error);
-    } finally {
-      setUpdatingMemberId(null);
-    }
-  };
+//   setUpdatingMemberId(memberId);
+
+//   try {
+//     const res = await fetch(
+//       `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/members/${memberId}`,
+//       {
+//         method: 'DELETE',
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//         },
+//       }
+//     );
+
+//     if (!res.ok) {
+//       throw new Error(await res.text());
+//     }
+
+//     await onRemoveMember(memberId); // parent sync
+//   } catch (err) {
+//     console.error(err);
+//     alert("Failed to remove member");
+//   } finally {
+//     setUpdatingMemberId(null);
+//   }
+// };
 
   const RoleBadge = ({ role }: { role: Member['role'] }) => {
     const colors = {
@@ -182,8 +200,9 @@ const isOwnerOrSelf = (member: Member) => {
           </nav>
         </div>
 
-        {/* Content */}
-        <div className="p-6">
+         
+     {/* Content */}
+<div className="p-6 overflow-y-auto flex-1" style={{ maxHeight: 'calc(90vh - 280px)' }}>
           {activeTab === 'invite' ? (
             /* Invite Form */
             <form onSubmit={handleInviteSubmit} className="space-y-4">
@@ -241,80 +260,76 @@ const isOwnerOrSelf = (member: Member) => {
             </form>
           ) : (
             /* Members List */
-            <div className="space-y-4">
-              {members.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  <svg className="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No team members yet</h3>
-                  <p className="text-sm">Invite your first team member to get started.</p>
-                  <button
-                    onClick={() => setActiveTab('invite')}
-                    className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-all"
-                  >
-                    Invite Member
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {members.map((member) => {
-                 const isSelf = member.userId === currentUserId;
-const isOwner = member.role === 'owner';
+     <div className="space-y-4">
+  {members.length === 0 ? (
+    <div className="text-center py-12 text-gray-500">
+      <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+      <p className="font-medium text-gray-600">No members yet</p>
+      <p className="text-sm mt-1">Invite someone to get started</p>
+    </div>
+  ) : (
+    
+    <div className="space-y-3">
+      {members.map((member) => {
+        const isSelf = member.userId === currentUserId;
+        const isOwner = member.role === 'owner';
+        const disableRoleChange = isSelf || isOwner;
 
-const disableRoleChange = isSelf || isOwner  
-                    return (
-                    
-                    <div key={member.userId} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-all">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
-                          {member.email[0]?.toUpperCase()}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-gray-900 truncate">{member.email}</p>
-                          <p className="text-xs text-gray-500">
-                            Joined {new Date(member.joinedAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <RoleBadge role={member.role} />
-                        
-                     <select
-  value={member.role}
-  onChange={(e) =>
-    handleUpdateRole(member.userId, e.target.value as Member['role'])
-  }
-  disabled={disableRoleChange}
-  className="px-3 py-1.5 text-sm font-medium bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 transition-all"
->
-                          <option value="viewer">Viewer</option>
-                          <option value="member">Member</option>
-                          <option value="owner">Owner</option>
-                        </select>
+        return (
+          <div key={member.userId} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-all">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                {member.email[0]?.toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="font-medium text-gray-900 truncate">{member.email}</p>
+                <p className="text-xs text-gray-500">
+                  Joined {new Date(member.joinedAt).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <RoleBadge role={member.role} />
+              
+              <select
+                value={member.role}
+              onChange={(e) =>
+  onUpdateMember(member.userId, e.target.value as Member['role'])
+}
+                disabled={disableRoleChange}
+                className="px-3 py-1.5 text-sm font-medium bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 transition-all"
+              >
+                <option value="viewer">Viewer</option>
+                <option value="member">Member</option>
+                <option value="owner">Owner</option>
+              </select>
 
-                        <button
-                          onClick={() => handleRemoveMember(member.userId)}
-                          disabled={removingMemberId === member.userId || updatingMemberId === member.userId}
-                          className="p-1.5 text-red-500 hover:bg-red-50 hover:text-red-700 rounded-lg transition-all disabled:opacity-50"
-                          title="Remove member"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  )})}
-                </div>
-              )}
+              <button
+           onClick={() => onRemoveMember(member.userId)}
+                disabled={removingMemberId === member.id || updatingMemberId === member.id}
+                className="p-1.5 text-red-500 hover:bg-red-50 hover:text-red-700 rounded-lg transition-all disabled:opacity-50"
+                title="Remove member"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+ 
+)}
 
               <div className="flex gap-3 pt-4 border-t border-gray-100">
                 <button
                   type="button"
                   onClick={() => setActiveTab('invite')}
-                  className="flex-1 px-4 py-2.5 text-sm font-medium text-blue-600 border border-blue-200 bg-blue-50 rounded-xl hover:bg-blue-100 transition-all"
+                  className="flex-1 sticky px-4 py-2.5 text-sm font-medium text-blue-600 border border-blue-200 bg-blue-50 rounded-xl hover:bg-blue-100 transition-all"
                 >
                   + Invite New Member
                 </button>

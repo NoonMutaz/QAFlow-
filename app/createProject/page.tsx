@@ -280,7 +280,7 @@ const handleCreate = async () => {
           <div className="mt-8 pt-6 border-t border-gray-100">
             <p className="text-xs text-gray-500 text-center">
               By creating a project, you agree to our{' '}
-              <a href="/terms" className="text-blue-600 hover:underline">Terms of Service</a>
+              <a href="/privacy" className="text-blue-600 hover:underline">Terms of Service</a>
             </p>
           </div>
         </div>

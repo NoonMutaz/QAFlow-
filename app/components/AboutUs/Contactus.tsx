@@ -1,27 +1,31 @@
-import React from 'react'
+import React from "react";
 
 export default function Contactus() {
   return (
-    <div>
-       <section className="py-20 px-6 relative z-10">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl p-10 md:p-12 shadow-2xl relative overflow-hidden text-white">
-            <div className="absolute top-0 left-0 w-40 h-40 bg-white opacity-10 rounded-full filter blur-3xl"></div>
-            <div className="absolute bottom-0 right-0 w-40 h-40 bg-white opacity-10 rounded-full filter blur-3xl"></div>
+    <section className="py-20 px-6 bg-white border-t border-gray-200">
+      <div className="max-w-3xl mx-auto text-center">
 
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Join Our Team</h2>
-            <p className="text-blue-100 mb-8 max-w-2xl mx-auto">
-              We're always looking for talented developers to help us improve the QA experience.
-            </p>
-            <a
-              href="/contact"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-600 rounded-xl font-semibold hover:shadow-xl hover:scale-105 transition-all duration-300"
-            >
-              Get in Touch
-            </a>
-          </div>
+        {/* Heading */}
+        <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 tracking-tight">
+          Get in touch
+        </h2>
+
+        {/* Description */}
+        <p className="mt-3 text-gray-600">
+          Have questions or feedback? We’d love to hear from you.
+        </p>
+
+        {/* CTA */}
+        <div className="mt-8">
+          <a
+            href="/contact"
+            className="inline-flex items-center justify-center px-6 py-3 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition"
+          >
+            Contact us
+          </a>
         </div>
-      </section>
-    </div>
-  )
+
+      </div>
+    </section>
+  );
 }

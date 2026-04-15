@@ -232,7 +232,7 @@ export default function InviteNotifications() {
         </div>
 
         {/* Footer Count */}
-        {invites.length > 1 && (
+        {/* {invites.length > 1 && (
           <div className="mt-4 p-3 bg-gradient-to-r from-slate-50/80 to-blue-50/80 backdrop-blur-xl border border-slate-200/50 rounded-2xl shadow-xl">
             <div className="text-center">
               <div className="inline-flex items-center gap-2 text-sm font-semibold text-gray-700 bg-white/60 px-4 py-2 rounded-xl shadow-sm">
@@ -241,7 +241,7 @@ export default function InviteNotifications() {
               </div>
             </div>
           </div>
-        )}
+        )} */}
       </div>
     </>
   );

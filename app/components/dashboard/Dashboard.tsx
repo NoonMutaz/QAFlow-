@@ -173,10 +173,10 @@ export default function Dashboard() {
 
           <div className="flex items-center gap-3">
             <div className="text-right">
-              <p className="text-xs text-gray-500">Total Queue</p>
+              {/* <p className="text-xs text-gray-500">Total Queue</p>
               <p className="text-2xl font-bold text-gray-900">
                 {(queue[id] || []).filter((c) => c.status === "in-progress").length}
-              </p>
+              </p> */}
             </div>
             <div className="h-12 w-px bg-gray-200"></div>
             <div className="text-right">
@@ -248,6 +248,7 @@ export default function Dashboard() {
             updateQueue={updateQueue}
             removeQueue={removeQueue}
             updatePriorityQueue={updatePriorityQueue}
+             currentUserRole={project.role}
           />
         </div>
       </div>

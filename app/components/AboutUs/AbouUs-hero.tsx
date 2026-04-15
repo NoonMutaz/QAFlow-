@@ -2,90 +2,90 @@ import React from "react";
 
 export default function AboutUsHero() {
   return (
-    <div>
-      <section className="py-24 px-6 relative z-10 bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
-        <div className="max-w-7xl mx-auto flex flex-col-reverse lg:flex-row items-center gap-12">
-          {/* Left Content */}
-          <div className="flex-1 text-center lg:text-left">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full border border-indigo-100 shadow-sm mb-6">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-              <span className="text-sm font-medium text-indigo-700">
-                About QAFlow
-              </span>
-            </div>
+    <section className="relative py-4 px-6 bg-white">
+      <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
 
-            {/* Heading */}
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-              Accelerate Your{" "}
-              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                QA Workflow
-              </span>
-            </h1>
+        {/* LEFT - Message */}
+        <div>
 
-            {/* Subheading */}
-            <p className="text-lg md:text-xl text-gray-600 max-w-xl mb-8 leading-relaxed">
-              QAFlow empowers teams to catch bugs faster, collaborate
-              seamlessly, and deliver flawless software. Experience real-time
-              insights and smart automation for all your QA needs.
-            </p>
-
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <a
-                href="/signup"
-                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
-                  />
-                </svg>
-                Get Started
-              </a>
-              <a
-                href="/contact"
-                className="inline-flex items-center gap-2 px-8 py-4 bg-white text-gray-700 border border-gray-200 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-300 hover:shadow-lg transition-all duration-300"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                  />
-                </svg>
-                Contact Us
-              </a>
-            </div>
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 text-gray-600 text-sm mb-6">
+            <span className="w-2 h-2 bg-green-500 rounded-full" />
+            QA Workflow Platform
           </div>
 
-          {/* Right Hero Image / Illustration */}
-          <div className="flex-1 relative">
+          {/* Heading */}
+          <h1 className="text-4xl md:text-5xl font-semibold text-gray-900 leading-tight">
+            A simpler way to manage{" "}
+            <span className="text-blue-600">bugs and QA workflows</span>
+          </h1>
+
+          {/* Description */}
+          <p className="mt-6 text-lg text-gray-600 leading-relaxed max-w-xl">
+            QAFlow helps teams track bugs, assign work, and monitor progress without spreadsheets, chaos, or lost context.
+          </p>
+
+          {/* Proof points */}
+          <div className="mt-6 grid grid-cols-3 gap-4 max-w-md">
+            <Stat value="Fast" label="Workflow" />
+            <Stat value="Real-time" label="Tracking" />
+            <Stat value="Clean" label="UI" />
+          </div>
+
+          {/* CTAs */}
+          <div className="mt-10 flex flex-col sm:flex-row gap-3">
+            <a
+              href="/signup"
+              className="px-6 py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition text-center"
+            >
+              Get Started
+            </a>
+
+            <a
+              href="/contact"
+              className="px-6 py-3 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 transition text-center"
+            >
+              Talk to us
+            </a>
+          </div>
+
+          {/* Micro trust line */}
+          <p className="mt-4 text-xs text-gray-400">
+            Built for frontend teams, QA engineers, and product teams.
+          </p>
+
+        </div>
+
+        {/* RIGHT - Product framing (not just image) */}
+        <div className="relative">
+
+          <div className="rounded-2xl border border-gray-200 shadow-sm overflow-hidden bg-white">
             <img
               src="https://datafloq.com/wp-content/uploads/2021/12/blog_pictures2FQuality_Assurance_Testing_8xXpzGg.jpg"
-              alt="QA Dashboard Illustration"
-              className="w-full max-w-lg mx-auto rounded-3xl shadow-2xl"
+              alt="QA dashboard preview"
+              className="w-full object-cover"
             />
-            {/* Optional floating elements */}
-            <div className="absolute -top-8 -left-8 w-24 h-24 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-pulse"></div>
-            <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse delay-500"></div>
           </div>
+
+          {/* Floating context card (adds meaning to image) */}
+          <div className="absolute -bottom-6 -left-6 bg-white border border-gray-100 shadow-lg rounded-xl p-4 w-48">
+            <p className="text-xs text-gray-500">Live projects</p>
+            <p className="text-lg font-semibold text-gray-900">QAFlow</p>
+          </div>
+
         </div>
-      </section>
+
+      </div>
+    </section>
+  );
+}
+
+/* --- small reusable piece --- */
+function Stat({ value, label }) {
+  return (
+    <div className="text-center">
+      <p className="text-sm font-semibold text-gray-900">{value}</p>
+      <p className="text-xs text-gray-500">{label}</p>
     </div>
   );
 }

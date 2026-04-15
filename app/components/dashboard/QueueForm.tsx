@@ -167,10 +167,12 @@ export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
         </div>
 
         <div>
-          <label className="text-sm font-medium text-gray-700">Expected Result</label>
+          <label className="text-sm font-medium text-gray-700">Expected Result <span className="text-red-500">*</span></label>
           <textarea
-            name="expectedResult"
+            name="expectedResult" 
+             required
             value={formData.expectedResult}
+          
             onChange={handleChange}
             rows={2}
             placeholder="What should happen..."
@@ -180,12 +182,14 @@ export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
         </div>
 
         <div>
-          <label className="text-sm font-medium text-gray-700">Actual Result</label>
+          <label className="text-sm font-medium text-gray-700">Actual Result <span className="text-red-500">*</span></label>
           <textarea
             name="actualResult"
+            required
             value={formData.actualResult}
             onChange={handleChange}
             rows={2}
+           
             placeholder="What actually happened..."
             className="w-full mt-1 px-3 py-2 border rounded-lg text-sm resize-vertical focus:ring-2 focus:ring-blue-500"
             disabled={uploading}

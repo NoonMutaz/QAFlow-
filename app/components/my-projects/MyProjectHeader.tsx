@@ -1,6 +1,6 @@
 import React from 'react'
 import { useRouter } from 'next/navigation';
-export default function MyProjectHeader({isLoading,filteredProjects,projects,searchTerm,setSearchTerm}) {
+export default function MyProjectHeader({isLoading,filteredProjects,projects,searchTerm,setSearchTerm}){
       const router = useRouter();
   return (
     <div>
