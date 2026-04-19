@@ -164,13 +164,22 @@ export default function MyProjects() {
   };
 
   const isOwner = (projectRole?: string): boolean => projectRole === 'owner';
+const filteredProjects = projects.filter((project: Project) => {
+  const term = searchTerm.toLowerCase();
 
-  const filteredProjects = projects.filter(
-    (project: Project) =>
-      project.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      project.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      project.type?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  return (
+    project.name?.toLowerCase().includes(term) ||
+    project.description?.toLowerCase().includes(term) ||
+    project.type?.toLowerCase().includes(term)
+  ) ?? false;
+});
+
+  // const filteredProjects = projects.filter(
+  //   (project: Project) =>
+  //     project.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //     project.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //     project.type?.toLowerCase().includes(searchTerm.toLowerCase())
+  // );
 
   const openProjectSettings = (project: Project): void => {
     if (!isOwner(project.role)) {
