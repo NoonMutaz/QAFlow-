@@ -26,11 +26,11 @@ export default function AboutUsHero() {
           </p>
 
           {/* Proof points */}
-          <div className="mt-6 grid grid-cols-3 gap-4 max-w-md">
+          {/* <div className="mt-6 grid grid-cols-3 gap-4 max-w-md">
             <Stat value="Fast" label="Workflow" />
             <Stat value="Real-time" label="Tracking" />
             <Stat value="Clean" label="UI" />
-          </div>
+          </div> */}
 
           {/* CTAs */}
           <div className="mt-10 flex flex-col sm:flex-row gap-3">
@@ -80,12 +80,12 @@ export default function AboutUsHero() {
   );
 }
 
-/* --- small reusable piece --- */
-function Stat({ value, label }) {
-  return (
-    <div className="text-center">
-      <p className="text-sm font-semibold text-gray-900">{value}</p>
-      <p className="text-xs text-gray-500">{label}</p>
-    </div>
-  );
-}
+
+// function Stat({ value, label }) {
+//   return (
+//     <div className="text-center">
+//       <p className="text-sm font-semibold text-gray-900">{value}</p>
+//       <p className="text-xs text-gray-500">{label}</p>
+//     </div>
+//   );
+// }
