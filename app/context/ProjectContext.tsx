@@ -13,10 +13,10 @@ import { useQueueContext } from "./QueueContext";
 //   role?: string;
 // }
 export interface Project {
-  id: number | string;
+  id: number ;
   name: string;
   description?: string;
-  role: "owner" | "member" | "viewer";
+  role?: "owner" | "member" | "viewer";
   type?: string;
 }
 
@@ -48,13 +48,18 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 const normalizeProject = (p: any): Project | null => {
   // Convert ID to number safely
   const id = Number(p?.id ?? p?.projectId ?? p?.project?.id);
-  
+  const role = p?.role ?? p?.project?.role;
+
+const safeRole: Project["role"] =
+  role === "owner" || role === "member" || role === "viewer"
+    ? role
+    : "viewer";
   const normalized: Project = {
     id: isNaN(id) ? 0 : id,  // Ensure it's a valid number
     name: p?.name ?? p?.project?.name ?? "",
     description: p?.description ?? p?.project?.description ?? "",
     type: p?.type ?? p?.project?.type ?? "",
-    role: p?.role ?? p?.project?.role,
+    role: safeRole,
   };
 
   // Check for valid numeric ID
