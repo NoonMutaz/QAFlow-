@@ -25,7 +25,9 @@ export default function ProfilePage() {
 //   }, [user]);
 useEffect(() => {
   if (projects.length) {
-    projects.forEach(p => fetchBugs(p.id));
+projects.forEach(p => fetchBugs(p.id.toString()));
+
+
   }
 }, [projects]);
   // Stats
