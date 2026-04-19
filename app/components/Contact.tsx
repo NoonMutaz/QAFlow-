@@ -2,6 +2,24 @@
 
 import React, { useState, useRef } from 'react';
 import emailjs from '@emailjs/browser';
+interface InputProps {
+  label: string;
+  name: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  type?: string;
+  focused: string | null;
+  setFocused: (v: string | null) => void;
+}
+
+interface TextareaProps {
+  label: string;
+  name: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  focused: string | null;
+  setFocused: (v: string | null) => void;
+}
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -163,66 +181,52 @@ export default function Contact() {
 
 /* ---------- components ---------- */
 
-function Input({ label, name, value, onChange, type = "text", focused, setFocused }) {
+function Input({
+  label,
+  name,
+  value,
+  onChange,
+  type = "text",
+  focused,
+  setFocused,
+}: InputProps) {
   return (
     <div className="relative">
       <input
-        type={type}
         name={name}
         value={value}
         onChange={onChange}
+        type={type}
         onFocus={() => setFocused(name)}
         onBlur={() => setFocused(null)}
-        placeholder=" "
-        required={name !== "subject"}
-        className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none transition
-                   focus:border-black focus:ring-1 focus:ring-black"
+        className="w-full border rounded-lg px-3 py-2"
       />
-
-      <label
-        className={`absolute left-3 px-1 bg-white text-sm transition-all
-        ${
-          focused === name || value
-            ? "-top-2 text-xs text-black"
-            : "top-3 text-gray-400"
-        }`}
-      >
-        {label}
-      </label>
+      <label className="text-sm text-gray-600">{label}</label>
     </div>
   );
 }
-
-function Textarea({ label, name, value, onChange, focused, setFocused }) {
+function Textarea({
+  label,
+  name,
+  value,
+  onChange,
+  focused,
+  setFocused,
+}: TextareaProps) {
   return (
     <div className="relative">
       <textarea
         name={name}
-        rows={4}
         value={value}
         onChange={onChange}
         onFocus={() => setFocused(name)}
         onBlur={() => setFocused(null)}
-        placeholder=" "
-        required
-        className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none transition
-                   focus:border-black focus:ring-1 focus:ring-black"
+        className="w-full border rounded-lg px-3 py-2"
       />
-
-      <label
-        className={`absolute left-3 px-1 bg-white text-sm transition-all
-        ${
-          focused === name || value
-            ? "-top-2 text-xs text-black"
-            : "top-3 text-gray-400"
-        }`}
-      >
-        {label}
-      </label>
+      <label className="text-sm text-gray-600">{label}</label>
     </div>
   );
 }
-
 function Info({ title, children }) {
   return (
     <div>

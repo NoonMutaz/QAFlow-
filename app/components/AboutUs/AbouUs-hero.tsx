@@ -25,7 +25,7 @@ export default function AboutUsHero() {
             QAFlow helps teams track bugs, assign work, and monitor progress without spreadsheets, chaos, or lost context.
           </p>
 
-          {/* Proof points */}
+          {/* fix points */}
           {/* <div className="mt-6 grid grid-cols-3 gap-4 max-w-md">
             <Stat value="Fast" label="Workflow" />
             <Stat value="Real-time" label="Tracking" />
