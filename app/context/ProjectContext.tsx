@@ -5,12 +5,19 @@ import { useRouter } from "next/navigation";
 import { useAuthContext } from "./AuthContext";
 import { useQueueContext } from "./QueueContext";
 
-interface Project {
-  id: number;
+// interface Project {
+//   id: number;
+//   name: string;
+//   description: string;
+//   type: string;
+//   role?: string;
+// }
+export interface Project {
+  id: number | string;
   name: string;
-  description: string;
-  type: string;
-  role?: string;
+  description?: string;
+  role: "owner" | "member" | "viewer";
+  type?: string;
 }
 
 interface ProjectContextType {

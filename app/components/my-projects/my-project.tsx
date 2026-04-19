@@ -19,12 +19,19 @@ interface Member {
   joinedAt: string;
 }
 
+// interface Project {
+//   id: number | string;
+//   name: string;
+//   description?: string;
+//   role: "owner" | "member" | "viewer" | string;
+//   type?: string;
+// }
 interface Project {
-  id: number | string;
+  id: number;
   name: string;
-  description?: string;
-  role: 'owner' | 'member' | 'viewer' | string;
-  type?: string;
+  description: string;
+  type: string;
+  role?: string;
 }
 
 export default function MyProjects() {
@@ -168,11 +175,12 @@ const filteredProjects = projects.filter((project: Project) => {
   const term = searchTerm.toLowerCase();
 
   return (
-    project.name?.toLowerCase().includes(term) ||
-    project.description?.toLowerCase().includes(term) ||
-    project.type?.toLowerCase().includes(term)
-  ) ?? false;
+    (project.name && project.name.toLowerCase().includes(term)) ||
+    (project.description && project.description.toLowerCase().includes(term)) ||
+    (project.type && project.type.toLowerCase().includes(term))
+  );
 });
+
 
   // const filteredProjects = projects.filter(
   //   (project: Project) =>

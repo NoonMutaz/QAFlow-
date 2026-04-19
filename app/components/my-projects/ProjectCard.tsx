@@ -2,11 +2,11 @@
 
 import React from 'react';
 
-interface Project {
+export interface Project {
   id: number | string;
   name: string;
   description?: string;
-  role: 'owner' | 'member' | 'viewer' | string;
+  role: "owner" | "member" | "viewer";
   type?: string;
 }
 

@@ -1,10 +1,10 @@
-interface Project {
-  id: string | number;
+export interface Project {
+  id: number | string;
   name: string;
   description?: string;
-  role?: string;
+  role: "owner" | "member" | "viewer";
+  type?: string;
 }
-
 interface QueueItem {
   status: string;
 }
