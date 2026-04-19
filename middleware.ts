@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_ROUTES = ["/", "/contact", "/aboutUs"];
+const PUBLIC_ROUTES = ["/", "/contactus", "/aboutUs"];
 const AUTH_ROUTES = ["/login", "/register"];
 
 export function middleware(request: NextRequest) {

@@ -18,7 +18,7 @@ export default function Contactus() {
         {/* CTA */}
         <div className="mt-8">
           <a
-            href="/contact"
+            href="/contactus"
             className="inline-flex items-center justify-center px-6 py-3 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition"
           >
             Contact us

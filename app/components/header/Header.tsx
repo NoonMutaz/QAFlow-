@@ -18,7 +18,7 @@ export default function Header({ searchTerm, setSearchTerm }: HeaderProps) {
     { href: "/", label: "Home" },
     { href: "/my-projects", label: "Projects" },
     { href: "/aboutUs",     label: "About Us" },
-    { href: "/contact",     label: "Contact" },
+    { href: "/contactus",     label: "Contact" },
         { href: "/account",     label: "profile" },
   ]
 

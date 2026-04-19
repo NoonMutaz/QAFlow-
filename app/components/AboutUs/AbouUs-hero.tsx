@@ -42,7 +42,7 @@ export default function AboutUsHero() {
             </a>
 
             <a
-              href="/contact"
+              href="/contactus"
               className="px-6 py-3 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 transition text-center"
             >
               Talk to us

@@ -1,13 +1,13 @@
 export const runtime = "nodejs";
-import { NextRequest, NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
+
+import { NextRequest, NextResponse } from "next/server";
+import nodemailer from "nodemailer";
 
 export async function POST(request: NextRequest) {
   const { name, email, subject, message } = await request.json();
-  
-  // Configure your email transporter
+
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    service: "gmail",
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
@@ -16,10 +16,10 @@ export async function POST(request: NextRequest) {
 
   await transporter.sendMail({
     from: email,
-    to: 'your-email@gmail.com',
-    subject: `Contact Form: ${subject}`,
-    text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
+    to: process.env.EMAIL_USER, // or your actual email
+    subject,
+    text: message,
   });
 
-  return NextResponse.json({ message: 'Email sent' });
+  return NextResponse.json({ success: true });
 }
