@@ -15,9 +15,9 @@ interface InviteModalProps {
   customer: {
     id: string;
     name: string;
-     currentUserId: string;
+  
      
-  };
+  };   currentUserId: string;
   members: Member[];
   onClose: () => void;
   isOpen: boolean;
@@ -59,8 +59,9 @@ export default function InviteModal({
 //const currentUserId = localStorage.getItem('userId') || '';
  
 //  const currentUserId = localStorage.getItem("userId") || "";
-const isSelf = (m: Member) => String(m.userId) === String(currentUserId);
-
+// const isSelf = (m: Member) => String(m.userId) === String(currentUserId);
+const isSelf = (m: Member) =>
+  currentUserId ? String(m.userId) === String(currentUserId) : false;
 // 2. Can modify check (CORRECT - blocks self-editing)
 const canModify = (m: Member) => !isSelf(m);
 
@@ -242,7 +243,7 @@ const handleRoleUpdate = async (memberId: string, role: Member['role']) => {
                     className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
                   />
                   <p className="text-xs text-gray-400 mt-1.5">
-                    They'll get a notification to accept or decline the invite.
+                    They&apos;ll get a notification to accept or decline the invite.
                   </p>
                 </div>
 

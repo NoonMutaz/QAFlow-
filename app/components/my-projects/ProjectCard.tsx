@@ -1,7 +1,45 @@
 'use client';
 
 import React from 'react';
+interface Project {
+  id: number | string;
+  name: string;
+  description?: string;
+  role: "owner" | "member" | "viewer" | string;
+  type?: string;
+}
 
+interface Status {
+  label: string;
+  color: "green" | "amber" | "blue" | string;
+}
+
+interface QueueItem {
+  status: string;
+}
+
+type Queue = Record<string | number, QueueItem[]>;
+
+interface ProjectCardProps {
+  handleDeleteClick: (project: Project) => void;
+  handleInviteClick: (project: Project) => void;
+  handleOpenProject: (id: string | number) => void;
+  openProjectSettings: (project: Project) => void;
+  isLoading: boolean;
+  filteredProjects: Project[];
+  searchTerm: string;
+  setSearchTerm: (v: string) => void;
+  projects: Project[];
+  getProjectStatus: (id: string | number) => Status;
+  queue: Queue | null;
+  isOwner: (role: string) => boolean;
+}
+interface MetricProps {
+  label: string;
+  value: number;
+  danger?: boolean;
+  success?: boolean;
+}
 export default function ProjectCard({
   handleDeleteClick,
   handleInviteClick,
@@ -15,7 +53,7 @@ export default function ProjectCard({
   getProjectStatus,
   queue,
   isOwner,
-}) {
+}:ProjectCardProps) {
 
   const renderEmptyState = () => {
     if (projects.length === 0) {
@@ -188,8 +226,7 @@ export default function ProjectCard({
 }
 
 /* ---------- small reusable UI pieces ---------- */
-
-function Metric({ label, value, danger, success }) {
+function Metric({ label, value, danger, success }: MetricProps) {
   return (
     <div className="bg-gray-50 rounded-xl p-2 text-center">
       <p
@@ -204,7 +241,7 @@ function Metric({ label, value, danger, success }) {
   );
 }
 
-function ActionBtn({ label, icon, onClick, disabled, danger }) {
+function ActionBtn({ label, icon, onClick, disabled, danger }: { label: string; icon: string; onClick: () => void; disabled: boolean; danger?: boolean }) {
   return (
     <button
       onClick={onClick}
@@ -214,9 +251,9 @@ function ActionBtn({ label, icon, onClick, disabled, danger }) {
         ${
           disabled
             ? "bg-gray-300 text-gray-300 cursor-not-allowed opacity-47"
-            : "danger bg-gray-300"
-            ? " hover:bg-gray-200 bg-red-50 hover:text-red-600 text-gray-600"
-            : "hover:bg-gray-600 text-gray-600"
+            : danger
+            ? "bg-red-50 hover:bg-red-100 hover:text-red-600 text-gray-600"
+            : "bg-gray-100 hover:bg-gray-200 text-gray-600"
         }`}
     >
       {icon}

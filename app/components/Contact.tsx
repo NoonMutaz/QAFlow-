@@ -20,6 +20,10 @@ interface TextareaProps {
   focused: string | null;
   setFocused: (v: string | null) => void;
 }
+interface InfoProps {
+  title: string;
+  children: React.ReactNode;
+}
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -36,11 +40,11 @@ export default function Contact() {
 
   const formRef = useRef<HTMLFormElement>(null);
 
-  const handleChange = (e: any) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError('');
@@ -227,7 +231,7 @@ function Textarea({
     </div>
   );
 }
-function Info({ title, children }) {
+function Info({ title, children }: InfoProps) {
   return (
     <div>
       <p className="font-medium text-gray-900">{title}</p>
