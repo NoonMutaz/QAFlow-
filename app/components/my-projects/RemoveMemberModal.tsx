@@ -1,74 +1,126 @@
-import React from 'react'
+'use client';
 
-export default function RemoveMemberModal({ removeMember }: { removeMember: any }) {
+import React from 'react';
+
+interface ConfirmRemove {
+  email: string;
+  memberId: string;
+}
+
+interface RemoveMemberActions {
+  confirmRemove: ConfirmRemove;
+  removingMemberId: string | null;
+  handleCancelRemove: () => void;
+  handleConfirmRemove: () => void;
+}
+
+interface RemoveMemberModalProps {
+  removeMember: RemoveMemberActions;
+}
+
+export default function RemoveMemberModal({ removeMember }: RemoveMemberModalProps) {
+  const { confirmRemove, removingMemberId, handleCancelRemove, handleConfirmRemove } =
+    removeMember;
+
+  const isRemoving = removingMemberId === confirmRemove.memberId;
+
   return (
-    <div>
-       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 max-w-md w-full mx-4 max-h-[90vh] overflow-hidden">
-            {/* Header */}
-            <div className="p-6 border-b border-gray-100">
-              <div className="flex items-start gap-3">
-                <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">Remove Team Member</h3>
-                  <p className="text-sm text-gray-600 mt-1">This action cannot be undone.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Body */}
-            <div className="p-6">
-              <div className="bg-red-50 border border-red-100 rounded-xl p-4">
-                <p className="text-sm font-medium text-red-800">
-                  Are you sure you want to remove{' '}
-                  <span className="font-semibold bg-red-200 px-1.5 py-0.5 rounded text-red-900">
-                    {removeMember.confirmRemove.email}
-                  </span>{' '}
-                  from this project?
-                </p>
-                <p className="text-xs text-red-700 mt-2">
-                  They will lose all access immediately.
-                </p>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="flex gap-3 p-6 border-t border-gray-100 bg-gray-50">
-              <button
-                onClick={removeMember.handleCancelRemove}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 border border-gray-200 rounded-xl hover:bg-white transition-all shadow-sm"
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 max-w-md w-full mx-4 max-h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div className="p-6 border-b border-gray-100">
+          <div className="flex items-start gap-3">
+            <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg
+                className="w-6 h-6 text-red-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                Cancel
-              </button>
-              <button
-                onClick={removeMember.handleConfirmRemove}
-                disabled={removeMember.removingMemberId === removeMember.confirmRemove.memberId}
-                className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 transition-all shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {removeMember.removingMemberId === removeMember.confirmRemove.memberId ? (
-                  <>
-                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Removing...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    Remove Member
-                  </>
-                )}
-              </button>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">Remove Team Member</h3>
+              <p className="text-sm text-gray-600 mt-1">This action cannot be undone.</p>
             </div>
           </div>
         </div>
+
+        {/* Body */}
+        <div className="p-6">
+          <div className="bg-red-50 border border-red-100 rounded-xl p-4">
+            <p className="text-sm font-medium text-red-800">
+              Are you sure you want to remove{' '}
+              <span className="font-semibold bg-red-200 px-1.5 py-0.5 rounded text-red-900">
+                {confirmRemove.email}
+              </span>{' '}
+              from this project?
+            </p>
+            <p className="text-xs text-red-700 mt-2">
+              They will lose all access immediately.
+            </p>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex gap-3 p-6 border-t border-gray-100 bg-gray-50">
+          <button
+            onClick={handleCancelRemove}
+            className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 border border-gray-200 rounded-xl hover:bg-white transition-all shadow-sm"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirmRemove}
+            disabled={isRemoving}
+            className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 transition-all shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {isRemoving ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                Removing...
+              </>
+            ) : (
+              <>
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+                Remove Member
+              </>
+            )}
+          </button>
+        </div>
+      </div>
     </div>
-  )
+  );
 }

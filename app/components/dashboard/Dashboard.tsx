@@ -182,7 +182,11 @@ export default function Dashboard() {
 
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-8">
-              <QueueForm onAdd={(customer) => addQueue(project.id, customer)} />
+            <QueueForm
+  projectId={String(project.id)}
+  onAdd={(customer) => addQueue(String(project.id), customer)}
+/>
+
             </div>
           </div>
         </div>
@@ -213,7 +217,7 @@ export default function Dashboard() {
           </div> */}
 
           <TableOfQueue
-            projectId={project.id}
+            projectId={String(project.id)}
             filteredQueue={filteredQueue}
             select={select}
             setSelect={setSelect}

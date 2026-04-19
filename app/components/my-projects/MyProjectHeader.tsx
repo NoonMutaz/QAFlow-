@@ -1,7 +1,24 @@
 import React from 'react'
 import { useRouter } from 'next/navigation';
-export default function MyProjectHeader({isLoading,filteredProjects,projects,searchTerm,setSearchTerm}){
-      const router = useRouter();
+
+
+interface Props {
+  isLoading: boolean;
+  filteredProjects: any[];
+  projects: any[];
+  searchTerm: string;
+  setSearchTerm: (v: string) => void;
+}
+
+
+
+export default function MyProjectHeader({
+  isLoading,
+  filteredProjects,
+  projects,
+  searchTerm,
+  setSearchTerm,
+}: Props) {     const router = useRouter();
   return (
     <div>
        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
