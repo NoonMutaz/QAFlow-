@@ -8,6 +8,7 @@ import RemoveModal from './RemoveModal';
 import { useQueueContext } from "../../context/QueueContext";
 import MyProjectHeader from './MyProjectHeader';
 import ProjectCard from './ProjectCard';
+import { useAuthContext } from "../../context/AuthContext";
 import CreateProjectForm from './CreateProjectForm';
 
 interface Member {
@@ -17,6 +18,11 @@ interface Member {
   role: 'owner' | 'member' | 'viewer';
   joinedAt: string;
 }
+
+// const user = {
+//  // id: localStorage.getItem("userId") || "",
+//   email: localStorage.getItem("email") || ""
+// };
 
 export default function MyProjects() {
   const router = useRouter();
@@ -30,7 +36,7 @@ export default function MyProjects() {
   const [projectForm, setProjectForm] = useState({ name: '', description: '', type: '' });
   const [projectErrors, setProjectErrors] = useState<{ [key: string]: string }>({});
   const [isProjectSubmitting, setIsProjectSubmitting] = useState(false);
-  
+  const { user, isReady } = useAuthContext();
   //  Member management states
   const [projectMembers, setProjectMembers] = useState<Member[]>([]);
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
@@ -63,40 +69,46 @@ export default function MyProjects() {
     }
   };
 
-  // ✅ SINGLE handleUpdateRole function (DELETE duplicates)
-  const handleUpdateRole = async (userId: string, role: Member['role']) => {
-    if (!inviteModal) return;
-    
-    setUpdatingMemberId(userId); // ✅ Use updatingMemberId, not removingMemberId
-    try {
-      console.log("🔄 Updating:", userId, "→", role); // DEBUG
-      
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${inviteModal}/members/${userId}`, {
+  //   SINGLE handleUpdateRole function (DELETE duplicates)
+ const handleUpdateRole = async (userId: string, role: Member['role']) => {
+  if (!inviteModal || !user) return;
+
+  //  BLOCK self-update (critical)
+  if (String(userId) === String(user.id)) {
+    console.warn("⚠️ Attempted to update own role");
+    alert("⚠️ You cannot change your own role");
+    return;
+  }
+
+  setUpdatingMemberId(userId);
+
+  try {
+    const token = localStorage.getItem('token');
+
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${inviteModal}/members/${userId}`,
+      {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json', 
           Authorization: `Bearer ${token}` 
         },
         body: JSON.stringify({ role }),
-      });
-      
-      if (!res.ok) {
-        const text = await res.text();
-        console.error("❌ API Error:", text);
-        alert(`❌ Update failed: ${text}`);
-        return;
       }
-      
-      alert('✅ Role updated!');
-      await fetchProjectMembers(inviteModal);
-    } catch (e) {
-      console.error("❌ Update failed:", e);
-      alert('❌ Network error');
-    } finally {
-      setUpdatingMemberId(null);
+    );
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("❌ API Error:", text);
+      alert(`❌ Update failed: ${text}`);
+      return;
     }
-  };
+
+    await fetchProjectMembers(inviteModal);
+  } finally {
+    setUpdatingMemberId(null);
+  }
+};
 
   // ✅ FIXED handleRemoveMember
   const handleRemoveMember = async (userId: string) => {
@@ -148,7 +160,7 @@ export default function MyProjects() {
     const total = bugs.length;
     const fixed = bugs.filter((b: any) => b.status === 'fixed').length;
     if (total === 0) return { label: 'New', color: 'emerald' };
-    if (fixed === total) return { label: 'All Bugs Fixed', color: 'green' };
+    if (fixed === total) return { label: 'Closed', color: 'green' };
     return { label: `Active`, color: total > 5 ? 'amber' : 'blue' };
   };
 
@@ -281,6 +293,8 @@ export default function MyProjects() {
             removeQueue={deleteProject}
             customer={projects.find(p => p.id === openModalId)!}
             onClose={() => setOpenModalId(null)}
+   currentUserId={user?.id ?? ""}
+currentUserEmail={user?.email ?? ""}
           />
         </div>
       )}
@@ -288,17 +302,21 @@ export default function MyProjects() {
       {/* ✅ FIXED Invite Modal */}
       {inviteModal !== null && projects.find(p => p.id === inviteModal) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-auto">
-          <InviteModal
-            isOpen={true}
-            projectId={inviteModal}
-            customer={{ 
-              id: inviteModal.toString(),
-              name: projects.find(p => p.id === inviteModal)?.name || 'Project'
-            }}
-            members={projectMembers}
-            removingMemberId={removingMemberId}
-            updatingMemberId={updatingMemberId}  // ✅ ADD THIS
-            onClose={() => setInviteModal(null)}
+        <InviteModal
+  isOpen={true}
+  projectId={String(inviteModal)}  // ✅ String, not number
+  customer={{ 
+    id: inviteModal.toString(),
+    name: projects.find(p => p.id === inviteModal)?.name || 'Project'
+    
+  }} currentUserId={user?.id ?? ""}
+  members={projectMembers}
+  removingMemberId={removingMemberId}
+  updatingMemberId={updatingMemberId}
+  //   ADD THESE SETTERS
+  setRemovingMemberId={setRemovingMemberId}
+  setUpdatingMemberId={setUpdatingMemberId}
+  onClose={() => setInviteModal(null)}
             onInvite={async (email) => {
               const trimmed = email?.trim();
               if (!trimmed?.includes('@')) { 
@@ -327,7 +345,7 @@ export default function MyProjects() {
                 alert('❌ Network error'); 
               }
             }}
-            onUpdateMember={handleUpdateRole}      // ✅ FIXED - use handleUpdateRole
+            onUpdateMember={handleUpdateRole}      
             onRemoveMember={handleRemoveMember}
           />
         </div>

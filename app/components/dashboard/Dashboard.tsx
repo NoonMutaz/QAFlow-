@@ -17,6 +17,7 @@ import { saveAs } from "file-saver";
 import DashboardSearchBar from "./DashboardSearchBar";
 
 import { useParams } from "next/navigation";
+import DashboardHeader from "./DashboardHeader";
 
 type Status = "notFixed" | "in-progress" | "fixed";
 type Priority = "High" | "Medium" | "Low";
@@ -62,7 +63,7 @@ export default function Dashboard() {
   const [select, setSelect] = useState<Status | "">("");
   const [selectP, setSelectP] = useState<Priority | "">("");
 
-  // FIX: Hook must run BEFORE any conditional return
+  //  must run BEFORE any conditional return
   useEffect(() => {
     if (id) {
       fetchBugs(id);
@@ -116,7 +117,7 @@ export default function Dashboard() {
   // Find project
   const project = projects.find((p) => p.id.toString() === id);
 
-  // SAFE: conditional return AFTER all hooks
+  //  return AFTER all hooks
   if (!project) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -156,37 +157,10 @@ export default function Dashboard() {
     <>
       <div className="min-h-screen px-4 md:px-8 lg:px-12 py-8 space-y-8">
         {/* Page Header */}
-        {/* <Header searchTerm={searchTerm} setSearchTerm={setSearchTerm} /> */}
+  
+      <DashboardHeader project={project} queue={queue} id={project.id}/>
 
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-              {project.name || "QA Dashboard"}
-            </h1>
-            <div className="w-full">
-              <p className="text-xs sm:text-sm md:text-base text-gray-500 mt-1 leading-snug break-words">
-                {project.description ||
-                  "Monitor bugs, test cases, and status in real time"}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              {/* <p className="text-xs text-gray-500">Total Queue</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {(queue[id] || []).filter((c) => c.status === "in-progress").length}
-              </p> */}
-            </div>
-            <div className="h-12 w-px bg-gray-200"></div>
-            <div className="text-right">
-              <p className="text-xs text-gray-500">Active</p>
-              <p className="text-2xl font-bold text-purple-600">
-                {(queue[id] || []).filter((c) => c.status === "in-progress").length}
-              </p>
-            </div>
-          </div>
-        </div>
+       
 
         {/* KPI Section */}
         <KpiSection queue={queue[id] || []} />
@@ -218,7 +192,7 @@ export default function Dashboard() {
 
         {/* Table Section */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          {/* <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <h2 className="text-lg font-semibold text-gray-900">Queue Management</h2>
             <div className="flex items-center gap-3">
               <span className="text-sm text-gray-500">
@@ -236,7 +210,7 @@ export default function Dashboard() {
                 </button>
               )}
             </div>
-          </div>
+          </div> */}
 
           <TableOfQueue
             projectId={project.id}
@@ -248,7 +222,8 @@ export default function Dashboard() {
             updateQueue={updateQueue}
             removeQueue={removeQueue}
             updatePriorityQueue={updatePriorityQueue}
-             currentUserRole={project.role}
+            currentUserRole={project.role}
+             projectQueue={projectQueue}
           />
         </div>
       </div>

@@ -54,7 +54,6 @@ export default function Header({ searchTerm, setSearchTerm }: HeaderProps) {
           </Link>
         </div>
 
-        {/* Center: Search + Desktop Nav */}
         <div className="navbar-center hidden md:flex items-center gap-6">
          
           <ul className="menu menu-horizontal px-1 text-sm font-medium gap-2">

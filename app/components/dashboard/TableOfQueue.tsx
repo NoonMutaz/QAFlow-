@@ -9,6 +9,43 @@ type Status = "notFixed" | "in-progress" | "fixed";
 type Priority = "High" | "Medium" | "Low";
 type UserRole = "owner" | "member" | "viewer";
 
+function RoleHeader(){
+  return(
+        <div className="px-6 py-3 bg-gradient-to-r from-emerald-50 to-indigo-50 border-t border-gray-100 rounded-b-xl">
+        <div className="flex flex-wrap gap-3 text-xs">
+          <span className="px-3 py-1.5 bg-emerald-100 text-emerald-800 rounded-full font-semibold shadow-sm border border-emerald-200"> Owner: Full access</span>
+          <span className="px-3 py-1.5 bg-indigo-100 text-indigo-800 rounded-full font-semibold shadow-sm border border-indigo-200"> Member: Edit + Priority + Upload</span>
+          <span className="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full font-semibold shadow-sm border border-blue-200"> Viewer: status only</span>
+        </div>
+      </div>
+  )
+}
+function FilteringHeader({ 
+  select, 
+  setSelect, 
+  selectP, 
+  setSelectP, 
+  currentUserRole 
+}: { 
+  select: Status | "";
+  setSelect: React.Dispatch<React.SetStateAction<Status | "">>;
+  selectP: Priority | "";
+  setSelectP: React.Dispatch<React.SetStateAction<Priority | "">>;
+  currentUserRole: UserRole;
+}) {
+  return (
+    <div className="px-6 py-4 flex gap-4 flex-wrap items-center bg-gray-50 rounded-t-xl border-b border-gray-200">
+      <FilterByStatus select={select} setSelect={setSelect} />
+      <FilterByPriority setSelectP={setSelectP} selectP={selectP} />
+      <div className="ml-auto flex items-center gap-3 text-sm text-gray-600">
+        <span className="px-2 py-1 bg-gradient-to-r from-indigo-100 to-purple-100 text-xs font-medium rounded-full capitalize border">
+          {currentUserRole}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 interface Customer {
   id: number;
   bugId: string;
@@ -35,8 +72,153 @@ interface TableProps {
   setSelectP: React.Dispatch<React.SetStateAction<Priority | "">>;
   updatePriorityQueue: (projectId: string, id: number, newPriority: Priority) => void;
   currentUserRole?: UserRole;
+    projectQueue: Customer[];
+}
+// Move this OUTSIDE the TableOfQueue component, before the export default
+interface EditableTextareaProps {
+  value: string;
+  field: keyof Customer;
+  customerId: number;
+  projectId: string;
+  canEditTextareas: boolean;
+  placeholder?: string;
+  maxWidth?: string;
+  rows?: number;
 }
 
+const EditableTextarea = React.memo<EditableTextareaProps>(({
+  value,
+  field,
+  customerId,
+  projectId,
+  canEditTextareas,
+  placeholder = "",
+  maxWidth = "max-w-xs",
+  rows = 2,
+}) => {
+  const [localValue, setLocalValue] = useState(value);
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const saveChanges = useCallback(async () => {
+  if (!canEditTextareas || localValue === value) {
+    setIsEditing(false);
+    return;
+  }
+
+  setSaving(true);
+  try {
+    const token = localStorage.getItem("token");
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/bugs/${customerId}`, // Matches [HttpPatch("{bugId}")]
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ 
+          field: field.toLowerCase(),  // "expectedResult" → "expectedresult"
+          value: localValue 
+        }),
+      }
+    );
+
+    if (res.ok) {
+      window.dispatchEvent(
+        new CustomEvent("bug-updated", {
+          detail: { customerId, field: field as string, value: localValue },
+        })
+      );
+    } else {
+      const errorText = await res.text();
+      console.error("API Error:", res.status, errorText);
+      alert(`Failed to save ${field}: ${res.status}`);
+      setLocalValue(value);
+    }
+  } catch (error) {
+    console.error("Save error:", error);
+    alert("Save failed");
+    setLocalValue(value);
+  } finally {
+    setSaving(false);
+    setIsEditing(false);
+  }
+}, [localValue, value, customerId, field, projectId, canEditTextareas]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      saveChanges();
+    }
+    if (e.key === "Escape") {
+      setLocalValue(value);
+      setIsEditing(false);
+    }
+  };
+
+  return (
+    <div className={`relative ${maxWidth}`}>
+      {isEditing ? (
+        <textarea
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+          onBlur={saveChanges}
+          onKeyDown={handleKeyDown}
+          rows={rows}
+          className="w-full px-3 py-2 border-2 border-blue-300 rounded-md text-xs resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm bg-white transition-all"
+          placeholder={placeholder}
+          autoFocus
+        />
+      ) : (
+        <div
+          className={`group w-full px-3 py-2 border rounded-md text-xs bg-gray-50 hover:bg-gray-100 min-h-[3.5rem] flex items-center transition-all ${
+            canEditTextareas
+              ? "hover:border-blue-300 hover:shadow-sm cursor-pointer border-gray-200"
+              : "border-gray-200 cursor-not-allowed opacity-70"
+          }`}
+          onClick={() => canEditTextareas && setIsEditing(true)}
+          title={
+            canEditTextareas
+              ? "Click to edit (Enter=save, Esc=cancel)"
+              : "Read-only"
+          }
+        >
+          <span className="block truncate leading-relaxed flex-1">
+            {localValue || placeholder || "No content"}
+          </span>
+          {canEditTextareas && (
+            <svg
+              className="w-4 h-4 ml-2 text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              />
+            </svg>
+          )}
+        </div>
+      )}
+      {saving && (
+        <div className="absolute -top-7 right-0 flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full animate-pulse">
+          <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping" />
+          Saving...
+        </div>
+      )}
+    </div>
+  );
+});
+
+EditableTextarea.displayName = "EditableTextarea";
 export default function TableOfQueue({
   filteredQueue,
   select,
@@ -47,6 +229,7 @@ export default function TableOfQueue({
   updateQueue,
   removeQueue,
   updatePriorityQueue,
+  projectQueue,
   currentUserRole = "viewer",
 }: TableProps) {
   const [openModalId, setOpenModalId] = useState<number | null>(null);
@@ -148,152 +331,166 @@ const canDelete = ["owner"].includes(currentUserRole);
   };
 
   // Editable Textarea Component
-  const EditableTextarea = React.memo(({
-    value,
-    field,
-    customerId,
-    placeholder = "",
-    maxWidth = "max-w-xs",
-    rows = 2
-  }: {
-    value: string;
-    field: keyof Customer;
-    customerId: number;
-    placeholder?: string;
-    maxWidth?: string;
-    rows?: number;
-  }) => {
-    const [localValue, setLocalValue] = useState(value);
-    const [isEditing, setIsEditing] = useState(false);
-    const [saving, setSaving] = useState(false);
+  // const EditableTextarea = React.memo(({
+  //   value,
+  //   field,
+  //   customerId,
+  //   placeholder = "",
+  //   maxWidth = "max-w-xs",
+  //   rows = 2
+  // }: {
+  //   value: string;
+  //   field: keyof Customer;
+  //   customerId: number;
+  //   placeholder?: string;
+  //   maxWidth?: string;
+  //   rows?: number;
+  // }) => {
+  //   const [localValue, setLocalValue] = useState(value);
+  //   const [isEditing, setIsEditing] = useState(false);
+  //   const [saving, setSaving] = useState(false);
 
-    useEffect(() => {
-      setLocalValue(value);
-    }, [value]);
+  //   useEffect(() => {
+  //     setLocalValue(value);
+  //   }, [value]);
 
-    const saveChanges = useCallback(async () => {
-      if (!canEditTextareas || localValue === value) {
-        setIsEditing(false);
-        return;
-      }
+  //   const saveChanges = useCallback(async () => {
+  //     if (!canEditTextareas || localValue === value) {
+  //       setIsEditing(false);
+  //       return;
+  //     }
 
-      setSaving(true);
-      try {
-        const token = localStorage.getItem("token");
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/bugs/${customerId}`,
-          {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ [field]: localValue }),
-          }
-        );
+  //     setSaving(true);
+  //     try {
+  //       const token = localStorage.getItem("token");
+  //       const res = await fetch(
+  //         `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/bugs/${customerId}`,
+  //         {
+  //           method: "PATCH",
+  //           headers: {
+  //             "Content-Type": "application/json",
+  //             Authorization: `Bearer ${token}`,
+  //           },
+  //           body: JSON.stringify({ [field]: localValue }),
+  //         }
+  //       );
 
-        if (res.ok) {
-          // Notify parent component
-          window.dispatchEvent(new CustomEvent("bug-updated", { 
-            detail: { customerId, field: field as string, value: localValue } 
-          }));
-        } else {
-          alert(`Failed to save ${field}`);
-          setLocalValue(value);
-        }
-      } catch (error) {
-        console.error("Save failed:", error);
-        alert("Save failed");
-        setLocalValue(value);
-      } finally {
-        setSaving(false);
-        setIsEditing(false);
-      }
-    }, [localValue, value, customerId, field, projectId]);
+  //       if (res.ok) {
+  //         // Notify parent component
+  //         window.dispatchEvent(new CustomEvent("bug-updated", { 
+  //           detail: { customerId, field: field as string, value: localValue } 
+  //         }));
+  //       } else {
+  //         alert(`Failed to save ${field}`);
+  //         setLocalValue(value);
+  //       }
+  //     } catch (error) {
+  //       console.error("Save failed:", error);
+  //       alert("Save failed");
+  //       setLocalValue(value);
+  //     } finally {
+  //       setSaving(false);
+  //       setIsEditing(false);
+  //     }
+  //   }, [localValue, value, customerId, field, projectId]);
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        saveChanges();
-      }
-      if (e.key === "Escape") {
-        setLocalValue(value);
-        setIsEditing(false);
-      }
-    };
+  //   const handleKeyDown = (e: React.KeyboardEvent) => {
+  //     if (e.key === "Enter" && !e.shiftKey) {
+  //       e.preventDefault();
+  //       saveChanges();
+  //     }
+  //     if (e.key === "Escape") {
+  //       setLocalValue(value);
+  //       setIsEditing(false);
+  //     }
+  //   };
 
-    return (
-      <div className={`relative ${maxWidth}`}>
-        {isEditing ? (
-          <textarea
-            value={localValue}
-            onChange={(e) => setLocalValue(e.target.value)}
-            onBlur={saveChanges}
-            onKeyDown={handleKeyDown}
-            rows={rows}
-            className="w-full px-3 py-2 border-2 border-blue-300 rounded-md text-xs resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm bg-white transition-all"
-            placeholder={placeholder}
-            autoFocus
-          />
-        ) : (
-          <div
-            className={`group w-full px-3 py-2 border rounded-md text-xs bg-gray-50 hover:bg-gray-100 min-h-[3.5rem] flex items-center transition-all ${
-              canEditTextareas 
-                ? "hover:border-blue-300 hover:shadow-sm cursor-pointer border-gray-200" 
-                : "border-gray-200 cursor-not-allowed opacity-70"
-            }`}
-            onClick={() => canEditTextareas && setIsEditing(true)}
-            title={canEditTextareas ? "Click to edit (Enter=save, Esc=cancel)" : "Read-only"}
-          >
-            <span className="block truncate leading-relaxed flex-1">
-              {localValue || placeholder || "No content"}
-            </span>
-            {canEditTextareas && (
-              <svg 
-                className="w-4 h-4 ml-2 text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-            )}
-          </div>
-        )}
-        {saving && (
-          <div className="absolute -top-7 right-0 flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full animate-pulse">
-            <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping"></div>
-            Saving...
-          </div>
-        )}
-      </div>
-    );
-  });
+  //   return (
+  //     <div className={`relative ${maxWidth}`}>
+  //       {isEditing ? (
+  //         <textarea
+  //           value={localValue}
+  //           onChange={(e) => setLocalValue(e.target.value)}
+  //           onBlur={saveChanges}
+  //           onKeyDown={handleKeyDown}
+  //           rows={rows}
+  //           className="w-full px-3 py-2 border-2 border-blue-300 rounded-md text-xs resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm bg-white transition-all"
+  //           placeholder={placeholder}
+  //           autoFocus
+  //         />
+  //       ) : (
+  //         <div
+  //           className={`group w-full px-3 py-2 border rounded-md text-xs bg-gray-50 hover:bg-gray-100 min-h-[3.5rem] flex items-center transition-all ${
+  //             canEditTextareas 
+  //               ? "hover:border-blue-300 hover:shadow-sm cursor-pointer border-gray-200" 
+  //               : "border-gray-200 cursor-not-allowed opacity-70"
+  //           }`}
+  //           onClick={() => canEditTextareas && setIsEditing(true)}
+  //           title={canEditTextareas ? "Click to edit (Enter=save, Esc=cancel)" : "Read-only"}
+  //         >
+  //           <span className="block truncate leading-relaxed flex-1">
+  //             {localValue || placeholder || "No content"}
+  //           </span>
+  //           {canEditTextareas && (
+  //             <svg 
+  //               className="w-4 h-4 ml-2 text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+  //               fill="none" 
+  //               stroke="currentColor" 
+  //               viewBox="0 0 24 24"
+  //             >
+  //               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+  //                 d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+  //             </svg>
+  //           )}
+  //         </div>
+  //       )}
+  //       {saving && (
+  //         <div className="absolute -top-7 right-0 flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full animate-pulse">
+  //           <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping"></div>
+  //           Saving...
+  //         </div>
+  //       )}
+  //     </div>
+  //   );
+  // });
 
   return (
     <div className="space-y-4">
       {/* Filters & Role Info */}
-      <div className="px-6 py-4 flex gap-4 flex-wrap items-center bg-gray-50 rounded-t-xl border-b border-gray-200">
-        <FilterByStatus select={select} setSelect={setSelect} />
-        <FilterByPriority setSelectP={setSelectP} selectP={selectP} />
-        <div className="ml-auto flex items-center gap-3 text-sm text-gray-600">
-          <span>
-            Showing {startIndex + 1}-{Math.min(endIndex, filteredQueue.length)} of {filteredQueue.length}
-          </span>
-          <span className="px-2 py-1 bg-gradient-to-r from-indigo-100 to-purple-100 text-xs font-medium rounded-full capitalize border">
-            {currentUserRole}
-          </span>
-        </div>
-      </div>
-      {/* UPDATED Role Legend */}
-      <div className="px-6 py-3 bg-gradient-to-r from-emerald-50 to-indigo-50 border-t border-gray-100 rounded-b-xl">
-        <div className="flex flex-wrap gap-3 text-xs">
-          <span className="px-3 py-1.5 bg-emerald-100 text-emerald-800 rounded-full font-semibold shadow-sm border border-emerald-200"> Owner: Full access</span>
-          <span className="px-3 py-1.5 bg-indigo-100 text-indigo-800 rounded-full font-semibold shadow-sm border border-indigo-200"> Member: Edit + Priority + Upload</span>
-          <span className="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full font-semibold shadow-sm border border-blue-200"> Viewer: status only</span>
-        </div>
-      </div>
+           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <h2 className="text-lg font-semibold text-gray-900">Queue Management</h2>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-500">
+                Showing {filteredQueue.length} of {projectQueue.length} items
+              </span>
+              {(select || selectP) && (
+                <button
+                  onClick={() => {
+                    setSelect("");
+                    setSelectP("");
+                  }}
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
+          </div> 
+
+          {/* FilterByStatus and FilterByPriority section */}
+<FilteringHeader 
+  select={select} 
+  setSelect={setSelect} 
+  selectP={selectP} 
+  setSelectP={setSelectP} 
+  currentUserRole={currentUserRole} 
+/>
+     
+      <RoleHeader/>
+    
+
+
+
       {/* Table */}
       <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm bg-white">
         <table className="min-w-full divide-y divide-gray-200">
@@ -350,7 +547,7 @@ const canDelete = ["owner"].includes(currentUserRole);
                   </td>
 
                   {/* URL */}
-                  <td className="px-6 py-4 w-48">
+                  <td className="px-6 py-4 w-48" title="click to go to page">
                     <Link href={customer.url} target="_blank" className="block">
                       <input
                         value={customer.url}
@@ -363,9 +560,15 @@ const canDelete = ["owner"].includes(currentUserRole);
                   {/* Expected Result - EDITABLE */}
                   <td className="px-6 py-4">
                     <EditableTextarea
-                      value={customer.expectedResult}
-                      field="expectedResult"
-                      customerId={customer.id}
+                      // value={customer.expectedResult}
+                      // field="expectedResult"
+                      // customerId={customer.id}
+
+                       value={customer.expectedResult}
+    field="expectedResult"
+    customerId={customer.id}
+    projectId={projectId}
+    canEditTextareas={canEditTextareas}
                       placeholder="Expected result..."
                     />
                   </td>
@@ -376,6 +579,8 @@ const canDelete = ["owner"].includes(currentUserRole);
                       value={customer.actualResult}
                       field="actualResult"
                       customerId={customer.id}
+                      projectId={projectId}
+    canEditTextareas={canEditTextareas}
                       placeholder="What happened..."
                     />
                   </td>
@@ -386,6 +591,8 @@ const canDelete = ["owner"].includes(currentUserRole);
                       value={customer.description}
                       field="description"
                       customerId={customer.id}
+                      projectId={projectId}
+    canEditTextareas={canEditTextareas}
                       placeholder="Describe the bug..."
                       maxWidth="max-w-lg"
                     />
@@ -422,6 +629,8 @@ const canDelete = ["owner"].includes(currentUserRole);
                       value={customer.note || ""}
                       field="note"
                       customerId={customer.id}
+                      projectId={projectId}
+    canEditTextareas={canEditTextareas}
                       placeholder="Team notes..."
                     />
                   </td>
