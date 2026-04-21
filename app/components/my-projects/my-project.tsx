@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-// ✅ Import Project directly from context — no local redefinition
+// mport Project directly from context — no local redefinition
 import { useProjects, type Project } from '../../context/ProjectContext';
 import InviteModal from './InviteModal';
 import RemoveModal from './RemoveModal';
@@ -59,7 +59,7 @@ export default function MyProjects() {
   const [isProjectSubmitting, setIsProjectSubmitting] = useState(false);
 
   // Member management
-  const [projectMembers, setProjectMembers] = useState<Member[]>([]);
+const [projectMembers, setProjectMembers] = useState<Member[]>([]);
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
   const [updatingMemberId, setUpdatingMemberId] = useState<string | null>(null);
 
@@ -250,7 +250,7 @@ export default function MyProjects() {
       const updated: Project = await res.json();
       updateProject(updated);
       setSettingsModalProjectId(null);
-      alert('✅ Project updated!');
+      alert(' Project updated!');
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Failed to update project';
       console.error('Update failed:', message);
@@ -322,34 +322,35 @@ export default function MyProjects() {
           setSearchTerm={setSearchTerm}
         />
 
-        <ProjectCard
-          handleDeleteClick={handleDeleteClick}
-          handleInviteClick={handleInviteClick}
-          handleOpenProject={handleOpenProject}
-          openProjectSettings={openProjectSettings}
-          isLoading={isLoading}
-          filteredProjects={filteredProjects}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          projects={projects}
-          getProjectStatus={getProjectStatus}
-          queue={queue}
-          isOwner={isOwner}
-        />
+ <ProjectCard
+  handleDeleteClick={handleDeleteClick}
+  handleInviteClick={handleInviteClick}
+  handleOpenProject={(projectId: number) => handleOpenProject(projectId)} //  Fix: explicit number type
+  openProjectSettings={openProjectSettings}
+  isLoading={isLoading}
+  filteredProjects={filteredProjects}
+  searchTerm={searchTerm}
+  setSearchTerm={setSearchTerm}
+  projects={projects}
+  getProjectStatus={getProjectStatus}
+  queue={queue}
+  isOwner={isOwner}
+/>
       </div>
 
       {/* Delete Modal */}
-      {openModalId !== null && deleteModalProject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-auto">
-          <RemoveModal
-            removeQueue={deleteProject}
-            customer={{ id: String(deleteModalProject.id), name: deleteModalProject.name }}
-            onClose={() => setOpenModalId(null)}
-            currentUserId={user?.id ?? ''}
-            currentUserEmail={user?.email ?? ''}
-          />
-        </div>
-      )}
+{/* Delete Modal - FIXED */}
+{openModalId !== null && deleteModalProject && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-auto">
+    <RemoveModal
+      removeQueue={async (id: string | number) => {
+        await deleteProject(Number(id));  //  Convert to number & make async
+      }}
+      customer={{ id: Number(deleteModalProject.id), name: deleteModalProject.name }}
+      onClose={() => setOpenModalId(null)}
+    />
+  </div>
+)}
 
       {/* Invite Modal */}
       {inviteModal !== null && inviteModalProject && (

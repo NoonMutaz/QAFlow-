@@ -15,9 +15,10 @@ interface InviteModalProps {
   customer: {
     id: string;
     name: string;
+   
+  };
   
-     
-  };   currentUserId: string;
+  currentUserId: string;
   members: Member[];
   onClose: () => void;
   isOpen: boolean;
@@ -27,7 +28,7 @@ interface InviteModalProps {
   projectId: string;
   removingMemberId?: string | null;
   updatingMemberId?: string | null;
-    setRemovingMemberId?: (id: string | null) => void;
+  setRemovingMemberId?: (id: string | null) => void;
   setUpdatingMemberId?: (id: string | null) => void;
 }
 
@@ -95,7 +96,7 @@ const isOwner = (m: Member) =>
   const handleConfirmRemove = async () => {
   if (!confirmRemove) return;
 
-  // ✅ Use parent setter instead of trying to set local state
+  //  Use parent setter instead of trying to set local state
   if (setRemovingMemberId) {
     setRemovingMemberId(confirmRemove.memberId);
   }
@@ -153,9 +154,16 @@ const handleRoleUpdate = async (memberId: string, role: Member['role']) => {
   return (
     <>
       {/* CONFIRMATION MODAL */}
-      {confirmRemove && (
-       <RemoveMemberModal removeMember={{ confirmRemove, handleConfirmRemove, handleCancelRemove, removingMemberId }}/>
-      )}
+  {confirmRemove && (
+  <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
+    <RemoveMemberModal
+      member={{ id: confirmRemove.memberId, email: confirmRemove.email }}
+      onConfirm={handleConfirmRemove}
+      onCancel={handleCancelRemove}
+      isLoading={removingMemberId === confirmRemove.memberId}
+    />
+  </div>
+)}
 
       {/* MAIN MODAL */}
       <div

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-// ✅ Import Project from context — no local redefinition
+//  Import Project from context — no local redefinition
 import { type Project } from '../../context/ProjectContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────

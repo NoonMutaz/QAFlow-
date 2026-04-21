@@ -20,7 +20,7 @@ interface ProjectContextType {
   addProject: (project: unknown) => void;
   //   Accepts string | number so ProjectCard's prop type is satisfied
   deleteProject: (id: number) => Promise<void>;
-  handleOpenProject: (id: string | number) => void;
+handleOpenProject: (id: string | number) => void;
   clearProjects: () => void;
   fetchProjects: () => Promise<void>;
   updateProject: (project: unknown) => void;

@@ -2,28 +2,22 @@
 
 import React from 'react';
 
-interface ConfirmRemove {
-  email: string;
-  memberId: string;
-}
-
-interface RemoveMemberActions {
-  confirmRemove: ConfirmRemove;
-  removingMemberId: string | null;
-  handleCancelRemove: () => void;
-  handleConfirmRemove: () => void;
-}
-
 interface RemoveMemberModalProps {
-  removeMember: RemoveMemberActions;
+  member: {
+    id: string;
+    email: string;
+  };
+  onConfirm: () => void;
+  onCancel: () => void;
+  isLoading: boolean;
 }
 
-export default function RemoveMemberModal({ removeMember }: RemoveMemberModalProps) {
-  const { confirmRemove, removingMemberId, handleCancelRemove, handleConfirmRemove } =
-    removeMember;
-
-  const isRemoving = removingMemberId === confirmRemove.memberId;
-
+export default function RemoveMemberModal({ 
+  member, 
+  onConfirm, 
+  onCancel, 
+  isLoading 
+}: RemoveMemberModalProps) {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 max-w-md w-full mx-4 max-h-[90vh] overflow-hidden">
@@ -58,7 +52,7 @@ export default function RemoveMemberModal({ removeMember }: RemoveMemberModalPro
             <p className="text-sm font-medium text-red-800">
               Are you sure you want to remove{' '}
               <span className="font-semibold bg-red-200 px-1.5 py-0.5 rounded text-red-900">
-                {confirmRemove.email}
+                {member.email}
               </span>{' '}
               from this project?
             </p>
@@ -71,17 +65,18 @@ export default function RemoveMemberModal({ removeMember }: RemoveMemberModalPro
         {/* Footer */}
         <div className="flex gap-3 p-6 border-t border-gray-100 bg-gray-50">
           <button
-            onClick={handleCancelRemove}
-            className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 border border-gray-200 rounded-xl hover:bg-white transition-all shadow-sm"
+            onClick={onCancel}
+            disabled={isLoading}
+            className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 border border-gray-200 rounded-xl hover:bg-white transition-all shadow-sm disabled:opacity-50"
           >
             Cancel
           </button>
           <button
-            onClick={handleConfirmRemove}
-            disabled={isRemoving}
+            onClick={onConfirm}
+            disabled={isLoading}
             className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 transition-all shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {isRemoving ? (
+            {isLoading ? (
               <>
                 <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle

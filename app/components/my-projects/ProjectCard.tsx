@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-// ✅ Import Project from context — no local redefinition
+//  Import Project from context — no local redefinition
 import { type Project } from '../../context/ProjectContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -20,7 +20,8 @@ type Queue = Record<string | number, QueueItem[]>;
 interface ProjectCardProps {
   handleDeleteClick: (project: Project) => void;
   handleInviteClick: (project: Project) => void;
-  handleOpenProject: (id: string | number) => void;
+  handleOpenProject: (projectId: number) => void;
+  // handleOpenProject: (id: string | number) => void;
   openProjectSettings: (project: Project) => void;
   isLoading: boolean;
   filteredProjects: Project[];

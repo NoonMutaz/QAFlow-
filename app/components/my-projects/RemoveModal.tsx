@@ -3,15 +3,12 @@
 import React, { useEffect, useRef } from 'react';
 
 interface RemoveModalProps {
-customer: {
-  id:string| number;
-  name: string;
-};
-
-removeQueue: (id: string| number) => Promise<void>;
+  customer: {
+    id: string | number;  //   Union type
+    name: string;
+  };
+  removeQueue: (id: string | number) => Promise<void>;  //   Promise return
   onClose: () => void;
-  currentUserId: string;
-  currentUserEmail: string;
 }
 
 export default function RemoveModal({
