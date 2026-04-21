@@ -1,15 +1,17 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import { useProjects } from "../../context/ProjectContext";
-import InviteModal from "./InviteModal";
+import { useState, useEffect, useCallback } from 'react';
+// ✅ Import Project directly from context — no local redefinition
+import { useProjects, type Project } from '../../context/ProjectContext';
+import InviteModal from './InviteModal';
 import RemoveModal from './RemoveModal';
-import { useQueueContext } from "../../context/QueueContext";
+import { useQueueContext } from '../../context/QueueContext';
 import MyProjectHeader from './MyProjectHeader';
 import ProjectCard from './ProjectCard';
-import { useAuthContext } from "../../context/AuthContext";
+import { useAuthContext } from '../../context/AuthContext';
 import CreateProjectForm from './CreateProjectForm';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Member {
   id: string;
@@ -19,98 +21,101 @@ interface Member {
   joinedAt: string;
 }
 
-// interface Project {
-//   id: number | string;
-//   name: string;
-//   description?: string;
-//   role: "owner" | "member" | "viewer" | string;
-//   type?: string;
-// }
-interface Project {
-  id: number;
-  name: string;
-  description: string;
-  type: string;
-  role?: string;
+// ─── SSR-safe token helper ────────────────────────────────────────────────────
+
+function getToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return window.localStorage.getItem('token');
 }
 
+function authHeaders(contentType = false): HeadersInit {
+  const token = getToken();
+  return {
+    ...(contentType ? { 'Content-Type': 'application/json' } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export default function MyProjects() {
-  const router = useRouter();
-  const { projects, deleteProject, handleOpenProject, fetchProjects, isLoading, updateProject } = useProjects();
+  const {
+    projects,
+    deleteProject,
+    handleOpenProject,
+    fetchProjects,
+    isLoading,
+    updateProject,
+  } = useProjects();
   const { queue, fetchBugs } = useQueueContext();
+  const { user } = useAuthContext();
 
   const [openModalId, setOpenModalId] = useState<number | null>(null);
   const [inviteModal, setInviteModal] = useState<number | null>(null);
   const [settingsModalProjectId, setSettingsModalProjectId] = useState<number | null>(null);
-  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [projectForm, setProjectForm] = useState({ name: '', description: '', type: '' });
   const [projectErrors, setProjectErrors] = useState<Record<string, string>>({});
-  const [isProjectSubmitting, setIsProjectSubmitting] = useState<boolean>(false);
-  const { user, isReady } = useAuthContext();
+  const [isProjectSubmitting, setIsProjectSubmitting] = useState(false);
 
-  // Member management states
+  // Member management
   const [projectMembers, setProjectMembers] = useState<Member[]>([]);
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
   const [updatingMemberId, setUpdatingMemberId] = useState<string | null>(null);
-  const [membersLoading, setMembersLoading] = useState<boolean>(false);
 
   const projectTypes = [
-    "QA Dashboard",
-    "Bug Tracking",
-    "Test Management",
-    "Performance Testing",
-    "Web App",
-    "Mobile App",
-    "API Project",
+    'QA Dashboard',
+    'Bug Tracking',
+    'Test Management',
+    'Performance Testing',
+    'Web App',
+    'Mobile App',
+    'API Project',
   ];
 
-  const fetchProjectMembers = async (projectId: number): Promise<void> => {
+  // ── Fetch members ────────────────────────────────────────────────────────────
+
+  const fetchProjectMembers = useCallback(async (projectId: number): Promise<void> => {
     if (!projectId) return;
-    setMembersLoading(true);
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/members`,
-        { headers: { Authorization: `Bearer ${token ?? ''}` } }
+        { headers: authHeaders() },
       );
       if (res.ok) {
-        const members: Member[] = await res.json() as Member[];
+        const members: Member[] = await res.json();
         setProjectMembers(members);
       } else {
         console.error('Failed to fetch members:', await res.text());
       }
     } catch (e) {
       console.error('Network error fetching members:', e);
-    } finally {
-      setMembersLoading(false);
     }
-  };
+  }, []);
+
+  // ── Update role ──────────────────────────────────────────────────────────────
 
   const handleUpdateRole = async (userId: string, role: Member['role']): Promise<void> => {
     if (!inviteModal || !user) return;
 
     if (String(userId) === String(user.id)) {
-      alert("⚠️ You cannot change your own role");
+      alert('⚠️ You cannot change your own role');
       return;
     }
 
     setUpdatingMemberId(userId);
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${inviteModal}/members/${userId}`,
         {
           method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token ?? ''}`,
-          },
+          headers: authHeaders(true),
           body: JSON.stringify({ role }),
-        }
+        },
       );
       if (!res.ok) {
         const text = await res.text();
-        console.error("❌ API Error:", text);
+        console.error('API Error:', text);
         alert(`❌ Update failed: ${text}`);
         return;
       }
@@ -120,17 +125,15 @@ export default function MyProjects() {
     }
   };
 
+  // ── Remove member ────────────────────────────────────────────────────────────
+
   const handleRemoveMember = async (userId: string): Promise<void> => {
     if (!inviteModal) return;
     setRemovingMemberId(userId);
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${inviteModal}/members/${userId}`,
-        {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${token ?? ''}` },
-        }
+        { method: 'DELETE', headers: authHeaders() },
       );
       if (!res.ok) {
         const text = await res.text();
@@ -138,14 +141,16 @@ export default function MyProjects() {
       }
       setProjectMembers((prev) => prev.filter((m) => m.userId !== userId));
       alert('✅ Member removed!');
-    } catch (error) {
-      const err = error as Error;
-      console.error('Remove failed:', err);
-      alert(`❌ ${err.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Remove failed:', message);
+      alert(`❌ ${message}`);
     } finally {
       setRemovingMemberId(null);
     }
   };
+
+  // ── Effects ──────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (inviteModal !== null) {
@@ -153,16 +158,20 @@ export default function MyProjects() {
     } else {
       setProjectMembers([]);
     }
-  }, [inviteModal]);
+  }, [inviteModal, fetchProjectMembers]);
 
   useEffect(() => {
     if (projects.length > 0) {
-      projects.forEach((project) => fetchBugs(project.id.toString()));
+      projects.forEach((project) => fetchBugs(String(project.id)));
     }
-  }, [projects]);
+  }, [projects, fetchBugs]);
 
-  const getProjectStatus = (projectId: number | string): { label: string; color: string } => {
-    const bugs = (queue?.[projectId] ?? []) as Array<{ status: string }>;
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+
+  const getProjectStatus = (
+    projectId: string | number,
+  ): { label: string; color: string } => {
+    const bugs = (queue?.[projectId] as Array<{ status: string }> | undefined) ?? [];
     const total = bugs.length;
     const fixed = bugs.filter((b) => b.status === 'fixed').length;
     if (total === 0) return { label: 'New', color: 'emerald' };
@@ -171,38 +180,23 @@ export default function MyProjects() {
   };
 
   const isOwner = (projectRole?: string): boolean => projectRole === 'owner';
-// const filteredProjects = projects.filter((project: Project) => {
-//   const term = searchTerm.toLowerCase();
 
-//   return (
-//     (project.name && project.name.toLowerCase().includes(term)) ||
-//     (project.description && project.description.toLowerCase().includes(term)) ||
-//     (project.type && project.type.toLowerCase().includes(term))
-//   );
-// });
-const term = searchTerm.toLowerCase();
-
-const filteredProjects = projects.filter((project) => {
-  return (
-    project.name?.toLowerCase().includes(term) ||
-    project.description?.toLowerCase().includes(term) ||
-    project.type?.toLowerCase().includes(term)
+  const term = searchTerm.toLowerCase();
+  const filteredProjects = projects.filter(
+    (project) =>
+      project.name?.toLowerCase().includes(term) ||
+      project.description?.toLowerCase().includes(term) ||
+      project.type?.toLowerCase().includes(term),
   );
-});
 
-  // const filteredProjects = projects.filter(
-  //   (project: Project) =>
-  //     project.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //     project.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //     project.type?.toLowerCase().includes(searchTerm.toLowerCase())
-  // );
+  // ── Actions ──────────────────────────────────────────────────────────────────
 
   const openProjectSettings = (project: Project): void => {
     if (!isOwner(project.role)) {
       alert('⚠️ Only owners can edit projects');
       return;
     }
-    setSettingsModalProjectId(project.id as number);
+    setSettingsModalProjectId(project.id);
     setProjectForm({
       name: project.name ?? '',
       description: project.description ?? '',
@@ -216,7 +210,7 @@ const filteredProjects = projects.filter((project) => {
       alert('⚠️ Only owners can delete projects');
       return;
     }
-    setOpenModalId(project.id as number);
+    setOpenModalId(project.id);
   };
 
   const handleInviteClick = (project: Project): void => {
@@ -224,14 +218,15 @@ const filteredProjects = projects.filter((project) => {
       alert('⚠️ Only owners can invite members');
       return;
     }
-    setInviteModal(project.id as number);
+    setInviteModal(project.id);
   };
 
   const validateProjectForm = (): boolean => {
     const errs: Record<string, string> = {};
-    if (!projectForm.name.trim()) errs.name = "Project name is required";
-    else if (projectForm.name.length < 3) errs.name = "At least 3 characters";
-    if ((projectForm.description?.length ?? 0) > 100) errs.description = "Max 100 characters";
+    if (!projectForm.name.trim()) errs.name = 'Project name is required';
+    else if (projectForm.name.length < 3) errs.name = 'At least 3 characters';
+    if ((projectForm.description?.length ?? 0) > 100)
+      errs.description = 'Max 100 characters';
     setProjectErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -240,51 +235,73 @@ const filteredProjects = projects.filter((project) => {
     if (!validateProjectForm()) return;
     setIsProjectSubmitting(true);
     try {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('No token');
-
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${settingsModalProjectId}`,
         {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
+          headers: authHeaders(true),
           body: JSON.stringify(projectForm),
-        }
+        },
       );
-
       if (!res.ok) {
         const errorText = await res.text();
         throw new Error(errorText || `HTTP ${res.status}`);
       }
-
-      const updated: Project = await res.json() as Project;
+      const updated: Project = await res.json();
       updateProject(updated);
       setSettingsModalProjectId(null);
       alert('✅ Project updated!');
-    } catch (error) {
-      const err = error as Error;
-      console.error('Update failed:', err);
-      setProjectErrors({ submit: err.message || 'Failed to update project' });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to update project';
+      console.error('Update failed:', message);
+      setProjectErrors({ submit: message });
     } finally {
       setIsProjectSubmitting(false);
     }
   };
 
-  const currentProject = projects.find((p: Project) => p.id === settingsModalProjectId);
+  const handleSendInvite = async (email: string): Promise<void> => {
+    const trimmed = email?.trim();
+    if (!trimmed?.includes('@')) {
+      alert('⚠️ Invalid email');
+      return;
+    }
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${inviteModal}/invite`,
+        {
+          method: 'POST',
+          headers: authHeaders(true),
+          body: JSON.stringify({ email: trimmed }),
+        },
+      );
+      if (!res.ok) {
+        const text = await res.text();
+        alert(text.includes('already') ? 'ℹ️ Already invited' : `❌ ${text}`);
+        return;
+      }
+      alert('✅ Invitation sent!');
+      setInviteModal(null);
+      fetchProjects();
+    } catch {
+      alert('❌ Network error');
+    }
+  };
+
+  // ── Derived ──────────────────────────────────────────────────────────────────
+
+  // No type annotation on the predicate — TypeScript infers Project from context
+  const currentProject = projects.find((p) => p.id === settingsModalProjectId);
+  const deleteModalProject = projects.find((p) => p.id === openModalId);
+  const inviteModalProject = projects.find((p) => p.id === inviteModal);
+
   const anyModalOpen =
     openModalId !== null || inviteModal !== null || settingsModalProjectId !== null;
 
-  // Suppress unused variable warning for router/isReady if not yet used
-  void router;
-  void isReady;
-  void membersLoading;
+  // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/60">
-      {/* Backdrop */}
       {anyModalOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
@@ -322,66 +339,36 @@ const filteredProjects = projects.filter((project) => {
       </div>
 
       {/* Delete Modal */}
-      {openModalId !== null && projects.find((p: Project) => p.id === openModalId) && (
+      {openModalId !== null && deleteModalProject && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-auto">
           <RemoveModal
             removeQueue={deleteProject}
-            customer={projects.find((p: Project) => p.id === openModalId)!}
+            customer={{ id: String(deleteModalProject.id), name: deleteModalProject.name }}
             onClose={() => setOpenModalId(null)}
-            currentUserId={user?.id ?? ""}
-            currentUserEmail={user?.email ?? ""}
+            currentUserId={user?.id ?? ''}
+            currentUserEmail={user?.email ?? ''}
           />
         </div>
       )}
 
       {/* Invite Modal */}
-      {inviteModal !== null && projects.find((p: Project) => p.id === inviteModal) && (
+      {inviteModal !== null && inviteModalProject && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-auto">
           <InviteModal
             isOpen={true}
             projectId={String(inviteModal)}
             customer={{
-              id: inviteModal.toString(),
-              name: projects.find((p: Project) => p.id === inviteModal)?.name ?? 'Project',
+              id: String(inviteModal),
+              name: inviteModalProject.name,
             }}
-            currentUserId={user?.id ?? ""}
+            currentUserId={user?.id ?? ''}
             members={projectMembers}
             removingMemberId={removingMemberId}
             updatingMemberId={updatingMemberId}
             setRemovingMemberId={setRemovingMemberId}
             setUpdatingMemberId={setUpdatingMemberId}
             onClose={() => setInviteModal(null)}
-            onInvite={async (email: string) => {
-              const trimmed = email?.trim();
-              if (!trimmed?.includes('@')) {
-                alert('⚠️ Invalid email');
-                return;
-              }
-              try {
-                const token = localStorage.getItem('token');
-                const res = await fetch(
-                  `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${inviteModal}/invite`,
-                  {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      Authorization: `Bearer ${token ?? ''}`,
-                    },
-                    body: JSON.stringify({ email: trimmed }),
-                  }
-                );
-                if (!res.ok) {
-                  const text = await res.text();
-                  alert(text.includes('already') ? 'ℹ️ Already invited' : `❌ ${text}`);
-                  return;
-                }
-                alert('✅ Invitation sent!');
-                setInviteModal(null);
-                fetchProjects();
-              } catch {
-                alert('❌ Network error');
-              }
-            }}
+            onInvite={handleSendInvite}
             onUpdateMember={handleUpdateRole}
             onRemoveMember={handleRemoveMember}
           />
@@ -394,6 +381,7 @@ const filteredProjects = projects.filter((project) => {
         projectTypes={projectTypes}
         isProjectSubmitting={isProjectSubmitting}
         projectErrors={projectErrors}
+        settingsModalProjectId={settingsModalProjectId}
         currentProject={currentProject}
         isOwner={isOwner}
         projectForm={projectForm}
