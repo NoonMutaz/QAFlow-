@@ -1,14 +1,10 @@
 'use client';
 
 import React from 'react';
+// ✅ Import Project from context — no local redefinition
+import { type Project } from '../../context/ProjectContext';
 
-export interface Project {
-  id: number ;
-  name: string;
-  description?: string;
-  role: "owner" | "member" | "viewer";
-  type?: string;
-}
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Status {
   label: string;
@@ -51,6 +47,8 @@ interface ActionBtnProps {
   danger?: boolean;
 }
 
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export default function ProjectCard({
   handleDeleteClick,
   handleInviteClick,
@@ -81,7 +79,9 @@ export default function ProjectCard({
     if (filteredProjects.length === 0 && searchTerm) {
       return (
         <div className="col-span-full py-20 text-center">
-          <p className="text-gray-500 font-medium">No results for &quot;{searchTerm}&quot;</p>
+          <p className="text-gray-500 font-medium">
+            No results for &quot;{searchTerm}&quot;
+          </p>
           <button
             onClick={() => setSearchTerm('')}
             className="mt-4 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm"
@@ -113,7 +113,8 @@ export default function ProjectCard({
           const projectQueue: QueueItem[] = queue?.[project.id] ?? [];
           const bugCount = projectQueue.length;
           const fixedCount = projectQueue.filter((b) => b.status === 'fixed').length;
-          const owner = isOwner(project.role);
+          // role is optional in ProjectContext.Project — default to non-owner
+          const owner = isOwner(project.role ?? '');
 
           return (
             <div
@@ -128,7 +129,9 @@ export default function ProjectCard({
                     {project.name?.[0]?.toUpperCase() ?? '?'}
                   </div>
                   <div className="min-w-0">
-                    <h3 className="font-semibold text-gray-900 truncate">{project.name}</h3>
+                    <h3 className="font-semibold text-gray-900 truncate">
+                      {project.name}
+                    </h3>
                     <p className="text-xs text-gray-500 line-clamp-2">
                       {project.description ?? 'No description'}
                     </p>
@@ -217,6 +220,8 @@ export default function ProjectCard({
     </div>
   );
 }
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function Metric({ label, value, danger, success }: MetricProps) {
   return (

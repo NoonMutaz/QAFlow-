@@ -1,14 +1,10 @@
 'use client';
 
 import React from 'react';
+// ✅ Import Project from context — no local redefinition
+import { type Project } from '../../context/ProjectContext';
 
-export interface Project {
-  id: number ;
-  name: string;
-  description?: string;
-  role: "owner" | "member" | "viewer";
-  type?: string;
-}
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface ProjectForm {
   name: string;
@@ -29,6 +25,8 @@ interface CreateProjectFormProps {
   setSettingsModalProjectId: (id: number | null) => void;
 }
 
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export default function CreateProjectForm({
   handleUpdateProject,
   projectTypes,
@@ -41,11 +39,11 @@ export default function CreateProjectForm({
   setProjectForm,
   setSettingsModalProjectId,
 }: CreateProjectFormProps) {
-  // Guard: only render when modal is open and the current user is owner
+  // role is optional in ProjectContext.Project — default to '' so isOwner returns false
   if (
     settingsModalProjectId == null ||
     !currentProject ||
-    !isOwner(currentProject.role)
+    !isOwner(currentProject.role ?? '')
   ) {
     return null;
   }
@@ -178,8 +176,8 @@ export default function CreateProjectForm({
           <div className="flex gap-3 pt-4">
             <button
               onClick={() => setSettingsModalProjectId(null)}
-              className="flex-1 py-2.5 border border-gray-200 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-50 hover:shadow-sm transition-all"
               disabled={isProjectSubmitting}
+              className="flex-1 py-2.5 border border-gray-200 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-50 hover:shadow-sm transition-all"
             >
               Cancel
             </button>
