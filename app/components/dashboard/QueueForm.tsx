@@ -1,9 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from "react";
-import { useAuthContext } from "@/app/context/AuthContext";
+import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
+import { useAuthContext } from '@/app/context/AuthContext';
 
-type Priority = "High" | "Medium" | "Low";
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type Priority = 'High' | 'Medium' | 'Low';
 
 interface NewCustomer {
   name: string;
@@ -22,107 +25,129 @@ interface QueueFormProps {
   projectId: string;
 }
 
+// ─── SSR-safe token helper ────────────────────────────────────────────────────
+
+function getToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return window.localStorage.getItem('token');
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
   const { user } = useAuthContext();
+
+  const currentUserName = user?.name ?? 'Current User';
+
   const [formData, setFormData] = useState<NewCustomer>({
-    name: "",
-    priority: "Medium",
-    url: "",
-    expectedResult: "",
-    actualResult: "",
-    description: "",
-    note: "",
-    bugId: "",
+    name: currentUserName,
+    priority: 'Medium',
+    url: '',
+    expectedResult: '',
+    actualResult: '',
+    description: '',
+    note: '',
+    bugId: '',
     attachment: null,
   });
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
 
-  //   Store current user name
-  const currentUserName = user?.name || "Current User";
-
-  //  Update formData when user changes
+  // Keep name in sync with authenticated user
   useEffect(() => {
-    setFormData(prev => ({ 
-      ...prev, 
-      name: currentUserName 
-    }));
+    setFormData((prev) => ({ ...prev, name: currentUserName }));
+  }, [currentUserName]);
+
+  const resetForm = useCallback((): void => {
+    setFormData({
+      name: currentUserName,
+      priority: 'Medium',
+      url: '',
+      expectedResult: '',
+      actualResult: '',
+      description: '',
+      note: '',
+      bugId: '',
+      attachment: null,
+    });
+    setError('');
   }, [currentUserName]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    if (e.target.name === "name") return; // Prevent changing name
-    
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ): void => {
+    // name is read-only — driven by auth context
+    if (e.target.name === 'name') return;
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      attachment: e.target.files ? e.target.files[0] : null,
-    });
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    setFormData((prev) => ({
+      ...prev,
+      attachment: e.target.files?.[0] ?? null,
+    }));
   };
 
-  //   Reset function that preserves user name
-  const resetForm = useCallback(() => {
-    setFormData({
-      name: currentUserName,  //   Always use current user
-      priority: "Medium",
-      url: "",
-      expectedResult: "",
-      actualResult: "",
-      description: "",
-      note: "",
-      bugId: "",
-      attachment: null,
-    });
-    setError("");
-  }, [currentUserName]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      setError("Reported By is required");
+      setError('Reported By is required');
       return;
     }
 
     setUploading(true);
-    setError("");
+    setError('');
 
     try {
-      const newBugId = await onAdd({ ...formData, bugId: "" });
+      const newBugId = await onAdd({ ...formData, bugId: '' });
 
       if (formData.attachment && newBugId) {
-        const token = localStorage.getItem("token");
+        const token = getToken();
         const fd = new FormData();
-        fd.append("file", formData.attachment);
+        fd.append('file', formData.attachment);
 
         await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/bugs/${newBugId}/upload`,
           {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
+            method: 'POST',
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
             body: fd,
-          }
+          },
         );
       }
 
-      resetForm(); //   Use reset function
-    } catch (err: any) {
-      setError(err.message || "Failed to add bug");
+      resetForm();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to add bug';
+      setError(message);
     } finally {
       setUploading(false);
     }
   };
 
+  // Build a stable object-URL for the attachment preview.
+  // Revoke it on cleanup to avoid memory leaks.
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!formData.attachment) {
+      setPreviewSrc(null);
+      return;
+    }
+    const url = URL.createObjectURL(formData.attachment);
+    setPreviewSrc(url);
+    return () => URL.revokeObjectURL(url);
+  }, [formData.attachment]);
+
   return (
     <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5">
         <h2 className="text-lg font-semibold text-gray-800">Add New Bug</h2>
 
-        {/* Reported By - READ ONLY */}
+        {/* Reported By — read-only */}
         <div>
           <label className="text-sm font-medium text-gray-700">Reported By</label>
           <input
@@ -151,9 +176,11 @@ export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
           </select>
         </div>
 
-        {/* Rest of form unchanged... */}
+        {/* URL */}
         <div>
-          <label className="text-sm font-medium text-gray-700">URL <span className="text-red-500">*</span></label>
+          <label className="text-sm font-medium text-gray-700">
+            URL <span className="text-red-500">*</span>
+          </label>
           <input
             name="url"
             value={formData.url}
@@ -166,13 +193,15 @@ export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
           />
         </div>
 
+        {/* Expected Result */}
         <div>
-          <label className="text-sm font-medium text-gray-700">Expected Result <span className="text-red-500">*</span></label>
+          <label className="text-sm font-medium text-gray-700">
+            Expected Result <span className="text-red-500">*</span>
+          </label>
           <textarea
-            name="expectedResult" 
-             required
+            name="expectedResult"
+            required
             value={formData.expectedResult}
-          
             onChange={handleChange}
             rows={2}
             placeholder="What should happen..."
@@ -181,21 +210,24 @@ export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
           />
         </div>
 
+        {/* Actual Result */}
         <div>
-          <label className="text-sm font-medium text-gray-700">Actual Result <span className="text-red-500">*</span></label>
+          <label className="text-sm font-medium text-gray-700">
+            Actual Result <span className="text-red-500">*</span>
+          </label>
           <textarea
             name="actualResult"
             required
             value={formData.actualResult}
             onChange={handleChange}
             rows={2}
-           
             placeholder="What actually happened..."
             className="w-full mt-1 px-3 py-2 border rounded-lg text-sm resize-vertical focus:ring-2 focus:ring-blue-500"
             disabled={uploading}
           />
         </div>
 
+        {/* Description */}
         <div>
           <label className="text-sm font-medium text-gray-700">Description</label>
           <textarea
@@ -209,6 +241,7 @@ export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
           />
         </div>
 
+        {/* Note */}
         <div>
           <label className="text-sm font-medium text-gray-700">Note</label>
           <textarea
@@ -222,8 +255,11 @@ export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
           />
         </div>
 
+        {/* Screenshot / Video */}
         <div>
-          <label className="text-sm font-medium text-gray-700">Screenshot / Video (Optional)</label>
+          <label className="text-sm font-medium text-gray-700">
+            Screenshot / Video (Optional)
+          </label>
           <input
             type="file"
             accept="image/*,video/*"
@@ -231,14 +267,29 @@ export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
             disabled={uploading}
             className="mt-1 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 w-full text-sm"
           />
-          {formData.attachment && (
+
+          {formData.attachment && previewSrc && (
             <div className="mt-2 p-2 bg-gray-50 rounded-lg">
-              {formData.attachment.type.startsWith("video/") ? (
-                <video src={URL.createObjectURL(formData.attachment)} controls className="max-h-32 w-full rounded border object-contain" />
+              {formData.attachment.type.startsWith('video/') ? (
+                <video
+                  src={previewSrc}
+                  controls
+                  className="max-h-32 w-full rounded border object-contain"
+                />
               ) : (
-                <img src={URL.createObjectURL(formData.attachment)} alt="Preview" className="max-h-32 w-full object-contain rounded border" />
+                <div className="relative w-full h-32">
+                  <Image
+                    src={previewSrc}
+                    alt="Preview"
+                    fill
+                    className="object-contain rounded border"
+                    sizes="(max-width: 640px) 100vw, 400px"
+                  />
+                </div>
               )}
-              <p className="text-xs text-gray-500 mt-1 truncate">{formData.attachment.name}</p>
+              <p className="text-xs text-gray-500 mt-1 truncate">
+                {formData.attachment.name}
+              </p>
             </div>
           )}
         </div>
@@ -256,11 +307,11 @@ export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
         >
           {uploading ? (
             <span className="flex items-center justify-center gap-2">
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               Adding Bug...
             </span>
           ) : (
-            "Add Bug"
+            'Add Bug'
           )}
         </button>
       </form>
