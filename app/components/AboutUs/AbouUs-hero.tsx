@@ -61,7 +61,7 @@ export default function AboutUsHero() {
 
           <div className="rounded-2xl border border-gray-200 shadow-sm overflow-hidden bg-white">
             <img
-              src="https://datafloq.com/wp-content/uploads/2021/12/blog_pictures2FQuality_Assurance_Testing_8xXpzGg.jpg"
+              src="./QAdashboard.png"
               alt="QA dashboard preview"
               className="w-full object-cover"
             />

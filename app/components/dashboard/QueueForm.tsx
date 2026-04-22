@@ -23,6 +23,8 @@ interface NewCustomer {
 interface QueueFormProps {
   onAdd: (data: NewCustomer) => Promise<number>;
   projectId: string;
+  // Role comes from the project, not the user object
+  currentUserRole?: 'owner' | 'member' | 'viewer' | string;
 }
 
 // ─── SSR-safe token helper ────────────────────────────────────────────────────
@@ -34,10 +36,17 @@ function getToken(): string | null {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
+export default function QueueForm({
+  onAdd,
+  projectId,
+  currentUserRole = 'viewer',
+}: QueueFormProps) {
   const { user } = useAuthContext();
 
   const currentUserName = user?.name ?? 'Current User';
+
+  //   Only owner and member can add bugs — viewer cannot
+  const canAddBug = currentUserRole === 'owner' || currentUserRole === 'member';
 
   const [formData, setFormData] = useState<NewCustomer>({
     name: currentUserName,
@@ -52,11 +61,23 @@ export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
   });
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
 
   // Keep name in sync with authenticated user
   useEffect(() => {
     setFormData((prev) => ({ ...prev, name: currentUserName }));
   }, [currentUserName]);
+
+  // Stable object-URL for attachment preview — revoked on cleanup
+  useEffect(() => {
+    if (!formData.attachment) {
+      setPreviewSrc(null);
+      return;
+    }
+    const url = URL.createObjectURL(formData.attachment);
+    setPreviewSrc(url);
+    return () => URL.revokeObjectURL(url);
+  }, [formData.attachment]);
 
   const resetForm = useCallback((): void => {
     setFormData({
@@ -74,12 +95,9 @@ export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
   }, [currentUserName]);
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ): void => {
-    // name is read-only — driven by auth context
-    if (e.target.name === 'name') return;
+    if (e.target.name === 'name') return; // name is read-only
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
@@ -92,6 +110,7 @@ export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
+    if (!canAddBug) return; // extra safety guard
 
     if (!formData.name.trim()) {
       setError('Reported By is required');
@@ -108,7 +127,6 @@ export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
         const token = getToken();
         const fd = new FormData();
         fd.append('file', formData.attachment);
-
         await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/bugs/${newBugId}/upload`,
           {
@@ -128,19 +146,29 @@ export default function QueueForm({ onAdd, projectId }: QueueFormProps) {
     }
   };
 
-  // Build a stable object-URL for the attachment preview.
-  // Revoke it on cleanup to avoid memory leaks.
-  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+  // ── Viewer blocked state ──────────────────────────────────────────────────
 
-  useEffect(() => {
-    if (!formData.attachment) {
-      setPreviewSrc(null);
-      return;
-    }
-    const url = URL.createObjectURL(formData.attachment);
-    setPreviewSrc(url);
-    return () => URL.revokeObjectURL(url);
-  }, [formData.attachment]);
+  if (!canAddBug) {
+    return (
+      <div className="bg-white p-6 rounded-xl shadow border border-gray-100 flex flex-col items-center justify-center gap-3 min-h-[200px] text-center">
+        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+          {/* <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M12 15v2m0 0v2m0-2h2m-2 0H10m2-6V7a4 4 0 00-8 0v4H3a1 1 0 00-1 1v6a1 1 0 001 1h14a1 1 0 001-1v-6a1 1 0 00-1-1h-1V7a4 4 0 00-4-4z" />
+          </svg> */}
+          !
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-gray-700">View Only</p>
+          <p className="text-xs text-gray-400 mt-1">
+            Only owners and members can add bugs.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Form (owner / member) ─────────────────────────────────────────────────
 
   return (
     <div className="bg-white p-6 rounded-xl shadow border border-gray-100">

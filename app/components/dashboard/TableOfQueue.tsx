@@ -7,7 +7,7 @@ import Link from "next/link";
 
 type Status = "notFixed" | "in-progress" | "fixed";
 type Priority = "High" | "Medium" | "Low";
-type UserRole = "owner" | "member" | "viewer" | string;
+type UserRole = "owner" | "member" | "viewer" ;
 
 function RoleHeader(){
   return(

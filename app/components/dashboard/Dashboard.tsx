@@ -1,39 +1,45 @@
-'use client';
+"use client";
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
-import { useProjects } from '../../context/ProjectContext';
-import { useQueueContext } from '../../context/QueueContext';
-import QueueForm from './QueueForm';
-import TableOfQueue from './TableOfQueue';
-import Chart from './Chart';
-import PieChart from './PieChart';
-import KpiSection from './KpiSection';
-import DashboardSearchBar from './DashboardSearchBar';
-import DashboardHeader from './DashboardHeader';
-import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
-import { useParams } from 'next/navigation';
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { useProjects } from "../../context/ProjectContext";
+import { useQueueContext } from "../../context/QueueContext";
+import QueueForm from "./QueueForm";
+import TableOfQueue from "./TableOfQueue";
+import Chart from "./Chart";
+import PieChart from "./PieChart";
+import KpiSection from "./KpiSection";
+import DashboardSearchBar from "./DashboardSearchBar";
+import DashboardHeader from "./DashboardHeader";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+import { useParams } from "next/navigation";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Status = 'notFixed' | 'in-progress' | 'fixed';
-type Priority = 'High' | 'Medium' | 'Low';
+type Status = "notFixed" | "in-progress" | "fixed";
+type Priority = "High" | "Medium" | "Low";
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
   const params = useParams();
-  const id = Array.isArray(params.id) ? params.id[0] : (params.id ?? '');
+  const id = Array.isArray(params.id) ? params.id[0] : (params.id ?? "");
 
   const { projects } = useProjects();
-  const { queue, addQueue, removeQueue, updateQueue, updatePriorityQueue, fetchBugs } =
-    useQueueContext();
+  const {
+    queue,
+    addQueue,
+    removeQueue,
+    updateQueue,
+    updatePriorityQueue,
+    fetchBugs,
+  } = useQueueContext();
 
   const projectQueue = queue[id] ?? [];
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [select, setSelect] = useState<Status | ''>('');
-  const [selectP, setSelectP] = useState<Priority | ''>('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [select, setSelect] = useState<Status | "">("");
+  const [selectP, setSelectP] = useState<Priority | "">("");
 
   // fetchBugs wrapped in useCallback inside QueueContext so it's stable
   const stableFetchBugs = useCallback(() => {
@@ -53,8 +59,8 @@ export default function Dashboard() {
         customer.bugId.toLowerCase().includes(term) ||
         customer.description.toLowerCase().includes(term);
 
-      const matchesStatus = select === '' || customer.status === select;
-      const matchesPriority = selectP === '' || customer.priority === selectP;
+      const matchesStatus = select === "" || customer.status === select;
+      const matchesPriority = selectP === "" || customer.priority === selectP;
 
       return matchesSearch && matchesStatus && matchesPriority;
     });
@@ -62,25 +68,28 @@ export default function Dashboard() {
 
   const exportToExcel = (): void => {
     const data = projectQueue.map((customer) => ({
-      'Bug ID': customer.bugId,
-      'Reported By': customer.name,
+      "Bug ID": customer.bugId,
+      "Reported By": customer.name,
       Description: customer.description,
       Priority: customer.priority,
       URL: customer.url,
-      'Expected Result': customer.expectedResult,
-      'Actual Result': customer.actualResult,
+      "Expected Result": customer.expectedResult,
+      "Actual Result": customer.actualResult,
       Status: customer.status,
       Note: customer.note,
-      'Created At': new Date(customer.createdAt).toLocaleString(),
+      "Created At": new Date(customer.createdAt).toLocaleString(),
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Queue');
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Queue");
 
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
-    saveAs(blob, 'Queue.xlsx');
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
+    const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
+    saveAs(blob, "Queue.xlsx");
   };
 
   const project = projects.find((p) => p.id.toString() === id);
@@ -121,6 +130,7 @@ export default function Dashboard() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-8">
             <QueueForm
               projectId={String(project.id)}
+              currentUserRole={project.role}
               onAdd={(customer) => addQueue(String(project.id), customer)}
             />
           </div>
@@ -128,7 +138,10 @@ export default function Dashboard() {
       </div>
 
       {/* Search */}
-      <DashboardSearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+      <DashboardSearchBar
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+      />
 
       {/* Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
