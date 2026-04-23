@@ -94,7 +94,7 @@ export default function Dashboard() {
 
   const project = projects.find((p) => p.id.toString() === id);
 
-  // All hooks must be called before any conditional return
+ 
   if (!project) {
     return (
       <div className="min-h-screen flex items-center justify-center">

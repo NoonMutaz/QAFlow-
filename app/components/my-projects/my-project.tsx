@@ -9,7 +9,7 @@ import { useQueueContext } from '../../context/QueueContext';
 import MyProjectHeader from './MyProjectHeader';
 import ProjectCard from './ProjectCard';
 import { useAuthContext } from '../../context/AuthContext';
-import CreateProjectForm from './CreateProjectForm';
+import CreateProjectForm from './EditProjectForm';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -166,8 +166,7 @@ const [projectMembers, setProjectMembers] = useState<Member[]>([]);
     }
   }, [projects, fetchBugs]);
 
-  // ── Helpers ──────────────────────────────────────────────────────────────────
-
+ 
   const getProjectStatus = (
     projectId: string | number,
   ): { label: string; color: string } => {
@@ -288,7 +287,7 @@ const [projectMembers, setProjectMembers] = useState<Member[]>([]);
     }
   };
 
-  // ── Derived ──────────────────────────────────────────────────────────────────
+  // ── Derived 
 
   // No type annotation on the predicate — TypeScript infers Project from context
   const currentProject = projects.find((p) => p.id === settingsModalProjectId);

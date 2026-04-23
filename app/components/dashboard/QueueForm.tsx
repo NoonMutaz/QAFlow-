@@ -152,10 +152,7 @@ export default function QueueForm({
     return (
       <div className="bg-white p-6 rounded-xl shadow border border-gray-100 flex flex-col items-center justify-center gap-3 min-h-[200px] text-center">
         <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-          {/* <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M12 15v2m0 0v2m0-2h2m-2 0H10m2-6V7a4 4 0 00-8 0v4H3a1 1 0 00-1 1v6a1 1 0 001 1h14a1 1 0 001-1v-6a1 1 0 00-1-1h-1V7a4 4 0 00-4-4z" />
-          </svg> */}
+ 
           !
         </div>
         <div>

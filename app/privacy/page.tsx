@@ -296,7 +296,7 @@ export default function PrivacyPolicy() {
             
             <div className="text-center pt-6 border-t border-amber-200">
               <p className="text-sm text-gray-600 mb-4">
-                Last updated: <strong>December 15, 2024</strong>
+                Last updated: <strong>April 15, 2026</strong>
               </p>
               <p className="text-xs text-gray-500">
                 Questions? <a href="mailto:privacy@yourapp.com" className="text-blue-600 hover:text-blue-700 font-medium underline">privacy@yourapp.com</a>

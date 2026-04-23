@@ -35,7 +35,7 @@ export default function DashboardHeader({ project, id, queue }: DashboardHeaderP
 
         <div className="w-full">
           <p className="text-xs sm:text-sm md:text-base text-gray-500 mt-1 leading-snug break-words">
-            {project.description ?? 'Monitor bugs, test cases, and status in real time'}
+            {project.description || 'Monitor bugs, test cases, and status in real time'}
           </p>
         </div>
       </div>

@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useAuthContext } from './AuthContext';
 import { useQueueContext } from './QueueContext';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 export interface Project {
   id: number;
   name: string;
@@ -27,7 +25,7 @@ handleOpenProject: (id: string | number) => void;
   isLoading: boolean;
 }
 
-// ─── SSR-safe localStorage ────────────────────────────────────────────────────
+//  SSR safe localStorage 
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -50,7 +48,7 @@ function normalizeProject(p: unknown): Project | null {
   );
 
   if (!id || isNaN(id)) {
-    console.error('❌ Invalid project ID from API:', p);
+    console.error(' Invalid project ID from API:', p);
     return null;
   }
 
@@ -96,8 +94,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   const API = process.env.NEXT_PUBLIC_API_URL ?? '';
 
-  // ── Fetch ──────────────────────────────────────────────────────────────────
-
+  // ── Fetch 
   const fetchProjects = useCallback(async (): Promise<void> => {
     if (!token) {
       setProjects([]);
@@ -132,18 +129,18 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         router.push('/login');
         setProjects([]);
       } else {
-        console.error('❌ Fetch failed:', await res.text());
+        console.error(' Fetch failed:', await res.text());
         setProjects([]);
       }
     } catch (err) {
-      console.error('❌ Network error:', err);
+      console.error(' Network error:', err);
       setProjects([]);
     } finally {
       setIsLoading(false);
     }
   }, [token, API, router]);
 
-  // ── Effects ────────────────────────────────────────────────────────────────
+  // Effects 
 
   useEffect(() => {
     if (token) void fetchProjects();
@@ -193,7 +190,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         setProjects((prev) => prev.filter((p) => p.id !== id));
       }
     } catch (err) {
-      console.error('❌ Delete failed:', err);
+      console.error(' Delete failed:', err);
     }
   };
 
