@@ -1,26 +1,26 @@
 "use client";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthContext } from "../context/AuthContext";
 import { useQueueContext } from "../context/QueueContext";
 import { useProjects } from "../context/ProjectContext";
 
-const API = `${process.env.NEXT_PUBLIC_API_URL}/api/auth`;
+const API = `${process.env.NEXT_PUBLIC_API_URL ?? ""}/api/auth`;
 
 export function useAuth() {
   const router = useRouter();
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  
-  //  Single context destructuring
+
   const { setAuth, clearAuth } = useAuthContext();
   const { clearQueue } = useQueueContext();
   const { clearProjects } = useProjects();
 
   const login = async (email: string, password: string) => {
     setLoading(true);
-    setError(""); //  Clear previous errors
-    
+    setError("");
+
     try {
       const res = await fetch(`${API}/login`, {
         method: "POST",
@@ -28,26 +28,23 @@ export function useAuth() {
         body: JSON.stringify({ email, password }),
       });
 
+      const data = await res.json().catch(() => null);
+
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Invalid credentials");
+        throw new Error(data?.message || "Invalid credentials");
       }
 
-      const data = await res.json();
-
-      //   Clear data ONLY after successful login
       clearQueue();
       clearProjects();
-      
-      //   Set auth state
+
       setAuth(data.user, data.token);
 
-      //   Set cookie
       document.cookie = `token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}`;
 
       router.push("/my-projects");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Login failed";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -55,8 +52,8 @@ export function useAuth() {
 
   const register = async (name: string, email: string, password: string) => {
     setLoading(true);
-    setError(""); //  Clear previous errors
-    
+    setError("");
+
     try {
       const res = await fetch(`${API}/register`, {
         method: "POST",
@@ -64,16 +61,16 @@ export function useAuth() {
         body: JSON.stringify({ name, email, password }),
       });
 
+      const data = await res.json().catch(() => null);
+
       if (!res.ok) {
-        const text = await res.text();
-        console.error("Register error:", text);
-        throw new Error(text || "Registration failed");
+        throw new Error(data?.message || "Registration failed");
       }
 
-      //  Success - redirect to login
       router.push("/login");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Registration failed";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -83,6 +80,7 @@ export function useAuth() {
     clearAuth();
     clearQueue();
     clearProjects();
+
     document.cookie = "token=; path=/; max-age=0";
     router.push("/login");
   };
