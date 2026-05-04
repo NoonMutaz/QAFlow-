@@ -213,6 +213,9 @@ const plans = [
                       className="px-4 py-2 text-sm font-medium text-blue-600 border border-blue-200 rounded-xl hover:bg-blue-50 transition-all"
                     >
                       Edit Profile
+                   <span className="text-xs text-red-500 ml-2">
+                     (Feature in development)
+                    </span>   
                     </button>
                   ) : (
                     <div className="flex gap-2">
@@ -282,9 +285,11 @@ const plans = [
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-red-50 border border-red-200 rounded-xl gap-3">
                     <div>
                       <p className="text-sm font-semibold text-gray-900">Delete Account</p>
-                      <p className="text-xs text-gray-500 mt-0.5">Permanently delete your account and all data</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Permanently delete your account and all data    <span className="text-xs text-red-500 ml-2">
+                     (Feature in development)
+                    </span>   </p>
                     </div>
-                    <button className="px-4 py-2 text-sm font-semibold text-red-600 border border-red-300 rounded-xl hover:bg-red-100 transition-all whitespace-nowrap">
+                    <button disabled className="px-4 py-2 text-sm font-semibold text-red-600 border border-red-300 rounded-xl hover:bg-red-100 transition-all whitespace-nowrap">
                       Delete Account
                     </button>
                   </div>
@@ -369,6 +374,9 @@ const plans = [
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     Payment processing coming soon. Plans are shown for preview purposes.
+                       <span className="text-xs text-red-500 ml-2">
+                     (Feature in development)
+                    </span>   
                   </p>
                 </div>
               </div>

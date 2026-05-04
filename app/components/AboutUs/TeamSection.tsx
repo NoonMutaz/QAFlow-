@@ -9,8 +9,8 @@ export default function TeamSection() {
         "https://tse4.mm.bing.net/th/id/OIP._CaPhpRAjmgPpYL4Y9vXkwHaE8?rs=1&pid=ImgDetMain&o=7&rm=3",
       highlight: true,
       socials: [
-        { name: "LinkedIn", icon: " ", link: "#" },
-        { name: "GitHub", icon: " ", link: "#" },
+        { name: "LinkedIn", icon: "LinkdIn", link: "https://www.linkedin.com/in/noon-almutaz-059a61267" },
+       // { name: "GitHub", icon: " ", link: "#" },
       ],
     },
     {
@@ -19,8 +19,8 @@ export default function TeamSection() {
       photo:
         "https://tse4.mm.bing.net/th/id/OIP._CaPhpRAjmgPpYL4Y9vXkwHaE8?rs=1&pid=ImgDetMain&o=7&rm=3",
       socials: [
-        { name: "LinkedIn", icon: " ", link: "#" },
-        { name: "Twitter", icon: " ", link: "#" },
+        { name: "LinkedIn", icon: "LinkdIn", link: "https://www.linkedin.com/posts/taif-alrashidi-0bba08378_softwaretesting-qa-tricentis-share-7454705907478900736-uMdh?utm_source=share&utm_medium=member_desktop&rcm=ACoAAEF5VQUBLEcNESuw26oBof7jqW3y688farM" },
+       // { name: "Twitter", icon: " ", link: "#" },
       ],
     },
   ];
@@ -75,7 +75,7 @@ export default function TeamSection() {
                 <a
                   key={social.name}
                   href={social.link}
-                  className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-lg
+                  className="  h-9 flex items-center justify-center bg-rounded p-2 bg-gray-100 text-lg text-primary
                              hover:bg-gray-900 hover:text-white transition"
                   title={social.name}
                 >
