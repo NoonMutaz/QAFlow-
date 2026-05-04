@@ -36,12 +36,15 @@ export function useAuth() {
 
       clearQueue();
       clearProjects();
+localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
 
+    
       setAuth(data.user, data.token);
 
       document.cookie = `token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}`;
 
-      router.push("/");
+      window.location.href = "/my-projects";
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Login failed";
       setError(message);
