@@ -41,7 +41,7 @@ export function useAuth() {
 
       document.cookie = `token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}`;
 
-      router.push("/my-projects");
+      router.push("/");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Login failed";
       setError(message);
