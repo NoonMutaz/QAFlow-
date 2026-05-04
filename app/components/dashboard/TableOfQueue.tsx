@@ -540,7 +540,7 @@ const canDelete = ["owner"].includes(currentUserRole);
                         getPriorityColor(customer.priority)
                       }`}
                      onClick={() => handlePriorityToggle(customer.id, customer.priority)}
-                      title={canChangePriority ? "Cycle priority (High→Medium→Low)" : "No permission"}
+                      title={canChangePriority ? "Click to change priority" : "No permission"}
                     >
                       {customer.priority}
                     </button>

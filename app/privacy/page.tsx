@@ -299,7 +299,7 @@ export default function PrivacyPolicy() {
                 Last updated: <strong>April 15, 2026</strong>
               </p>
               <p className="text-xs text-gray-500">
-                Questions? <a href="mailto:privacy@yourapp.com" className="text-blue-600 hover:text-blue-700 font-medium underline">privacy@yourapp.com</a>
+                Questions? <a href="mailto:info@qaflow.com" className="text-blue-600 hover:text-blue-700 font-medium underline">privacy@yourapp.com</a>
               </p>
             </div>
           </div>

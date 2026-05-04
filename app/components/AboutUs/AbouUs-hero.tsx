@@ -35,7 +35,7 @@ export default function AboutUsHero() {
           {/* CTAs */}
           <div className="mt-10 flex flex-col sm:flex-row gap-3">
             <a
-              href="/signup"
+              href="/login"
               className="px-6 py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition text-center"
             >
               Get Started
