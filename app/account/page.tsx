@@ -207,6 +207,8 @@ const plans = [
                   <h2 className="text-lg font-bold text-gray-900">Personal Information</h2>
                   {!isEditing ? (
                     <button
+                    disabled
+                    title='disabled for now'
                       onClick={() => setIsEditing(true)}
                       className="px-4 py-2 text-sm font-medium text-blue-600 border border-blue-200 rounded-xl hover:bg-blue-50 transition-all"
                     >
