@@ -25,6 +25,7 @@ export default function DashboardHeader({ project, id, queue }: DashboardHeaderP
   const activeCount = (queue[id] ?? []).filter(
     (c) => c.status === 'in-progress',
   ).length;
+ //const project = projects.find((p) => p.id.toString() === id);
 
   return (
     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">

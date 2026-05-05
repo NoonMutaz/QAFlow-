@@ -11,7 +11,7 @@ import ProjectCard from './ProjectCard';
 import { useAuthContext } from '../../context/AuthContext';
 import CreateProjectForm from './EditProjectForm';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// Types 
 
 interface Member {
   id: string;
@@ -21,7 +21,7 @@ interface Member {
   joinedAt: string;
 }
 
-// ─── SSR-safe token helper ────────────────────────────────────────────────────
+//  SSR safe token helper
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -68,14 +68,14 @@ const [projectMembers, setProjectMembers] = useState<Member[]>([]);
   const projectTypes = [
     'QA Dashboard',
     'Bug Tracking',
-    'Test Management',
-    'Performance Testing',
-    'Web App',
-    'Mobile App',
-    'API Project',
+    // 'Test Management',
+    // 'Performance Testing',
+    // 'Web App',
+    // 'Mobile App',
+    // 'API Project',
   ];
 
-  // ── Fetch members ────────────────────────────────────────────────────────────
+  // Fetch members 
 
   const fetchProjectMembers = useCallback(async (projectId: number): Promise<void> => {
     if (!projectId) return;
@@ -95,7 +95,7 @@ const [projectMembers, setProjectMembers] = useState<Member[]>([]);
     }
   }, []);
 
-  // ── Update role ──────────────────────────────────────────────────────────────
+  //  Update role
 
   const handleUpdateRole = async (userId: string, role: Member['role']): Promise<void> => {
     if (!inviteModal || !user) return;
@@ -127,7 +127,7 @@ const [projectMembers, setProjectMembers] = useState<Member[]>([]);
     }
   };
 
-  // ── Remove member ────────────────────────────────────────────────────────────
+  //  Remove member 
 
   const handleRemoveMember = async (userId: string): Promise<void> => {
     if (!inviteModal) return;
@@ -152,7 +152,7 @@ const [projectMembers, setProjectMembers] = useState<Member[]>([]);
     }
   };
 
-  // ── Effects ──────────────────────────────────────────────────────────────────
+  //  Effects
 
   useEffect(() => {
     if (inviteModal !== null) {
@@ -190,8 +190,7 @@ const [projectMembers, setProjectMembers] = useState<Member[]>([]);
       project.type?.toLowerCase().includes(term),
   );
 
-  // ── Actions ──────────────────────────────────────────────────────────────────
-
+  // Actions
   const openProjectSettings = (project: Project): void => {
     if (!isOwner(project.role)) {
       alert('⚠️ Only owners can edit projects');
@@ -302,7 +301,7 @@ const [projectMembers, setProjectMembers] = useState<Member[]>([]);
 useEffect(() => {
   setIsOpeningProject(false);
 }, []);
-  // ── Render ───────────────────────────────────────────────────────────────────
+  //  Render
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/60">
@@ -364,7 +363,7 @@ useEffect(() => {
       </div>
 
       {/* Delete Modal */}
-{/* Delete Modal - FIXED */}
+
 {openModalId !== null && deleteModalProject && (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-auto">
     <RemoveModal

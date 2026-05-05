@@ -1,610 +1,169 @@
 "use client";
-import React, { useState, useMemo, useEffect, useCallback } from "react";
-import FilterByStatus from "./FilterByStatus";
+import React, { useState, useEffect, useMemo } from "react";
+import { useQueueContext, Status, Priority } from "../../context/QueueContext";
 import RemoveModal from "./RemoveModal";
+import FilterByStatus from "./FilterByStatus";
 import FilterByPriority from "./FilterByPriority";
-import Link from "next/link";
 
-type Status = "notFixed" | "in-progress" | "fixed";
-type Priority = "High" | "Medium" | "Low";
-type UserRole = "owner" | "member" | "viewer" ;
+// --- Helpers ---
+const isVideo = (url?: string): boolean => {
+  if (!url) return false;
+  return /\.(mp4|webm|ogg|mov|avi)$/i.test(url);
+};
 
-function RoleHeader(){
-  return(
-        <div className="px-6 py-3 bg-gradient-to-r from-emerald-50 to-indigo-50 border-t border-gray-100 rounded-b-xl">
-        <div className="flex flex-wrap gap-3 text-xs">
-          <span className="px-3 py-1.5 bg-emerald-100 text-emerald-800 rounded-full font-semibold shadow-sm border border-emerald-200"> Owner: Full access</span>
-          <span className="px-3 py-1.5 bg-indigo-100 text-indigo-800 rounded-full font-semibold shadow-sm border border-indigo-200"> Member: Edit + Priority + Upload</span>
-          <span className="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full font-semibold shadow-sm border border-blue-200"> Viewer: status only</span>
-        </div>
-      </div>
-  )
-}
-function FilteringHeader({ 
+const PriorityBadge = ({ priority, onClick, disabled }: { priority: Priority; onClick: () => void; disabled: boolean }) => {
+  const styles = {
+    High: "bg-red-500 text-white shadow-red-200",
+    Medium: "bg-amber-400 text-amber-900 shadow-amber-100",
+    Low: "bg-emerald-500 text-white shadow-emerald-200"
+  };
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm transition-transform active:scale-90 ${styles[priority]} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:brightness-110'}`}
+    >
+      {priority}
+    </button>
+  );
+};
+
+// --- Main Component ---
+export default function TableOfQueue({ 
+  filteredQueue, 
+  projectId, 
+  updateQueue, 
+  removeQueue, 
+  updatePriorityQueue, 
+  currentUserRole, 
   select, 
   setSelect, 
   selectP, 
-  setSelectP, 
-  currentUserRole 
-}: { 
-  select: Status | "";
-  setSelect: React.Dispatch<React.SetStateAction<Status | "">>;
-  selectP: Priority | "";
-  setSelectP: React.Dispatch<React.SetStateAction<Priority | "">>;
-  currentUserRole: UserRole;
-}) {
-  return (
-    <div className="px-6 py-4 flex gap-4 flex-wrap items-center bg-gray-50 rounded-t-xl border-b border-gray-200">
-      <FilterByStatus select={select} setSelect={setSelect} />
-      <FilterByPriority setSelectP={setSelectP} selectP={selectP} />
-      <div className="ml-auto flex items-center gap-3 text-sm text-gray-600">
-        <span className="px-2 py-1 bg-gradient-to-r from-indigo-100 to-purple-100 text-xs font-medium rounded-full capitalize border">
-          {currentUserRole}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-interface Customer {
-  id: number;
-  bugId: string;
-  name: string;
-  priority: Priority;
-  status: Status;
-  createdAt: number;
-  url: string;
-  expectedResult: string;
-  actualResult: string;
-  description: string;
-  note: string;
-  attachmentUrl?: string;
-}
-
-interface TableProps {
-  filteredQueue: Customer[];
-  projectId: string;
-  updateQueue: (projectId: string, id: number, status: Status) => void;
-  removeQueue: (projectId: string, id: number) => void;
-  select: Status | "";
-  setSelect: React.Dispatch<React.SetStateAction<Status | "">>;
-  selectP: Priority | "";
-  setSelectP: React.Dispatch<React.SetStateAction<Priority | "">>;
-  updatePriorityQueue: (projectId: string, id: number, newPriority: Priority) => void;
-  currentUserRole?: UserRole;
-    projectQueue: Customer[];
-}
-// Move this OUTSIDE the TableOfQueue component, before the export default
-interface EditableTextareaProps {
-  value: string;
-  field: keyof Customer;
-  customerId: number;
-  projectId: string;
-  canEditTextareas: boolean;
-  placeholder?: string;
-  maxWidth?: string;
-  rows?: number;
-}
-
-const EditableTextarea = React.memo<EditableTextareaProps>(({
-  value,
-  field,
-  customerId,
-  projectId,
-  canEditTextareas,
-  placeholder = "",
-  maxWidth = "max-w-xs",
-  rows = 2,
-}) => {
-  const [localValue, setLocalValue] = useState(value);
-  const [isEditing, setIsEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
-
-  const saveChanges = useCallback(async () => {
-  if (!canEditTextareas || localValue === value) {
-    setIsEditing(false);
-    return;
-  }
-
-  setSaving(true);
-  try {
-    const token = localStorage.getItem("token");
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/bugs/${customerId}`, // Matches [HttpPatch("{bugId}")]
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ 
-          field: field.toLowerCase(),  // "expectedResult" → "expectedresult"
-          value: localValue 
-        }),
-      }
-    );
-
-    if (res.ok) {
-      window.dispatchEvent(
-        new CustomEvent("bug-updated", {
-          detail: { customerId, field: field as string, value: localValue },
-        })
-      );
-    } else {
-      const errorText = await res.text();
-      console.error("API Error:", res.status, errorText);
-      alert(`Failed to save ${field}: ${res.status}`);
-      setLocalValue(value);
-    }
-  } catch (error) {
-    console.error("Save error:", error);
-    alert("Save failed");
-    setLocalValue(value);
-  } finally {
-    setSaving(false);
-    setIsEditing(false);
-  }
-}, [localValue, value, customerId, field, projectId, canEditTextareas]);
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      saveChanges();
-    }
-    if (e.key === "Escape") {
-      setLocalValue(value);
-      setIsEditing(false);
-    }
-  };
-
-  return (
-    <div className={`relative ${maxWidth}`}>
-      {isEditing ? (
-        <textarea
-          value={localValue}
-          onChange={(e) => setLocalValue(e.target.value)}
-          onBlur={saveChanges}
-          onKeyDown={handleKeyDown}
-          rows={rows}
-          className="w-full px-3 py-2 border-2 border-blue-300 rounded-md text-xs resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm bg-white transition-all"
-          placeholder={placeholder}
-          autoFocus
-        />
-      ) : (
-        <div
-          className={`group w-full px-3 py-2 border rounded-md text-xs bg-gray-50 hover:bg-gray-100 min-h-[3.5rem] flex items-center transition-all ${
-            canEditTextareas
-              ? "hover:border-blue-300 hover:shadow-sm cursor-pointer border-gray-200"
-              : "border-gray-200 cursor-not-allowed opacity-70"
-          }`}
-          onClick={() => canEditTextareas && setIsEditing(true)}
-          title={
-            canEditTextareas
-              ? "Click to edit (Enter=save, Esc=cancel)"
-              : "Read-only"
-          }
-        >
-          <span className="block truncate leading-relaxed flex-1">
-            {localValue || placeholder || "No content"}
-          </span>
-          {canEditTextareas && (
-            <svg
-              className="w-4 h-4 ml-2 text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-              />
-            </svg>
-          )}
-        </div>
-      )}
-      {saving && (
-        <div className="absolute -top-7 right-0 flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full animate-pulse">
-          <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping" />
-          Saving...
-        </div>
-      )}
-    </div>
-  );
-});
-
-EditableTextarea.displayName = "EditableTextarea";
-export default function TableOfQueue({
-  filteredQueue,
-  select,
-  setSelect,
-  selectP,
-  setSelectP,
-  projectId,
-  updateQueue,
-  removeQueue,
-  updatePriorityQueue,
-  projectQueue,
-  currentUserRole = "viewer",
-}: TableProps) {
+  setSelectP 
+}: any) {
+  const { fetchBugs, updateBugInState } = useQueueContext();
+  
   const [openModalId, setOpenModalId] = useState<number | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
-const canEditTextareas = ["owner", "member"].includes(currentUserRole); //   Viewer NO
-const canEditStatus = ["owner", "member", "viewer"].includes(currentUserRole);  //  Viewer YES
-const canChangePriority = ["owner", "member"].includes(currentUserRole);        //  Viewer NO  
-const canUpload = ["owner", "member"].includes(currentUserRole);               //  Viewer NO
-const canDelete = ["owner"].includes(currentUserRole);  
-  // Reset pagination on filter changes
+  // --- Pagination State ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  const canEdit = ["owner", "member"].includes(currentUserRole);
+  const canDelete = currentUserRole === "owner";
+
+  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filteredQueue.length, select, selectP]);
+  }, [select, selectP]);
 
-  // Pagination calculations
-  const totalPages = Math.ceil(filteredQueue.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedQueue = useMemo(() => {
-    return filteredQueue.slice(startIndex, endIndex);
+  // Calculate Stats
+  // const stats = useMemo(() => ({
+  //   total: filteredQueue.length,
+  //   fixed: filteredQueue.filter((b: any) => b.status === 'fixed').length,
+  //   inProgress: filteredQueue.filter((b: any) => b.status === 'in-progress').length,
+  //   notFixed: filteredQueue.filter((b: any) => b.status === 'notFixed').length,
+  // }), [filteredQueue]);
+
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredQueue.length / pageSize);
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredQueue.slice(start, start + pageSize);
   }, [filteredQueue, currentPage]);
 
-  // Color helpers
-  const getPriorityColor = (priority: Priority) => {
-    switch (priority) {
-      case "High": return "bg-red-600 text-white border-red-600";
-      case "Medium": return "bg-yellow-200 text-yellow-700 border-yellow-200";
-      case "Low": return "bg-green-600 text-white border-green-600";
-      default: return "bg-gray-100 text-gray-700 border-gray-200";
-    }
-  };
-
-  const getStatusColor = (status: Status) => {
-    switch (status) {
-      case "notFixed": return "bg-blue-100 text-blue-700";
-      case "in-progress": return "bg-purple-100 text-purple-700";
-      case "fixed": return "bg-emerald-100 text-emerald-700";
-      default: return "bg-gray-100 text-gray-700";
-    }
-  };
-
-  const handlePriorityToggle = (id: number, currentPriority: Priority) => {
-    if (!canChangePriority) return;
-    const priorityOrder: Priority[] = ["High", "Medium", "Low"];
-    const nextPriority = priorityOrder[(priorityOrder.indexOf(currentPriority) + 1) % priorityOrder.length];
-    updatePriorityQueue(projectId, id, nextPriority);
-  };
-
   const handleUpload = async (file: File, bugId: number) => {
-    if (!canUpload) return;
-    
-    const token = localStorage.getItem("token");
     const fd = new FormData();
     fd.append("file", file);
-
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/bugs/${bugId}/upload`,
-        {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          body: fd,
-        }
-      );
-
-      if (res.ok) {
-        window.location.reload();
-      } else {
-        const text = await res.text();
-        alert("Upload failed: " + text);
-      }
-    } catch (error) {
-      alert("Upload failed");
-    }
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/bugs/${bugId}/upload`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      body: fd,
+    });
+    if (res.ok) await fetchBugs(projectId);
   };
-
-  // Pagination handlers
-  const goToPreviousPage = () => currentPage > 1 && setCurrentPage(currentPage - 1);
-  const goToNextPage = () => currentPage < totalPages && setCurrentPage(currentPage + 1);
-  const goToPage = (page: number) => page >= 1 && page <= totalPages && setCurrentPage(page);
-
-  const getPageNumbers = () => {
-    const pages: number[] = [];
-    const maxVisiblePages = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-    
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-    
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(i);
-    }
-    return pages;
-  };
-
-  // Editable Textarea Component
-  // const EditableTextarea = React.memo(({
-  //   value,
-  //   field,
-  //   customerId,
-  //   placeholder = "",
-  //   maxWidth = "max-w-xs",
-  //   rows = 2
-  // }: {
-  //   value: string;
-  //   field: keyof Customer;
-  //   customerId: number;
-  //   placeholder?: string;
-  //   maxWidth?: string;
-  //   rows?: number;
-  // }) => {
-  //   const [localValue, setLocalValue] = useState(value);
-  //   const [isEditing, setIsEditing] = useState(false);
-  //   const [saving, setSaving] = useState(false);
-
-  //   useEffect(() => {
-  //     setLocalValue(value);
-  //   }, [value]);
-
-  //   const saveChanges = useCallback(async () => {
-  //     if (!canEditTextareas || localValue === value) {
-  //       setIsEditing(false);
-  //       return;
-  //     }
-
-  //     setSaving(true);
-  //     try {
-  //       const token = localStorage.getItem("token");
-  //       const res = await fetch(
-  //         `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/bugs/${customerId}`,
-  //         {
-  //           method: "PATCH",
-  //           headers: {
-  //             "Content-Type": "application/json",
-  //             Authorization: `Bearer ${token}`,
-  //           },
-  //           body: JSON.stringify({ [field]: localValue }),
-  //         }
-  //       );
-
-  //       if (res.ok) {
-  //         // Notify parent component
-  //         window.dispatchEvent(new CustomEvent("bug-updated", { 
-  //           detail: { customerId, field: field as string, value: localValue } 
-  //         }));
-  //       } else {
-  //         alert(`Failed to save ${field}`);
-  //         setLocalValue(value);
-  //       }
-  //     } catch (error) {
-  //       console.error("Save failed:", error);
-  //       alert("Save failed");
-  //       setLocalValue(value);
-  //     } finally {
-  //       setSaving(false);
-  //       setIsEditing(false);
-  //     }
-  //   }, [localValue, value, customerId, field, projectId]);
-
-  //   const handleKeyDown = (e: React.KeyboardEvent) => {
-  //     if (e.key === "Enter" && !e.shiftKey) {
-  //       e.preventDefault();
-  //       saveChanges();
-  //     }
-  //     if (e.key === "Escape") {
-  //       setLocalValue(value);
-  //       setIsEditing(false);
-  //     }
-  //   };
-
-  //   return (
-  //     <div className={`relative ${maxWidth}`}>
-  //       {isEditing ? (
-  //         <textarea
-  //           value={localValue}
-  //           onChange={(e) => setLocalValue(e.target.value)}
-  //           onBlur={saveChanges}
-  //           onKeyDown={handleKeyDown}
-  //           rows={rows}
-  //           className="w-full px-3 py-2 border-2 border-blue-300 rounded-md text-xs resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm bg-white transition-all"
-  //           placeholder={placeholder}
-  //           autoFocus
-  //         />
-  //       ) : (
-  //         <div
-  //           className={`group w-full px-3 py-2 border rounded-md text-xs bg-gray-50 hover:bg-gray-100 min-h-[3.5rem] flex items-center transition-all ${
-  //             canEditTextareas 
-  //               ? "hover:border-blue-300 hover:shadow-sm cursor-pointer border-gray-200" 
-  //               : "border-gray-200 cursor-not-allowed opacity-70"
-  //           }`}
-  //           onClick={() => canEditTextareas && setIsEditing(true)}
-  //           title={canEditTextareas ? "Click to edit (Enter=save, Esc=cancel)" : "Read-only"}
-  //         >
-  //           <span className="block truncate leading-relaxed flex-1">
-  //             {localValue || placeholder || "No content"}
-  //           </span>
-  //           {canEditTextareas && (
-  //             <svg 
-  //               className="w-4 h-4 ml-2 text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-  //               fill="none" 
-  //               stroke="currentColor" 
-  //               viewBox="0 0 24 24"
-  //             >
-  //               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-  //                 d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-  //             </svg>
-  //           )}
-  //         </div>
-  //       )}
-  //       {saving && (
-  //         <div className="absolute -top-7 right-0 flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full animate-pulse">
-  //           <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping"></div>
-  //           Saving...
-  //         </div>
-  //       )}
-  //     </div>
-  //   );
-  // });
 
   return (
-    <div className="space-y-4">
-      {/* Filters & Role Info */}
-           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-            <h2 className="text-lg font-semibold text-gray-900">Queue Management</h2>
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-500">
-                Showing {filteredQueue.length} of {projectQueue.length} items
-              </span>
-              {(select || selectP) && (
-                <button
-                  onClick={() => {
-                    setSelect("");
-                    setSelectP("");
-                  }}
-                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  Clear filters
-                </button>
-              )}
-            </div>
-          </div> 
+    <div className="space-y-4 font-sans">
+      
+      {/* Stats Bar */}
+      {/* <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-center">
+        <div className="bg-white p-4 rounded-2xl border shadow-sm flex flex-col">
+          <span className="text-gray-500 text-xs font-bold uppercase">Total Bugs</span>
+          <span className="text-2xl font-black text-gray-800">{stats.total}</span>
+        </div>
+        <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 shadow-sm flex flex-col text-emerald-700">
+          <span className="text-xs font-bold uppercase">Fixed</span>
+          <span className="text-2xl font-black">{stats.fixed}</span>
+        </div>
+        <div className="bg-purple-50 p-4 rounded-2xl border border-purple-100 shadow-sm flex flex-col text-purple-700">
+          <span className="text-xs font-bold uppercase">In Progress</span>
+          <span className="text-2xl font-black">{stats.inProgress}</span>
+        </div>
+        <div className="bg-red-50 p-4 rounded-2xl border border-red-100 shadow-sm flex flex-col text-red-700">
+          <span className="text-xs font-bold uppercase">Not Fixed</span>
+          <span className="text-2xl font-black">{stats.notFixed}</span>
+        </div>
+      </div> */}
 
-          {/* FilterByStatus and FilterByPriority section */}
-<FilteringHeader 
-  select={select} 
-  setSelect={setSelect} 
-  selectP={selectP} 
-  setSelectP={setSelectP} 
-  currentUserRole={currentUserRole} 
-/>
-     
-      <RoleHeader/>
-    
-
-
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-gray-50 rounded-2xl border">
+        <div className="flex items-center gap-3">
+          <FilterByStatus select={select} setSelect={setSelect} />
+          <FilterByPriority selectP={selectP} setSelectP={setSelectP} />
+        </div>
+        <div className="px-4 py-1.5 bg-white border rounded-full text-[11px] font-bold shadow-sm">
+          ROLE: <span className="text-blue-600 uppercase">{currentUserRole}</span>
+        </div>
+      </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm bg-white">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gradient-to-r from-blue-50 to-indigo-50">
-            <tr>
-              {["ID", "Reporter", "Priority", "URL", "Expected", "Actual", "Description", "Status", "Created", "Note", "Attachment", "Actions"].map((header, i) => (
-                <th key={i} className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap">
-                  {header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-
-          <tbody className="divide-y divide-gray-100">
-            {paginatedQueue.length === 0 ? (
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-gray-100 border-b border-gray-200">
               <tr>
-                <td colSpan={12} className="px-6 py-12 text-center text-gray-400">
-                  <div className="flex flex-col items-center gap-3">
-                    <svg className="w-16 h-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">No bugs found</p>
-                      <p className="text-xs text-gray-400">Try adjusting filters</p>
-                    </div>
-                  </div>
-                </td>
+                {["ID", "Reporter", "Priority", "URL", "Expected", "Actual", "Description", "Status", "Created", "Note", "Attachment", "Actions"].map((h) => (
+                  <th key={h} className="px-4 py-4 text-[10px] font-black uppercase text-gray-600 tracking-wider whitespace-nowrap">
+                    {h}
+                  </th>
+                ))}
               </tr>
-            ) : (
-              paginatedQueue.map((customer) => (
-                <tr key={customer.id} className="hover:bg-gray-50/50 transition-colors">
-                  {/* Bug ID */}
-                  <td className="px-6 py-4 whitespace-nowrap font-mono text-sm font-semibold text-gray-900">
-                    {customer.bugId}
-                  </td>
-
-                  {/* Reporter */}
-                  <td className="px-6 py-4 font-medium text-sm text-gray-900">
-                    {customer.name}
-                  </td>
-
-                  {/* Priority - MEMBERS CAN CHANGE */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <button
-                      disabled={!canChangePriority}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border-2 shadow-sm transition-all hover:scale-105 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 font-medium ${
-                        getPriorityColor(customer.priority)
-                      }`}
-                     onClick={() => handlePriorityToggle(customer.id, customer.priority)}
-                      title={canChangePriority ? "Click to change priority" : "No permission"}
-                    >
-                      {customer.priority}
-                    </button>
-                  </td>
-
-                  {/* URL */}
-                  <td className="px-6 py-4 w-48" title="click to go to page">
-                    <Link href={customer.url} target="_blank" className="block">
-                      <input
-                        value={customer.url}
-                        readOnly
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-xs bg-gray-50 hover:bg-gray-100 cursor-pointer transition text-ellipsis overflow-hidden"
-                      />
-                    </Link>
-                  </td>
-
-                  {/* Expected Result - EDITABLE */}
-                  <td className="px-6 py-4">
-                    <EditableTextarea
-                      // value={customer.expectedResult}
-                      // field="expectedResult"
-                      // customerId={customer.id}
-
-                       value={customer.expectedResult}
-    field="expectedResult"
-    customerId={customer.id}
-    projectId={projectId}
-    canEditTextareas={canEditTextareas}
-                      placeholder="Expected result..."
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {paginatedData.map((bug: any) => (
+                <tr key={bug.id} className="hover:bg-blue-50/30 transition-colors group">
+                  <td className="px-4 py-4 font-mono text-xs font-bold text-blue-600">{bug.bugId}</td>
+                  <td className="px-4 py-4 text-xs font-semibold text-gray-700">{bug.name}</td>
+                  <td className="px-4 py-4">
+                    <PriorityBadge 
+                      priority={bug.priority} 
+                      onClick={() => {
+                        const order: Priority[] = ["High", "Medium", "Low"];
+                        updatePriorityQueue(projectId, bug.id, order[(order.indexOf(bug.priority) + 1) % 3]);
+                      }}
+                      disabled={!canEdit}
                     />
                   </td>
-
-                  {/* Actual Result - EDITABLE */}
-                  <td className="px-6 py-4">
-                    <EditableTextarea
-                      value={customer.actualResult}
-                      field="actualResult"
-                      customerId={customer.id}
-                      projectId={projectId}
-    canEditTextareas={canEditTextareas}
-                      placeholder="What happened..."
-                    />
+                  
+                  <td className="px-4 py-4">
+                    <div className="flex flex-col gap-1">
+                      <EditableCell value={bug.url} field="url" bugId={bug.id} projectId={projectId} canEdit={canEdit} updateBugInState={updateBugInState} />
+                      <a href={bug.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-500 font-bold hover:underline">OPEN ↗</a>
+                    </div>
                   </td>
 
-                  {/* Description - EDITABLE */}
-                  <td className="px-6 py-4">
-                    <EditableTextarea
-                      value={customer.description}
-                      field="description"
-                      customerId={customer.id}
-                      projectId={projectId}
-    canEditTextareas={canEditTextareas}
-                      placeholder="Describe the bug..."
-                      maxWidth="max-w-lg"
-                    />
-                  </td>
-
-                  {/* Status */}
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 py-4"><EditableCell value={bug.expectedResult} field="expectedResult" bugId={bug.id} projectId={projectId} canEdit={canEdit} updateBugInState={updateBugInState} /></td>
+                  <td className="px-4 py-4"><EditableCell value={bug.actualResult} field="actualResult" bugId={bug.id} projectId={projectId} canEdit={canEdit} updateBugInState={updateBugInState} /></td>
+                  <td className="px-4 py-4"><EditableCell value={bug.description} field="description" bugId={bug.id} projectId={projectId} canEdit={canEdit} updateBugInState={updateBugInState} /></td>
+                  
+                  <td className="px-4 py-4">
                     <select
-                      value={customer.status}
-                      onChange={(e) => canEditStatus && updateQueue(projectId, customer.id, e.target.value as Status)}
-                      disabled={!canEditStatus}
-                      className={`w-32 py-2 px-3 border rounded-md text-sm font-medium shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 ${getStatusColor(customer.status)}`}
+                      value={bug.status}
+                      onChange={(e) => updateQueue(projectId, bug.id, e.target.value as Status)}
+                      disabled={!canEdit}
+                      className={`text-[11px] font-bold border rounded-lg p-1.5 focus:ring-2 focus:ring-blue-400 outline-none cursor-pointer ${bug.status === 'fixed' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : bug.status === 'in-progress' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-red-100 text-red-700 border-red-200'}`}
                     >
                       <option value="notFixed">Not Fixed</option>
                       <option value="in-progress">In Progress</option>
@@ -612,181 +171,145 @@ const canDelete = ["owner"].includes(currentUserRole);
                     </select>
                   </td>
 
-                  {/* Created At */}
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {new Date(customer.createdAt).toLocaleString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                  <td className="px-4 py-4 text-[10px] text-gray-500 font-medium whitespace-nowrap">
+                    {new Date(bug.createdAt).toLocaleDateString()}
                   </td>
 
-                  {/* Note - EDITABLE */}
-                  <td className="px-6 py-4">
-                    <EditableTextarea
-                      value={customer.note || ""}
-                      field="note"
-                      customerId={customer.id}
-                      projectId={projectId}
-    canEditTextareas={canEditTextareas}
-                      placeholder="Team notes..."
-                    />
-                  </td>
-
-                  {/* Attachment - MEMBERS CAN UPLOAD */}
-                  <td className="px-6 py-4 max-w-[160px]">
-                    <div className="flex flex-col items-start gap-2">
-                      {customer.attachmentUrl && (
-                        customer.attachmentUrl.match(/\.(mp4|webm|mov)$/i) ? (
-                          <video
-                            src={`${process.env.NEXT_PUBLIC_API_URL}${customer.attachmentUrl}`}
-                            controls
-                            className="max-w-[120px] max-h-[80px] rounded-lg border shadow-sm"
-                          />
-                        ) : (
-                          <img
-                            src={`${process.env.NEXT_PUBLIC_API_URL}${customer.attachmentUrl}`}
-                            alt="Attachment"
-                            className="max-w-[120px] max-h-[80px] object-cover rounded-lg border shadow-sm hover:opacity-90 transition cursor-zoom-in"
-                            onClick={() => setPreviewUrl(`${process.env.NEXT_PUBLIC_API_URL}${customer.attachmentUrl}`)}
-                          />
-                        )
-                      )}
-                      {canUpload ? (
-                        <label className="cursor-pointer w-full">
-                          <input
-                            type="file"
-                            accept="image/*,video/*"
-                            className="hidden"
-                                                        onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) handleUpload(file, customer.id);
-                            }}
-                          />
-                          <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all text-xs bg-white shadow-sm w-full justify-center">
-                            <svg className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                            </svg>
-                            <span className="text-gray-600 font-medium">
-                              {customer.attachmentUrl ? "Replace" : "Attach"}
-                            </span>
-                          </div>
-                        </label>
-                      ) : (
-                        <div className="w-full px-3 py-2 text-xs text-gray-500 bg-gray-100 rounded-lg text-center font-medium">
-                          No upload access
+                  <td className="px-4 py-4"><EditableCell value={bug.note || ""} field="note" bugId={bug.id} projectId={projectId} canEdit={canEdit} updateBugInState={updateBugInState} placeholder="Team notes..." /></td>
+                  
+                  <td className="px-4 py-4">
+                    <div className="flex flex-col gap-2">
+                      {bug.attachmentUrl && (
+                        <div className="relative w-12 h-10 rounded-lg border overflow-hidden bg-black cursor-pointer shadow-sm hover:scale-110 transition-transform" onClick={() => setPreviewUrl(`${process.env.NEXT_PUBLIC_API_URL}${bug.attachmentUrl}`)}>
+                          {isVideo(bug.attachmentUrl) ? (
+                            <div className="flex items-center justify-center h-full text-white"><svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.841z"/></svg></div>
+                          ) : (
+                            <img src={`${process.env.NEXT_PUBLIC_API_URL}${bug.attachmentUrl}`} className="w-full h-full object-cover" />
+                          )}
                         </div>
+                      )}
+                      {canEdit && (
+                        <label className="text-[9px] font-black text-blue-600 cursor-pointer uppercase hover:underline">
+                          Upload <input type="file" className="hidden" accept="image/*,video/*" onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0], bug.id)} />
+                        </label>
                       )}
                     </div>
                   </td>
 
-                  {/* Actions */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <button
-                      disabled={!canDelete}
-                      className="w-full p-2.5 flex justify-center items-center bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg transition-all hover:scale-[1.02] shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                      onClick={() => canDelete && setOpenModalId(customer.id)}
-                      title={canDelete ? "Delete bug" : "No delete permission"}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
+                  <td className="px-4 py-4">
+                    <button onClick={() => setOpenModalId(bug.id)} disabled={!canDelete} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all disabled:opacity-20">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
-                    {openModalId === customer.id && canDelete && (
-                      <RemoveModal
-                        removeQueue={(id) => removeQueue(projectId, id)}
-                        customer={customer}
-                        onClose={() => setOpenModalId(null)}
-                      />
-                    )}
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ))}
+            </tbody>
+          </table>
+          {filteredQueue.length === 0 && (
+            <div className="py-20 flex flex-col items-center text-gray-400">
+              <svg className="w-12 h-12 mb-2 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              <p className="text-sm font-bold tracking-widest uppercase">No Bugs Found</p>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Pagination */}
+      {/* Pagination Controls */}
       {totalPages > 1 && (
-        <div className="px-6 pb-6 border-t border-gray-200 bg-gray-50 rounded-b-xl">
-          <div className="flex items-center justify-between py-4">
-            <div className="text-sm text-gray-700">
-              Showing <span className="font-semibold">{startIndex + 1}</span> to{' '}
-              <span className="font-semibold">{Math.min(endIndex, filteredQueue.length)}</span> of{' '}
-              <span className="font-semibold">{filteredQueue.length}</span> results
-            </div>
-            
-            <div className="flex items-center gap-1">
-              <button
-                onClick={goToPreviousPage}
-                disabled={currentPage === 1}
-                className="px-3 py-2 text-sm font-medium rounded-lg border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 bg-white border-gray-300 shadow-sm hover:shadow-md flex items-center gap-1"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                Prev
-              </button>
-
-              <div className="flex items-center gap-1">
-                {getPageNumbers().map((page) => (
-                  <button
-                    key={page}
-                    onClick={() => goToPage(page)}
-                    className={`px-3 py-2 text-sm font-medium rounded-lg border transition-all ${
-                      currentPage === page
-                        ? 'bg-blue-600 text-white border-blue-600 shadow-md'
-                        : 'bg-white border-gray-300 hover:bg-gray-100 hover:shadow-md hover:border-gray-400 text-gray-700'
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ))}
-              </div>
-
-              <button
-                onClick={goToNextPage}
-                disabled={currentPage === totalPages}
-                className="px-3 py-2 text-sm font-medium rounded-lg border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 bg-white border-gray-300 shadow-sm hover:shadow-md flex items-center gap-1"
-              >
-                Next
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-              </button>
-            </div>
+        <div className="flex items-center justify-between px-6 py-4 bg-white border border-gray-200 rounded-2xl shadow-sm mt-4">
+          <div className="text-xs text-gray-500 font-bold uppercase">
+            Page <span className="text-blue-600">{currentPage}</span> of {totalPages}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 text-[10px] font-black bg-gray-100 rounded-xl disabled:opacity-30 hover:bg-gray-200 transition-all uppercase tracking-widest"
+            >
+              Back
+            </button>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 text-[10px] font-black bg-gray-100 rounded-xl disabled:opacity-30 hover:bg-gray-200 transition-all uppercase tracking-widest"
+            >
+              Next
+            </button>
           </div>
         </div>
       )}
 
-
-
-      {/* Fullscreen Preview */}
+      {/* Modals */}
+      {openModalId && <RemoveModal customer={filteredQueue.find((b:any)=>b.id === openModalId)} onClose={() => setOpenModalId(null)} removeQueue={() => removeQueue(projectId, openModalId)} />}
+      
       {previewUrl && (
-        <div
-          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-6 animate-in fade-in zoom-in duration-200"
-          onClick={() => setPreviewUrl(null)}
-        >
-          <div
-            className="relative max-w-4xl max-h-[95vh] bg-black/50 rounded-2xl shadow-2xl backdrop-blur-sm p-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setPreviewUrl(null)}
-              className="absolute -top-4 right-0 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-lg hover:scale-105 transition-all border border-white/20 flex items-center gap-2 z-10"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              Close
-            </button>
-            <img
-              src={previewUrl}
-              alt="Full preview"
-              className="max-w-full max-h-[95vh] object-contain rounded-xl shadow-2xl"
-              onError={() => setPreviewUrl(null)}
-            />
+        <div className="fixed inset-0 bg-black/95 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setPreviewUrl(null)}>
+          <div className="max-w-5xl w-full flex flex-col items-center gap-4" onClick={e => e.stopPropagation()}>
+            {isVideo(previewUrl) ? <video src={previewUrl} controls autoPlay className="max-h-[80vh] rounded-lg shadow-2xl" /> : <img src={previewUrl} className="max-h-[80vh] rounded-lg shadow-2xl" alt="Preview" />}
+            <button onClick={() => setPreviewUrl(null)} className="bg-white px-8 py-2 rounded-full font-bold text-black hover:bg-gray-200 transition-colors">CLOSE PREVIEW</button>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// --- Editable Cell Sub-component ---
+function EditableCell({ value, field, bugId, projectId, canEdit, updateBugInState, placeholder }: any) {
+  const [local, setLocal] = useState(value);
+  const [editing, setEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => { setLocal(value); }, [value]);
+
+  const save = async () => {
+    if (!canEdit || local === value) { setEditing(false); return; }
+    setLoading(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/bugs/${bugId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
+        body: JSON.stringify({ field: field.toLowerCase(), value: local }),
+      });
+      if (res.ok) {
+        // Correct check for function existence
+        if (typeof updateBugInState === 'function') {
+          updateBugInState(projectId, bugId, { [field]: local });
+        }
+      } else {
+        setLocal(value);
+      }
+    } catch (e) {
+      setLocal(value);
+    } finally {
+      setLoading(false);
+      setEditing(false);
+    }
+  };
+
+  return (
+    <div className="min-w-[150px] relative">
+      {editing ? (
+        <textarea 
+          autoFocus 
+          value={local} 
+          onChange={e => setLocal(e.target.value)} 
+          onBlur={save}
+          onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); save(); } }}
+          className="w-full p-2 text-xs border-2 border-blue-400 rounded-lg shadow-inner focus:outline-none bg-white z-20 relative" 
+          rows={2} 
+        />
+      ) : (
+        <div 
+          onClick={() => canEdit && setEditing(true)}
+          className={`p-2 text-xs border border-transparent rounded-lg line-clamp-2 transition-all ${canEdit ? 'hover:bg-gray-100 hover:border-gray-200 cursor-text' : 'cursor-default'}`}
+        >
+          {local || <span className="text-gray-300 italic">{placeholder}</span>}
+        </div>
+      )}
+      {loading && (
+        <div className="absolute -top-4 right-0 flex items-center gap-1 z-30">
+          <span className="text-[8px] font-black text-blue-500 animate-pulse uppercase bg-white">Saving</span>
         </div>
       )}
     </div>

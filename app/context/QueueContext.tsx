@@ -1,15 +1,5 @@
 'use client';
-
-import {
-  createContext,
-  useContext,
-  useState,
-  type ReactNode,
-  useCallback,
-} from 'react';
-import Fuse from 'fuse.js';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
+import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 
 export type Status = 'notFixed' | 'in-progress' | 'fixed';
 export type Priority = 'High' | 'Medium' | 'Low';
@@ -31,204 +21,108 @@ export interface Customer {
 
 interface QueueContextType {
   queue: Record<string, Customer[]>;
-  addQueue: (
-    projectId: string,
-    customer: Omit<Customer, 'id' | 'status' | 'createdAt' | 'bugId'>,
-  ) => Promise<number>;
+  addQueue: (projectId: string, customer: any) => Promise<number>;
   removeQueue: (projectId: string, id: number) => Promise<void>;
   updateQueue: (projectId: string, id: number, status: Status) => Promise<void>;
-  updatePriorityQueue: (
-    projectId: string,
-    id: number,
-    newPriority: Priority,
-  ) => Promise<void>;
+  updatePriorityQueue: (projectId: string, id: number, newPriority: Priority) => Promise<void>;
+  updateBugInState: (projectId: string, bugId: number, updates: Partial<Customer>) => void;
   fetchBugs: (projectId: string) => Promise<void>;
-  fetchQueue: () => void;
   clearQueue: () => void;
 }
 
-// ─── SSR-safe token helper ────────────────────────────────────────────────────
-
-function getToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return window.localStorage.getItem('token');
-}
-
-function authHeaders(): HeadersInit {
-  const token = getToken();
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
-
-function uploadAuthHeaders(): HeadersInit {
-  const token = getToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
-// ─── Context ──────────────────────────────────────────────────────────────────
-
-const API = process.env.NEXT_PUBLIC_API_URL ?? '';
-
 const QueueContext = createContext<QueueContextType | undefined>(undefined);
+const API = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 export const QueueProvider = ({ children }: { children: ReactNode }) => {
   const [queue, setQueue] = useState<Record<string, Customer[]>>({});
 
-  const fetchBugs = useCallback(async (projectId: string): Promise<void> => {
+  const authHeaders = () => ({
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${localStorage.getItem('token')}`,
+  });
+
+  const fetchBugs = useCallback(async (projectId: string) => {
+    if (!projectId || !API) return;
     try {
-      const res = await fetch(`${API}/api/projects/${projectId}/bugs`, {
-        headers: authHeaders(),
-      });
+      const res = await fetch(`${API}/api/projects/${projectId}/bugs`, { headers: authHeaders() });
       if (res.ok) {
-        const data: Customer[] = await res.json();
+        const data = await res.json();
         setQueue((prev) => ({ ...prev, [projectId]: data }));
       }
-    } catch (err) {
-      console.error('Failed to fetch bugs:', err);
-    }
+    } catch (err) { console.error("Fetch bugs failed", err); }
   }, []);
 
-  // fetchQueue is a no-op stub kept for ProjectContext compatibility.
-  // Callers that need fresh data should call fetchBugs(projectId) directly.
-  const fetchQueue = useCallback((): void => {
-    // intentional no-op — queue is fetched per-project via fetchBugs
-  }, []);
-
-  const addQueue = async (
-    projectId: string,
-    customer: Omit<Customer, 'id' | 'status' | 'createdAt' | 'bugId'>,
-  ): Promise<number> => {
-    const projectQueue = queue[projectId] ?? [];
-
-    const fuse = new Fuse(projectQueue, {
-      keys: ['expectedResult', 'actualResult', 'description'],
-      threshold: 0.4,
-    });
-
-    const results = fuse.search(
-      `${customer.expectedResult} ${customer.actualResult} ${customer.description}`,
-    );
-
-    if (results.length > 0) {
-      alert(`Possible duplicate bug: ${results[0].item.bugId}`);
-      return 0;
-    }
-
-    try {
-      const res = await fetch(`${API}/api/projects/${projectId}/bugs`, {
-        method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify(customer),
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        console.error('Failed to create bug:', res.status, text);
-        return 0;
-      }
-
-      const newBug: Customer = await res.json();
-      setQueue((prev) => ({
+  const updateBugInState = useCallback((projectId: string, bugId: number, updates: Partial<Customer>) => {
+    setQueue((prev) => {
+      const projectList = prev[projectId] || [];
+      return {
         ...prev,
-        [projectId]: [...(prev[projectId] ?? []), newBug],
-      }));
+        [projectId]: projectList.map((b) => b.id === bugId ? { ...b, ...updates } : b),
+      };
+    });
+  }, []);
 
-      return newBug.id;
-    } catch (err) {
-      console.error('addQueue error:', err);
-      return 0;
-    }
-  };
-
-  const removeQueue = async (projectId: string, id: number): Promise<void> => {
-    const res = await fetch(`${API}/api/projects/${projectId}/bugs/${id}`, {
-      method: 'DELETE',
+  const addQueue = async (projectId: string, customer: any) => {
+    const res = await fetch(`${API}/api/projects/${projectId}/bugs`, {
+      method: 'POST',
       headers: authHeaders(),
+      body: JSON.stringify(customer),
     });
-
     if (res.ok) {
-      setQueue((prev) => ({
-        ...prev,
-        [projectId]: (prev[projectId] ?? []).filter((b) => b.id !== id),
+      const newBug = await res.json();
+      setQueue((prev) => ({ 
+        ...prev, 
+        [projectId]: [...(prev[projectId] ?? []), newBug] 
+      }));
+      return newBug.id;
+    }
+    return 0;
+  };
+
+  const removeQueue = async (projectId: string, id: number) => {
+    const res = await fetch(`${API}/api/projects/${projectId}/bugs/${id}`, { 
+      method: 'DELETE', 
+      headers: authHeaders() 
+    });
+    if (res.ok) {
+      setQueue((prev) => ({ 
+        ...prev, 
+        [projectId]: (prev[projectId] ?? []).filter((b) => b.id !== id) 
       }));
     }
   };
 
-  const updateQueue = async (
-    projectId: string,
-    id: number,
-    status: Status,
-  ): Promise<void> => {
-    const res = await fetch(
-      `${API}/api/projects/${projectId}/bugs/${id}/status`,
-      {
-        method: 'PATCH',
-        headers: authHeaders(),
-        body: JSON.stringify({ status }),
-      },
-    );
-
-    if (res.ok) {
-      setQueue((prev) => ({
-        ...prev,
-        [projectId]: (prev[projectId] ?? []).map((b) =>
-          b.id === id ? { ...b, status } : b,
-        ),
-      }));
-    }
+  const updateQueue = async (projectId: string, id: number, status: Status) => {
+    const res = await fetch(`${API}/api/projects/${projectId}/bugs/${id}/status`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify({ status }),
+    });
+    if (res.ok) updateBugInState(projectId, id, { status });
   };
 
-  const updatePriorityQueue = async (
-    projectId: string,
-    id: number,
-    newPriority: Priority,
-  ): Promise<void> => {
-    const res = await fetch(
-      `${API}/api/projects/${projectId}/bugs/${id}/priority`,
-      {
-        method: 'PATCH',
-        headers: authHeaders(),
-        body: JSON.stringify({ priority: newPriority }),
-      },
-    );
-
-    if (res.ok) {
-      setQueue((prev) => ({
-        ...prev,
-        [projectId]: (prev[projectId] ?? []).map((b) =>
-          b.id === id ? { ...b, priority: newPriority } : b,
-        ),
-      }));
-    }
-  };
-
-  const clearQueue = (): void => {
-    setQueue({});
+  const updatePriorityQueue = async (projectId: string, id: number, priority: Priority) => {
+    const res = await fetch(`${API}/api/projects/${projectId}/bugs/${id}/priority`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify({ priority }),
+    });
+    if (res.ok) updateBugInState(projectId, id, { priority });
   };
 
   return (
-    <QueueContext.Provider
-      value={{
-        queue,
-        addQueue,
-        removeQueue,
-        updateQueue,
-        updatePriorityQueue,
-        fetchBugs,
-        fetchQueue,
-        clearQueue,
-      }}
-    >
+    <QueueContext.Provider value={{ 
+      queue, addQueue, removeQueue, updateQueue, 
+      updatePriorityQueue, updateBugInState, fetchBugs, 
+      clearQueue: () => setQueue({}) 
+    }}>
       {children}
     </QueueContext.Provider>
   );
 };
 
-export const useQueueContext = (): QueueContextType => {
+export const useQueueContext = () => {
   const context = useContext(QueueContext);
-  if (!context)
-    throw new Error('useQueueContext must be used within QueueProvider');
+  if (!context) throw new Error('useQueueContext must be used within QueueProvider');
   return context;
 };
