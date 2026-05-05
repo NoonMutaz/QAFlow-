@@ -55,10 +55,12 @@ export default function TableOfQueue({
   const canDelete = currentUserRole === "owner";
 
   // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [select, selectP]);
-
+  // useEffect(() => {
+  //   setCurrentPage(1);
+  // }, [select, selectP]);
+useEffect(() => {
+  setCurrentPage(1);
+}, [filteredQueue.length]);
   // Calculate Stats
   // const stats = useMemo(() => ({
   //   total: filteredQueue.length,
@@ -68,22 +70,23 @@ export default function TableOfQueue({
   // }), [filteredQueue]);
 
   // Pagination Logic
-  const totalPages = Math.ceil(filteredQueue.length / pageSize);
+  const totalPages = Math.max(1, Math.ceil(filteredQueue.length / pageSize));
   const paginatedData = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     return filteredQueue.slice(start, start + pageSize);
   }, [filteredQueue, currentPage]);
 
-  const handleUpload = async (file: File, bugId: number) => {
-    const fd = new FormData();
-    fd.append("file", file);
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/bugs/${bugId}/upload`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      body: fd,
-    });
-    if (res.ok) await fetchBugs(projectId);
-  };
+const handleUpload = async (file: File, bugId: number) => {
+  const fd = new FormData();
+  fd.append("file", file);
+  const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2];
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/bugs/${bugId}/upload`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
+  });
+  if (res.ok) await fetchBugs(projectId);
+};
 
   return (
     <div className="space-y-4 font-sans">
@@ -269,15 +272,20 @@ function EditableCell({ value, field, bugId, projectId, canEdit, updateBugInStat
 
   useEffect(() => { setLocal(value); }, [value]);
 
-  const save = async () => {
-    if (!canEdit || local === value) { setEditing(false); return; }
-    setLoading(true);
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/bugs/${bugId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
-        body: JSON.stringify({ field: field.toLowerCase(), value: local }),
-      });
+ const save = async () => {
+  if (!canEdit || local === value) { setEditing(false); return; }
+  setLoading(true);
+  try {
+    const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2];
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/bugs/${bugId}`, {
+      method: "PATCH",
+      headers: { 
+        "Content-Type": "application/json", 
+        Authorization: `Bearer ${token}` // ← cookie instead of localStorage
+      },
+      body: JSON.stringify({ field: field.toLowerCase(), value: local }),
+    });
+ 
       if (res.ok) {
         // Correct check for function existence
         if (typeof updateBugInState === 'function') {

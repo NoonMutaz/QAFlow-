@@ -59,22 +59,43 @@ useEffect(() => {
   window.addEventListener("bug-updated", handleBugUpdated as any);
   return () => window.removeEventListener("bug-updated", handleBugUpdated as any);
 }, [stableFetchBugs]);
-  const filteredQueue = useMemo(() => {
-    return projectQueue.filter((customer) => {
-      const term = searchTerm.toLowerCase();
-      const matchesSearch =
-        customer.name.toLowerCase().includes(term) ||
-        customer.priority.toLowerCase().includes(term) ||
-        customer.bugId.toLowerCase().includes(term) ||
-        customer.description.toLowerCase().includes(term);
 
-      const matchesStatus = select === "" || customer.status === select;
-      const matchesPriority = selectP === "" || customer.priority === selectP;
+useEffect(() => {
+  if (!id) return;
+  
+  // Initial fetch
+  void fetchBugs(id);
+  
+  // Poll every 10 seconds
+  const interval = setInterval(() => {
+    if (document.visibilityState === 'visible') {
+      void fetchBugs(id);
+    }
+  }, 9000);
 
-      return matchesSearch && matchesStatus && matchesPriority;
-    });
-  }, [projectQueue, searchTerm, select, selectP]);
+  return () => clearInterval(interval); // cleanup on unmount
+}, [id, fetchBugs]);
+const filteredQueue = useMemo(() => {
+  const term = searchTerm.trim().toLowerCase();
 
+  return projectQueue.filter((customer) => {
+    const matchesSearch =
+      (customer.name ?? "").toLowerCase().includes(term) ||
+      (customer.priority ?? "").toLowerCase().includes(term) ||
+      String(customer.bugId ?? "").toLowerCase().includes(term) ||
+      (customer.description ?? "").toLowerCase().includes(term);
+
+    const matchesStatus =
+      select === "" ||
+      (customer.status ?? "").toLowerCase() === select.toLowerCase();
+
+    const matchesPriority =
+      selectP === "" ||
+      (customer.priority ?? "").toLowerCase() === selectP.toLowerCase();
+
+    return matchesSearch && matchesStatus && matchesPriority;
+  });
+}, [projectQueue, searchTerm, select, selectP]);
   const exportToExcel = (): void => {
     const data = projectQueue.map((customer) => ({
       "Bug ID": customer.bugId,
