@@ -1,6 +1,8 @@
 'use client';
 import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import Fuse from 'fuse.js';
 
+// --- Types ---
 export type Status = 'notFixed' | 'in-progress' | 'fixed';
 export type Priority = 'High' | 'Medium' | 'Low';
 
@@ -19,6 +21,11 @@ export interface Customer {
   attachmentUrl?: string;
 }
 
+export interface DuplicateMatch {
+  item: Customer;
+  matchedKey: string;
+}
+
 interface QueueContextType {
   queue: Record<string, Customer[]>;
   addQueue: (projectId: string, customer: any) => Promise<number>;
@@ -28,6 +35,7 @@ interface QueueContextType {
   updateBugInState: (projectId: string, bugId: number, updates: Partial<Customer>) => void;
   fetchBugs: (projectId: string) => Promise<void>;
   clearQueue: () => void;
+  findDuplicates: (projectId: string, text: string) => DuplicateMatch | null;
 }
 
 const QueueContext = createContext<QueueContextType | undefined>(undefined);
@@ -42,24 +50,48 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
   });
 
   const fetchBugs = useCallback(async (projectId: string) => {
-    if (!projectId || !API) return;
     try {
       const res = await fetch(`${API}/api/projects/${projectId}/bugs`, { headers: authHeaders() });
       if (res.ok) {
         const data = await res.json();
         setQueue((prev) => ({ ...prev, [projectId]: data }));
       }
-    } catch (err) { console.error("Fetch bugs failed", err); }
+    } catch (err) { console.error("Fetch failed", err); }
   }, []);
 
-  const updateBugInState = useCallback((projectId: string, bugId: number, updates: Partial<Customer>) => {
-    setQueue((prev) => {
-      const projectList = prev[projectId] || [];
-      return {
-        ...prev,
-        [projectId]: projectList.map((b) => b.id === bugId ? { ...b, ...updates } : b),
-      };
+  // ─── RE-LEARNED FUSE LOGIC ───────────────────────────────────────────
+  const findDuplicates = useCallback((projectId: string, text: string): DuplicateMatch | null => {
+    const projectBugs = queue[projectId] || [];
+    if (!text || text.trim().length < 3) return null;
+
+    const fuse = new Fuse(projectBugs, {
+      keys: [
+        { name: 'bugId', weight: 2 },        // Priority: Exact ID Match
+        { name: 'description', weight: 1 },  // Secondary: Text similarity
+        { name: 'actualResult', weight: 1 }
+      ],
+      includeMatches: true,
+      threshold: 0.35,  // Strictness level from our first version
+      distance: 100
     });
+
+    const results = fuse.search(text);
+    
+    if (results.length > 0) {
+      const bestMatch = results[0];
+      return {
+        item: bestMatch.item,
+        matchedKey: bestMatch.matches?.[0]?.key || 'description'
+      };
+    }
+    return null;
+  }, [queue]);
+
+  const updateBugInState = useCallback((projectId: string, bugId: number, updates: Partial<Customer>) => {
+    setQueue((prev) => ({
+      ...prev,
+      [projectId]: (prev[projectId] ?? []).map((b) => b.id === bugId ? { ...b, ...updates } : b),
+    }));
   }, []);
 
   const addQueue = async (projectId: string, customer: any) => {
@@ -70,25 +102,15 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
     });
     if (res.ok) {
       const newBug = await res.json();
-      setQueue((prev) => ({ 
-        ...prev, 
-        [projectId]: [...(prev[projectId] ?? []), newBug] 
-      }));
+      setQueue((prev) => ({ ...prev, [projectId]: [...(prev[projectId] ?? []), newBug] }));
       return newBug.id;
     }
     return 0;
   };
 
   const removeQueue = async (projectId: string, id: number) => {
-    const res = await fetch(`${API}/api/projects/${projectId}/bugs/${id}`, { 
-      method: 'DELETE', 
-      headers: authHeaders() 
-    });
-    if (res.ok) {
-      setQueue((prev) => ({ 
-        ...prev, 
-        [projectId]: (prev[projectId] ?? []).filter((b) => b.id !== id) 
-      }));
+    if ((await fetch(`${API}/api/projects/${projectId}/bugs/${id}`, { method: 'DELETE', headers: authHeaders() })).ok) {
+      setQueue((prev) => ({ ...prev, [projectId]: (prev[projectId] ?? []).filter((b) => b.id !== id) }));
     }
   };
 
@@ -114,6 +136,7 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
     <QueueContext.Provider value={{ 
       queue, addQueue, removeQueue, updateQueue, 
       updatePriorityQueue, updateBugInState, fetchBugs, 
+      findDuplicates, 
       clearQueue: () => setQueue({}) 
     }}>
       {children}

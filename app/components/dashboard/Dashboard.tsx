@@ -17,7 +17,7 @@ export default function Dashboard() {
   const params = useParams();
   const id = Array.isArray(params.id) ? params.id[0] : (params.id ?? "");
   const { projects } = useProjects();
-  const { queue, addQueue, removeQueue, updateQueue, updatePriorityQueue, fetchBugs } = useQueueContext();
+  const { findDuplicates, queue, addQueue, removeQueue, updateQueue, updatePriorityQueue, fetchBugs } = useQueueContext();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [select, setSelect] = useState("");
@@ -54,7 +54,7 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="lg:col-span-1">
-          <QueueForm projectId={id} currentUserRole={project.role} onAdd={(bug) => addQueue(id, bug)} />
+          <QueueForm findDuplicates={findDuplicates} projectId={id} currentUserRole={project.role} onAdd={(bug) => addQueue(id, bug)} />
         </div>
       </div>
       <DashboardSearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />

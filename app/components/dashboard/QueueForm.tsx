@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useAuthContext } from '@/app/context/AuthContext';
-import { useQueueContext } from '@/app/context/QueueContext'; // Added context
+import { useQueueContext, DuplicateMatch } from '@/app/context/QueueContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -38,7 +38,7 @@ export default function QueueForm({
   currentUserRole = 'viewer',
 }: QueueFormProps) {
   const { user } = useAuthContext();
-  const { fetchBugs } = useQueueContext(); // Used to refresh the table after upload
+  const { fetchBugs, findDuplicates } = useQueueContext();
 
   const currentUserName = user?.name ?? 'Current User';
   const canAddBug = currentUserRole === 'owner' || currentUserRole === 'member';
@@ -54,9 +54,17 @@ export default function QueueForm({
     bugId: '',
     attachment: null,
   });
+
+  const [duplicate, setDuplicate] = useState<DuplicateMatch | null>(null);
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+
+  // Similarity Alert Logic
+  useEffect(() => {
+    const textToSearch = formData.description || formData.actualResult;
+    setDuplicate(findDuplicates(projectId, textToSearch));
+  }, [formData.description, formData.actualResult, projectId, findDuplicates]);
 
   useEffect(() => {
     setFormData((prev) => ({ ...prev, name: currentUserName }));
@@ -84,6 +92,7 @@ export default function QueueForm({
       bugId: '',
       attachment: null,
     });
+    setDuplicate(null);
     setError('');
   }, [currentUserName]);
 
@@ -104,18 +113,13 @@ export default function QueueForm({
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     if (!canAddBug) return;
-
-    if (!formData.name.trim()) {
-      setError('Reported By is required');
-      return;
-    }
+    if (!formData.name.trim()) { setError('Reported By is required'); return; }
 
     setUploading(true);
     setError('');
 
     try {
       const newBugId = await onAdd({ ...formData, bugId: '' });
-
       if (formData.attachment && newBugId) {
         const token = getToken();
         const fd = new FormData();
@@ -128,13 +132,8 @@ export default function QueueForm({
             body: fd,
           },
         );
-
-        if (res.ok) {
-          // CRITICAL FIX: Refresh context so the table sees the new attachmentUrl
-          await fetchBugs(projectId);
-        }
+        if (res.ok) await fetchBugs(projectId);
       }
-
       resetForm();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to add bug';
@@ -160,6 +159,22 @@ export default function QueueForm({
     <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5">
         <h2 className="text-lg font-semibold text-gray-800">Add New Bug</h2>
+
+        {/* RE-INSERTED SIMILARITY ALERT */}
+        {duplicate && (
+          <div className="p-3 bg-amber-50 border-l-4 border-amber-400 rounded-lg animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black text-amber-800 uppercase tracking-tighter">
+                Similarity Alert
+              </span>
+              <span className="text-[10px] bg-amber-200 px-1.5 py-0.5 rounded text-amber-900 font-bold">
+                Matched {duplicate.matchedKey}
+              </span>
+            </div>
+            <p className="text-sm font-bold text-blue-600 mt-1">Bug #{duplicate.item.bugId}</p>
+            <p className="text-[11px] text-amber-700 italic line-clamp-1">{duplicate.item.description}</p>
+          </div>
+        )}
 
         <div>
           <label className="text-sm font-medium text-gray-700">Reported By</label>
@@ -276,7 +291,7 @@ export default function QueueForm({
 
         <button
           type="submit"
-          disabled={uploading}
+          disabled={uploading || duplicate}
           className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all text-sm disabled:opacity-50"
         >
           {uploading ? 'Adding Bug...' : 'Add Bug'}
