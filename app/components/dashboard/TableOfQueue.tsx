@@ -172,7 +172,13 @@ export default function TableOfQueue({
                   </td>
 
                   <td className="px-4 py-4 text-[10px] text-gray-500 font-medium whitespace-nowrap">
-                    {new Date(bug.createdAt).toLocaleDateString()}
+                   {new Date(bug.createdAt).toLocaleString(undefined, {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit'
+})}
                   </td>
 
                   <td className="px-4 py-4"><EditableCell value={bug.note || ""} field="note" bugId={bug.id} projectId={projectId} canEdit={canEdit} updateBugInState={updateBugInState} placeholder="Team notes..." /></td>

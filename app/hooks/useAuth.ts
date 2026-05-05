@@ -67,12 +67,12 @@ localStorage.setItem("token", data.token);
       const data = await res.json().catch(() => null);
 
       if (!res.ok) {
-        throw new Error(data?.message || "Registration failed");
+        throw new Error(data?.message || "Registration failed or email already in use");
       }
 
       router.push("/login");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Registration failed";
+      const message = err instanceof Error ? err.message : "Registration failed or email already in use";
       setError(message);
     } finally {
       setLoading(false);
