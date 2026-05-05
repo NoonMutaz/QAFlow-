@@ -168,10 +168,13 @@ export default function CreateProject() {
                 type="text"
                 value={projectName}
                 onChange={(e) => {
-                  setProjectName(e.target.value);
-                  if (errors.projectName)
-                    setErrors({ ...errors, projectName: "" });
-                }}
+  const value = e.target.value.replace(/[^a-zA-Z0-9 ]/g, ""); // allow letters, numbers, space
+  setProjectName(value);
+
+  if (errors.projectName) {
+    setErrors({ ...errors, projectName: "" });
+  }
+}}
                 placeholder="e.g., Mobile App Testing"
                 className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all ${
                   errors.projectName
@@ -223,7 +226,8 @@ export default function CreateProject() {
                 value={description}
                 maxLength={100}
                 onChange={(e) => {
-                  setDescription(e.target.value);
+                  const value = e.target.value.replace(/[^a-zA-Z0-9 ]/g, ""); 
+                  setDescription(value);
                   if (errors.description)
                     setErrors({ ...errors, description: "" });
                 }}
