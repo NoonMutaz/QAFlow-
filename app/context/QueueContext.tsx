@@ -59,7 +59,7 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
     } catch (err) { console.error("Fetch failed", err); }
   }, []);
 
-  // ─── RE-LEARNED FUSE LOGIC ───────────────────────────────────────────
+  // ───   FUSE LOGIC ───────────────────────────────────────────
   const findDuplicates = useCallback((projectId: string, text: string): DuplicateMatch | null => {
     const projectBugs = queue[projectId] || [];
     if (!text || text.trim().length < 3) return null;
@@ -71,7 +71,7 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
         { name: 'actualResult', weight: 1 }
       ],
       includeMatches: true,
-      threshold: 0.35,  // Strictness level from our first version
+      threshold: 0.35,  //  Strictness level
       distance: 100
     });
 

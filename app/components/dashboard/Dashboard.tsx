@@ -54,7 +54,7 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="lg:col-span-1">
-          <QueueForm findDuplicates={findDuplicates} projectId={id} currentUserRole={project.role} onAdd={(bug) => addQueue(id, bug)} />
+          <QueueForm  projectId={id} currentUserRole={project.role} onAdd={(bug) => addQueue(id, bug)} />
         </div>
       </div>
       <DashboardSearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
