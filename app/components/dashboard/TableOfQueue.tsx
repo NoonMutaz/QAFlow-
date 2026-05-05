@@ -51,6 +51,7 @@ export default function TableOfQueue({
   const pageSize = 10;
 
   const canEdit = ["owner", "member"].includes(currentUserRole);
+  const canEditViwer = ["viewer", "member"].includes(currentUserRole);
   const canDelete = currentUserRole === "owner";
 
   // Reset to page 1 when filters change
@@ -162,7 +163,7 @@ export default function TableOfQueue({
                     <select
                       value={bug.status}
                       onChange={(e) => updateQueue(projectId, bug.id, e.target.value as Status)}
-                      disabled={!canEdit}
+                      // disabled={!canEdit}
                       className={`text-[11px] font-bold border rounded-lg p-1.5 focus:ring-2 focus:ring-blue-400 outline-none cursor-pointer ${bug.status === 'fixed' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : bug.status === 'in-progress' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-red-100 text-red-700 border-red-200'}`}
                     >
                       <option value="notFixed">Not Fixed</option>
