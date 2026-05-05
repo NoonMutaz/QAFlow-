@@ -104,14 +104,22 @@ useEffect(() => {
   const project = projects.find((p) => p.id.toString() === id);
 
  
-  if (!project) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500 text-xl">Project not found.</p>
-      </div>
-    );
-  }
+if (!projects.length) {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <p className="text-gray-400 text-lg">Loading project...</p>
+    </div>
+  );
+}
 
+if (!project) {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <p className="text-red-500 text-lg">Project not found</p>
+    </div>
+  );
+}
+else
   return (
     <div className="min-h-screen px-4 md:px-8 lg:px-12 py-8 space-y-8">
       {/* Page Header */}
