@@ -85,7 +85,7 @@ const ProjectContext = createContext<ProjectContextType | null>(null);
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { token } = useAuthContext();
-  const { fetchQueue } = useQueueContext();
+ // const { fetchQueue } = useQueueContext();
 const [openingProject, setOpeningProject] = useState<Project | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -147,11 +147,13 @@ const [openingProject, setOpeningProject] = useState<Project | null>(null);
   useEffect(() => {
     const handleRefresh = (): void => {
       void fetchProjects();
-      fetchQueue();
+   //   fetchQueue();
     };
     window.addEventListener('projects-refresh', handleRefresh);
     return () => window.removeEventListener('projects-refresh', handleRefresh);
-  }, [fetchProjects, fetchQueue]);
+  }, [fetchProjects, 
+  //  fetchQueue
+  ]);
 
   useEffect(() => {
     const interval = setInterval(() => {
