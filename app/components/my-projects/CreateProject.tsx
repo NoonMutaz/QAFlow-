@@ -282,6 +282,7 @@ export default function CreateProject() {
                   Project Type
                 </span>
               </label>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   "QA Dashboard",
@@ -291,13 +292,18 @@ export default function CreateProject() {
                 ].map((type) => (
                   <button
                     key={type}
+                    disabled={type === "Performance Testing"|| type === "Test Management"} // Example of a disabled option
                     type="button"
                     onClick={() => setProjectType(type)}
-                    className={`px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
-                      projectType === type
-                        ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md"
-                        : "border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-600"
-                    }`}
+                   className={`px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all
+  ${
+    type === "Performance Testing" || type === "Test Management"
+      ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-60 shadow-none"
+      : projectType === type
+      ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md"
+      : " border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-600 cursor-pointer"
+  }
+`}
                   >
                     {type}
                   </button>
