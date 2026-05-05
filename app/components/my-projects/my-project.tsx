@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-// mport Project directly from context — no local redefinition
+import './openProjectAnimation.css';
 import { useProjects, type Project } from '../../context/ProjectContext';
 import InviteModal from './InviteModal';
 import RemoveModal from './RemoveModal';
@@ -46,6 +46,8 @@ export default function MyProjects() {
     fetchProjects,
     isLoading,
     updateProject,
+    isOpeningProject,
+setIsOpeningProject
   } = useProjects();
   const { queue, fetchBugs } = useQueueContext();
   const { user } = useAuthContext();
@@ -297,6 +299,9 @@ const [projectMembers, setProjectMembers] = useState<Member[]>([]);
   const anyModalOpen =
     openModalId !== null || inviteModal !== null || settingsModalProjectId !== null;
 
+useEffect(() => {
+  setIsOpeningProject(false);
+}, []);
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
@@ -335,6 +340,27 @@ const [projectMembers, setProjectMembers] = useState<Member[]>([]);
   queue={queue}
   isOwner={isOwner}
 />
+{isOpeningProject && (
+  <div className="fixed inset-0 z-[60] flex items-center justify-center">
+    
+    {/* Background */}
+    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+
+    {/* Center Card */}
+    <div className="relative bg-white rounded-2xl shadow-2xl px-8 py-6 flex flex-col items-center gap-4 animate-scaleIn">
+      
+      {/* Spinner */}
+      <div className="h-12 w-12 border-4 border-gray-300 border-t-black rounded-full animate-spin" />
+
+      {/* Text */}
+      <div className="text-center">
+        <p className="text-sm text-gray-500">Opening project...</p>
+        <p className="text-lg font-semibold">Please wait</p>
+      </div>
+
+    </div>
+  </div>
+)}
       </div>
 
       {/* Delete Modal */}

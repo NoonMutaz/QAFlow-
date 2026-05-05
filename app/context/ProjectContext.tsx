@@ -16,17 +16,17 @@ export interface Project {
 interface ProjectContextType {
   projects: Project[];
   addProject: (project: unknown) => void;
-  //   Accepts string | number so ProjectCard's prop type is satisfied
   deleteProject: (id: number) => Promise<void>;
-handleOpenProject: (id: string | number) => void;
+  handleOpenProject: (id: string | number) => void;
   clearProjects: () => void;
   fetchProjects: () => Promise<void>;
   updateProject: (project: unknown) => void;
+ setIsOpeningProject: (isOpening: boolean) => void; // New function to set loading state
   isLoading: boolean;
+  isOpeningProject: boolean; // New state for project opening
 }
 
-//  SSR safe localStorage 
-
+// SSR safe localStorage 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
   return window.localStorage.getItem('token');
@@ -38,7 +38,6 @@ function removeStoredToken(): void {
 }
 
 // ─── Normalizer ───────────────────────────────────────────────────────────────
-
 function normalizeProject(p: unknown): Project | null {
   if (!p || typeof p !== 'object') return null;
   const raw = p as Record<string, unknown>;
@@ -81,16 +80,16 @@ function normalizeProject(p: unknown): Project | null {
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
-
 const ProjectContext = createContext<ProjectContextType | null>(null);
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { token } = useAuthContext();
   const { fetchQueue } = useQueueContext();
-
+const [openingProject, setOpeningProject] = useState<Project | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isOpeningProject, setIsOpeningProject] = useState(false); // New loading state
 
   const API = process.env.NEXT_PUBLIC_API_URL ?? '';
 
@@ -141,7 +140,6 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   }, [token, API, router]);
 
   // Effects 
-
   useEffect(() => {
     if (token) void fetchProjects();
   }, [token, fetchProjects]);
@@ -165,7 +163,6 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   }, [token, fetchProjects]);
 
   // ── Mutations ──────────────────────────────────────────────────────────────
-
   const addProject = (project: unknown): void => {
     const normalized = normalizeProject(project);
     if (!normalized) return;
@@ -194,12 +191,14 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  //   Accepts string | number — converts to number internally
-  const handleOpenProject = (id: string | number): void => {
-    const numericId = typeof id === 'string' ? parseInt(id, 10) : id;
-    if (!numericId || isNaN(numericId)) return;
-    router.push(`/dashboard/${numericId}`);
-  };
+  // Updated handleOpenProject with loading state
+ const handleOpenProject = (id: string | number): void => {
+  const numericId = typeof id === 'string' ? parseInt(id, 10) : id;
+  if (!numericId || isNaN(numericId)) return;
+
+  setIsOpeningProject(true);
+  router.push(`/dashboard/${numericId}`);
+};
 
   const clearProjects = (): void => setProjects([]);
 
@@ -214,6 +213,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         fetchProjects,
         updateProject,
         isLoading,
+        isOpeningProject, 
+        setIsOpeningProject
+       
       }}
     >
       {children}
