@@ -110,38 +110,60 @@ export default function QueueForm({
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
-    e.preventDefault();
-    if (!canAddBug) return;
-    if (!formData.name.trim()) { setError('Reported By is required'); return; }
+const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+  e.preventDefault();
 
-    setUploading(true);
-    setError('');
+  if (!canAddBug) return;
+  if (duplicate) {
+    setError("Similar bug already exists");
+    return;
+  }
 
-    try {
-      const newBugId = await onAdd({ ...formData, bugId: '' });
-      if (formData.attachment && newBugId) {
-        const token = getToken();
-        const fd = new FormData();
-        fd.append('file', formData.attachment);
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/bugs/${newBugId}/upload`,
-          {
-            method: 'POST',
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-            body: fd,
-          },
-        );
-        if (res.ok) await fetchBugs(projectId);
-      }
-      resetForm();
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to add bug';
-      setError(message);
-    } finally {
-      setUploading(false);
+  setUploading(true);
+  setError("");
+
+  try {
+    const API = process.env.NEXT_PUBLIC_API_URL;
+    if (!API) throw new Error("API URL missing");
+
+    const newBugId = await onAdd({ ...formData, bugId: '' });
+
+    if (!newBugId) {
+      throw new Error("Failed to create bug");
     }
-  };
+
+    if (formData.attachment) {
+      const token = localStorage.getItem("token");
+
+      const fd = new FormData();
+      fd.append('file', formData.attachment);
+
+      const res = await fetch(
+        `${API}/api/projects/${projectId}/bugs/${newBugId}/upload`,
+        {
+          method: 'POST',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: fd,
+        }
+      );
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Upload failed: ${text}`);
+      }
+
+      await fetchBugs(projectId);
+    }
+
+    resetForm();
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to add bug';
+    console.error(err);
+    setError(message);
+  } finally {
+    setUploading(false);
+  }
+};
 
   if (!canAddBug) {
     return (
@@ -291,7 +313,7 @@ export default function QueueForm({
 
         <button
           type="submit"
-          disabled={uploading || duplicate}
+          disabled={uploading || !!duplicate  }
           className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all text-sm disabled:opacity-50"
         >
           {uploading ? 'Adding Bug...' : 'Add Bug'}
