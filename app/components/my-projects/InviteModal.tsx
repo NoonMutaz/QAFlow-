@@ -333,7 +333,7 @@ const handleRoleUpdate = async (memberId: string, role: Member['role']) => {
               )}
             </div>
             <p className="text-xs text-gray-500 mt-0.5">
-              Joined {new Date(member.joinedAt).toLocaleDateString()}
+              {/* Joined {new Date(member.joinedAt).toLocaleDateString()} */}
             </p>
           </div>
         </div>

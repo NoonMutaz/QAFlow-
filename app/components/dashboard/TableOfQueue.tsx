@@ -323,9 +323,15 @@ function EditableCell({ value, field, bugId, projectId, canEdit, updateBugInStat
         </div>
       )}
       {loading && (
-        <div className="absolute -top-4 right-0 flex items-center gap-1 z-30">
-          <span className="text-[8px] font-black text-blue-500 animate-pulse uppercase bg-white">Saving</span>
-        </div>
+    <div className="absolute
+
+-top-10 right-0 flex items-center gap-1 px-3 py-1.5 bg-blue-100 border border-blue-200 text-blue-800 text-xs rounded-full shadow-Ig z-10">
+
+<div className="w-2 h-2 bg-blue-500 rounded-full animate-ping" />
+
+Saving...
+
+</div>
       )}
     </div>
   );
