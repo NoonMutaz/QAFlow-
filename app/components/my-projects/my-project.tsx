@@ -36,7 +36,7 @@ function authHeaders(contentType = false): HeadersInit {
   };
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// Component 
 
 export default function MyProjects() {
   const {

@@ -40,7 +40,26 @@ export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [select, setSelect] = useState<Status | "">("");
   const [selectP, setSelectP] = useState<Priority | "">("");
+const [members, setMembers] = useState<any[]>([]);
 
+// 
+useEffect(() => {
+  if (!id) return;
+
+  const fetchMembers = async () => {
+    const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2];
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${id}/members`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      setMembers(data);
+    }
+  };
+
+  fetchMembers();
+}, [id]);
   // fetchBugs wrapped in useCallback inside QueueContext so it's stable
   const stableFetchBugs = useCallback(() => {
     if (id) void fetchBugs(id);
@@ -144,7 +163,7 @@ else
   return (
     <div className="min-h-screen px-4 md:px-8 lg:px-12 py-8 space-y-8">
       {/* Page Header */}
-      <DashboardHeader project={project} queue={queue} id={project.id} />
+      <DashboardHeader project={project} queue={queue} id={project.id} members={members} />
 
       {/* KPI Section */}
       <KpiSection queue={queue[id] ?? []} />

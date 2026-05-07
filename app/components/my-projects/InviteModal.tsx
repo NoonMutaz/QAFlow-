@@ -292,6 +292,17 @@ const handleRoleUpdate = async (memberId: string, role: Member['role']) => {
             ) : (
               /* Members List */
               <div className="space-y-4">
+                   <div className="text-left py-4 text-gray-500">
+                    <p className="font-medium text-gray-600 text-sm bg-blue-100 text-blue-800 p-2 rounded-lg">
+                      As owner you can only modify your team but You cannot modify your own role or remove yourself from the project.
+                    </p>
+                  </div>
+                {members.length === 1 && (
+                  <div className="text-center py-4 text-gray-500">
+                    Only you are a member of this project.
+                  </div>
+                )}
+
                 {members.length === 0 ? (
                   <div className="text-center py-12 text-gray-500">
                     <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -302,6 +313,7 @@ const handleRoleUpdate = async (memberId: string, role: Member['role']) => {
                   </div>
                 ) : (
 <div className="space-y-3">
+  
 {otherMembers.map((member) => {
  const self = isSelf(member);
   
@@ -317,8 +329,11 @@ const handleRoleUpdate = async (memberId: string, role: Member['role']) => {
         pointerEvents: self ? 'none' : 'auto' 
       }}
     >
+
+
       <div className="flex items-center justify-between">
         {/* LEFT - Profile */}
+   
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className="w-10 h-10 bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
             {member.email[0]?.toUpperCase()}
