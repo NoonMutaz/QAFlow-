@@ -193,8 +193,8 @@ const handleSubmit = async (e: React.FormEvent): Promise<void> => {
                 Matched {duplicate.matchedKey}
               </span>
             </div>
-            <p className="text-sm font-bold text-blue-600 mt-1">Bug #{duplicate.item.bugId}</p>
-            <p className="text-[11px] text-amber-700 italic line-clamp-1">{duplicate.item.description}</p>
+            <p className="text-sm font-bold text-blue-600 mt-1">Check {duplicate.item.bugId}</p>
+            {/* <p className="text-[11px] text-amber-700 italic line-clamp-1">{duplicate.item.description}</p> */}
           </div>
         )}
 

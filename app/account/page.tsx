@@ -35,6 +35,7 @@ const allBugs = Object.values(queue).flat();
 
 const totalBugs = allBugs.length;
 
+
 const fixedBugs = allBugs.filter(b => b.status === "fixed").length;
 
 const activeBugs = totalBugs - fixedBugs;
@@ -168,7 +169,7 @@ const plans = [
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
             { label: 'Projects', value: projects.length, color: 'blue', icon: ' ' },
-            { label: 'Total Bugs', value: totalBugs, color: 'gray', icon: ' ' },
+            { label: 'Total Bugs', value: totalBugs , color: 'gray', icon: ' ' },
             { label: 'Active Bugs', value: activeBugs, color: 'amber', icon: ' ' },
             { label: 'Fixed', value: fixedBugs, color: 'green', icon: ' ' },
           ].map((stat) => (

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import ApexCharts from "apexcharts";
 
 type Status = "notFixed" | "in-progress" | "fixed";
@@ -12,78 +12,50 @@ interface Customer {
   status: Status;
 }
 
-interface ServicesPieChartProps {
-  queue: Customer[];
-}
+export default function PieChart({ queue }: { queue: Customer[] }) {
+  const elRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<ApexCharts | null>(null);
 
-export default function PieChart({ queue }: ServicesPieChartProps) {
   useEffect(() => {
-    const computedStyle = getComputedStyle(document.documentElement);
+    if (!elRef.current) return;
 
-    const  notFixedColor =
-      computedStyle.getPropertyValue("--color-fg-brand")?.trim() || "#F59E0B";
+    const notFixed = queue.filter((c) => c.status === "notFixed").length;
+    const inProgress = queue.filter((c) => c.status === "in-progress").length;
+    const fixed = queue.filter((c) => c.status === "fixed").length;
 
-    const progressColor =
-      computedStyle.getPropertyValue("--color-fg-brand-subtle")?.trim() ||
-      "#3B82F6";
-
-    const doneColor =
-      computedStyle.getPropertyValue("--color-fg-brand-strong")?.trim() ||
-      "#10B981";
-
-    const neutralPrimaryColor =
-      computedStyle.getPropertyValue("--color-neutral-primary")?.trim() ||
-      "#ffffff";
-
-    // Count by STATUS
-    const  notFixedCount = queue.filter((c) => c.status === "notFixed").length;
-    const inProgressCount = queue.filter(
-      (c) => c.status === "in-progress",
-    ).length;
-    const doneCount = queue.filter((c) => c.status === "fixed").length;
-
-    const options = {
-      series: [ notFixedCount, inProgressCount, doneCount],
-      labels: ["not fixed", "In Progress", "fixed"],
-      colors: [ notFixedColor, progressColor, doneColor],
-      chart: {
-        type: "pie",
-        height: 380,
-      },
-      stroke: {
-        colors: [neutralPrimaryColor],
-      },
-      dataLabels: {
-        enabled: true,
-        formatter: function (val: number, opts: any) {
-          return opts.w.config.series[opts.seriesIndex];
-        },
-      },
-      legend: {
-        position: "bottom",
-      },
-    };
-
-    const chartEl = document.getElementById("services-pie");
-
-    let chart: ApexCharts | null = null;
-
-    if (chartEl) {
-      chart = new ApexCharts(chartEl, options);
-      chart.render();
+    // If chart exists, just update it
+    if (chartRef.current) {
+      chartRef.current.updateSeries([notFixed, inProgress, fixed], true);
+      return;
     }
 
+    // First time: create chart
+    chartRef.current = new ApexCharts(elRef.current, {
+      series: [notFixed, inProgress, fixed],
+      labels: ["Not Fixed", "In Progress", "Fixed"],
+      colors: ["#F59E0B", "#3B82F6", "#10B981"],
+      chart: { type: "pie", height: 380 },
+      dataLabels: {
+        enabled: true,
+        formatter: (val: number, opts: any) => opts.w.config.series[opts.seriesIndex],
+      },
+      legend: { position: "bottom" },
+    });
+
+    chartRef.current.render();
+
     return () => {
-      if (chart) chart.destroy();
+      chartRef.current?.destroy();
+      chartRef.current = null;
     };
-  }, [queue]);
+  }, [queue]); // ✅ runs on every queue change, updates in place
 
   return (
     <div className="max-w-sm w-full bg-white rounded-xl shadow p-6">
       <h2 className="text-lg font-semibold text-gray-800 mb-4">
-         Status Distribution
+        Status Distribution
       </h2>
-      <div id="services-pie" className="w-full"></div>
+      <div ref={elRef} />
     </div>
   );
 }

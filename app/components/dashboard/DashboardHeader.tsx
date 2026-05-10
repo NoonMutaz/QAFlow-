@@ -61,7 +61,7 @@ export default function DashboardHeader({ project, id, queue, members = [] }: Da
               className="flex -space-x-2 cursor-pointer"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
-              {members.slice(0, 7).map((member) => (
+              {members.slice(0, 3).map((member) => (
                 <div
                   key={member.userId}
                   title={`${member.email} (${member.role})`}
@@ -72,9 +72,9 @@ export default function DashboardHeader({ project, id, queue, members = [] }: Da
                   {member.email[0]?.toUpperCase()}
                 </div>
               ))}
-              {members.length > 7 && (
+              {members.length > 3 && (
                 <div className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-bold shadow-sm hover:scale-105 transition-transform bg-gradient-to-br from-purple-400 to-purple-600 cursor-pointer`}>
-                  +{members.length - 7}
+                  +{members.length - 3}
                 </div>
               )}
             </div>

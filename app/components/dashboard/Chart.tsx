@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import ApexCharts from "apexcharts";
 
 type Status = "notFixed" | "in-progress" | "fixed";
@@ -12,103 +12,56 @@ interface Customer {
   status: Status;
 }
 
-interface ServicesStatusChartProps {
-  queue: Customer[];
-}
+export default function ServicesStatusChart({ queue }: { queue: Customer[] }) {
+  const elRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<ApexCharts | null>(null);
 
-export default function ServicesStatusChart({
-  queue,
-}: ServicesStatusChartProps) {
   useEffect(() => {
-    const computedStyle = getComputedStyle(document.documentElement);
+    if (!elRef.current) return;
 
-    const  notFixedColor =
-      computedStyle.getPropertyValue("--color-fg-brand")?.trim() || "#1447E6";
-
-    const progressColor =
-      computedStyle.getPropertyValue("--color-fg-brand-subtle")?.trim() ||
-      "#90B4F8";
-
-    const doneColor =
-      computedStyle.getPropertyValue("--color-fg-brand-strong")?.trim() ||
-      "#1E3A8A";
-
-    const services = [...new Set(queue.map((c) => c.priority))];
-
-    const  notFixedData = services.map(
-      (service) =>
-        queue.filter((c) => c.priority === service && c.status === "notFixed")
-          .length,
-    );
-
-    const progressData = services.map(
-      (service) =>
-        queue.filter((c) => c.priority === service && c.status === "in-progress")
-          .length,
-    );
-
-    const doneData = services.map(
-      (service) =>
-        queue.filter((c) => c.priority === service && c.status === "fixed")
-          .length,
-    );
-
-    const options = {
-      chart: {
-        type: "bar",
-        height: 380,
-        toolbar: { show: false },
-      },
-      plotOptions: {
-        bar: {
-          horizontal: false,
-          columnWidth: "50%",
-          borderRadius: 6,
-        },
-      },
-      dataLabels: { enabled: false },
-      series: [
-        {
-          name: " notFixed",
-          data:  notFixedData,
-        },
-        {
-          name: "In Progress",
-          data: progressData,
-        },
-        {
-          name: "Fixed",
-          data: doneData,
-        },
-      ],
-      colors: [ notFixedColor, progressColor, doneColor],
-      xaxis: {
-        categories: services,
-      },
-      legend: {
-        position: "top",
-      },
-    };
-
-    const chartEl = document.getElementById("services-status-chart");
-    let chart: ApexCharts | null = null;
-
-    if (chartEl) {
-      chart = new ApexCharts(chartEl, options);
-      chart.render();
+    // If chart exists, just update it
+    if (chartRef.current) {
+      const services = [...new Set(queue.map((c) => c.priority))];
+      chartRef.current.updateOptions({ xaxis: { categories: services } }, false, true);
+      chartRef.current.updateSeries([
+        { name: "Not Fixed", data: services.map((s) => queue.filter((c) => c.priority === s && c.status === "notFixed").length) },
+        { name: "In Progress", data: services.map((s) => queue.filter((c) => c.priority === s && c.status === "in-progress").length) },
+        { name: "Fixed", data: services.map((s) => queue.filter((c) => c.priority === s && c.status === "fixed").length) },
+      ], true);
+      return;
     }
 
+    // First time: create chart
+    const services = [...new Set(queue.map((c) => c.priority))];
+
+    chartRef.current = new ApexCharts(elRef.current, {
+      chart: { type: "bar", height: 380, toolbar: { show: false } },
+      plotOptions: { bar: { horizontal: false, columnWidth: "50%", borderRadius: 6 } },
+      dataLabels: { enabled: false },
+      series: [
+        { name: "Not Fixed", data: services.map((s) => queue.filter((c) => c.priority === s && c.status === "notFixed").length) },
+        { name: "In Progress", data: services.map((s) => queue.filter((c) => c.priority === s && c.status === "in-progress").length) },
+        { name: "Fixed", data: services.map((s) => queue.filter((c) => c.priority === s && c.status === "fixed").length) },
+      ],
+      colors: ["#F59E0B", "#3B82F6", "#10B981"],
+      xaxis: { categories: services },
+      legend: { position: "top" },
+    });
+
+    chartRef.current.render();
+
     return () => {
-      if (chart) chart.destroy();
+      chartRef.current?.destroy();
+      chartRef.current = null;
     };
-  }, [queue]);
+  }, [queue]); // ✅ runs on every queue change, updates in place
 
   return (
     <div className="w-full bg-white rounded-xl shadow p-6">
       <h2 className="text-lg font-semibold text-gray-800 mb-4">
-        Bugs priority and Status Breakdown
+        Bugs Priority and Status Breakdown
       </h2>
-      <div id="services-status-chart"></div>
+      <div ref={elRef} />
     </div>
   );
 }

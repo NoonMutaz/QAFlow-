@@ -57,15 +57,29 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
     Authorization: `Bearer ${localStorage.getItem('token')}`,
   });
 
+// const fetchBugs = useCallback(async (projectId: string) => {
+//   try {
+//     const res = await fetch(`${API}/api/projects/${projectId}/bugs`, { headers: authHeaders() });
+//     if (res.ok) {
+//       const data = await res.json();
+//       setQueue((prev) => ({ ...prev, [projectId]: data }));
+//     }
+//   } catch (err) { console.error("Fetch failed", err); }
+// }, []);
+
+
+
+
+
 const fetchBugs = useCallback(async (projectId: string) => {
-  try {
-    const res = await fetch(`${API}/api/projects/${projectId}/bugs`, { headers: authHeaders() });
-    if (res.ok) {
-      const data = await res.json();
-      setQueue((prev) => ({ ...prev, [projectId]: data }));
-    }
-  } catch (err) { console.error("Fetch failed", err); }
+  const res = await fetch(`${API}/api/projects/${projectId}/bugs`, { headers: authHeaders() });
+  if (!res.ok) throw new Error('Failed to fetch');
+  return res.json();
 }, []);
+
+
+
+
 
   //  FUSE LOGIC  
   const findDuplicates = useCallback((projectId: string, text: string): DuplicateMatch | null => {
@@ -73,7 +87,11 @@ const fetchBugs = useCallback(async (projectId: string) => {
     if (!text || text.trim().length < 3) return null;
 
 const fuse = new Fuse(projectBugs, {
-  keys: ["bugId", "description", "actualResult"],
+keys: [
+  { name: "bugId", weight: 2 },
+  { name: "description", weight: 1 },
+  { name: "actualResult", weight: 1 },
+],
   includeMatches: true,
   threshold: 0.4,
   ignoreLocation: true,
@@ -82,13 +100,24 @@ const fuse = new Fuse(projectBugs, {
 
     const results = fuse.search(text);
     
-    if (results.length > 0) {
-      const bestMatch = results[0];
-      return {
-        item: bestMatch.item,
-        matchedKey: bestMatch.matches?.[0]?.key || 'description'
-      };
-    }
+if (results.length > 0) {
+  const bestMatch = results[0];
+
+const matchedKey =
+  bestMatch.matches?.sort((a, b) => {
+    const priority: Record<string, number> = {
+      bugId: 3,
+      actualResult: 2,
+      description: 1,
+    };
+
+    return (priority[b.key || ""] || 0) - (priority[a.key || ""] || 0);
+  })?.[0]?.key ?? "description";
+  return {
+    item: bestMatch.item,
+    matchedKey,
+  };
+}
     return null;
   }, [queue]);
 

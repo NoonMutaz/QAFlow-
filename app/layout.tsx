@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Header from "./components/header/Header";
+import { Providers } from './Providers';
 import {SearchProvider} from "./context/SearchContext" 
 import { AuthProvider } from "./context/AuthContext";
 import {QueueProvider} from "./context/QueueContext" 
@@ -37,7 +38,11 @@ export default function RootLayout({
    
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >   
+      > 
+      <Providers>
+        
+        
+   
        <AuthProvider> 
       <SearchProvider>
         <QueueProvider>  <ProjectProvider>
@@ -50,7 +55,7 @@ export default function RootLayout({
          
         </SearchProvider>
  </AuthProvider>
-      </body>
+          </Providers>   </body>
     </html>
   );
 }
