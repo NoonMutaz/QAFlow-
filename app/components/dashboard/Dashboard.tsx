@@ -130,9 +130,9 @@ export default function Dashboard() {
               projectId={String(project.id)}
               currentUserRole={project.role}
           onAdd={async (customer) => {
-  const newBugId = await addQueue(String(project.id), customer); // ✅ capture id
+  const newBugId = await addQueue(String(project.id), customer); //  capture id
   queryClient.invalidateQueries({ queryKey: ['bugs', id] });
-  return newBugId; // ✅ return it so QueueForm can use it for upload
+  return newBugId; //  return it so QueueForm can use it for upload
 }}
             />
           </div>

@@ -104,15 +104,19 @@ if (results.length > 0) {
   const bestMatch = results[0];
 
 const matchedKey =
-  bestMatch.matches?.sort((a, b) => {
-    const priority: Record<string, number> = {
-      bugId: 3,
-      actualResult: 2,
-      description: 1,
-    };
+  [...(bestMatch.matches ?? [])]
+    .sort((a, b) => {
+      const priority: Record<string, number> = {
+        bugId: 3,
+        actualResult: 2,
+        description: 1,
+      };
 
-    return (priority[b.key || ""] || 0) - (priority[a.key || ""] || 0);
-  })?.[0]?.key ?? "description";
+      return (
+        (priority[b.key || ""] || 0) -
+        (priority[a.key || ""] || 0)
+      );
+    })?.[0]?.key ?? "description";
   return {
     item: bestMatch.item,
     matchedKey,
