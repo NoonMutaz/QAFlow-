@@ -72,9 +72,25 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
 
 
 const fetchBugs = useCallback(async (projectId: string) => {
-  const res = await fetch(`${API}/api/projects/${projectId}/bugs`, { headers: authHeaders() });
-  if (!res.ok) throw new Error('Failed to fetch');
-  return res.json();
+  try {
+    const res = await fetch(`${API}/api/projects/${projectId}/bugs`, {
+      headers: authHeaders(),
+    });
+
+    if (!res.ok) {
+      throw new Error('Failed to fetch');
+    }
+
+    const data = await res.json();
+
+    setQueue((prev) => ({
+      ...prev,
+      [projectId]: data,
+    }));
+
+  } catch (err) {
+    console.error('Fetch failed:', err);
+  }
 }, []);
 
 

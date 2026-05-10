@@ -164,7 +164,7 @@ const [openingProject, setOpeningProject] = useState<Project | null>(null);
     return () => clearInterval(interval);
   }, [token, fetchProjects]);
 
-  // ── Mutations ──────────────────────────────────────────────────────────────
+  //  Mutations 
   const addProject = (project: unknown): void => {
     const normalized = normalizeProject(project);
     if (!normalized) return;

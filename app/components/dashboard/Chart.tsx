@@ -54,7 +54,7 @@ export default function ServicesStatusChart({ queue }: { queue: Customer[] }) {
       chartRef.current?.destroy();
       chartRef.current = null;
     };
-  }, [queue]); // ✅ runs on every queue change, updates in place
+  }, [queue]); //  runs on every queue change, updates in place
 
   return (
     <div className="w-full bg-white rounded-xl shadow p-6">

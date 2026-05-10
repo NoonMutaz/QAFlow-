@@ -30,7 +30,7 @@ export default function Dashboard() {
   const [selectP, setSelectP] = useState<Priority | "">("");
   const [members, setMembers] = useState<any[]>([]);
 
-  // ✅ React Query handles polling - no useEffect needed
+  //  React Query handles polling - no useEffect needed
   const { data: projectQueue = [] } = useQuery({
     queryKey: ['bugs', id],
     queryFn: () =>
@@ -43,7 +43,7 @@ export default function Dashboard() {
     enabled: !!id,
   });
 
-  // ✅ Fetch members once
+  //   Fetch members once
   useEffect(() => {
     if (!id) return;
     const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2];
@@ -54,7 +54,7 @@ export default function Dashboard() {
       .then(setMembers);
   }, [id]);
 
-  // ✅ Invalidate React Query cache when a bug is updated locally
+  //   Invalidate React Query cache when a bug is updated locally
   useEffect(() => {
     const handleBugUpdated = () => {
       queryClient.invalidateQueries({ queryKey: ['bugs', id] });
@@ -108,7 +108,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen px-4 md:px-8 lg:px-12 py-8 space-y-8">
-      {/* ✅ all use projectQueue from React Query */}
+      {/*  all use projectQueue from React Query */}
       <DashboardHeader project={project} queue={{ [id]: projectQueue }} id={project.id} members={members} />
       <KpiSection queue={projectQueue} />
 
@@ -118,7 +118,7 @@ export default function Dashboard() {
             <button onClick={exportToExcel} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">
               Export to Excel
             </button>
-            {/* ✅ charts get stable React Query data */}
+            {/*  charts get stable React Query data */}
             <Chart queue={projectQueue} />
             <PieChart queue={projectQueue} />
           </div>

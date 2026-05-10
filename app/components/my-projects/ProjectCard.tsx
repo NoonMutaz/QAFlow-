@@ -48,7 +48,7 @@ interface ActionBtnProps {
   danger?: boolean;
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+//   Component  
 
 export default function ProjectCard({
   handleDeleteClick,
