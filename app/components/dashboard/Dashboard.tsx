@@ -53,6 +53,16 @@ const handleUpdateQueue = async (projectId: string, bugId: number, status: Statu
   await updateQueue(projectId, bugId, status);
 };
 
+
+const handleUpdatePriority = async (projectId: string, bugId: number, priority: Priority) => {
+  //   Optimistic update - instant UI response
+  queryClient.setQueryData(['bugs', id], (old: any[]) =>
+    old?.map((bug) => bug.id === bugId ? { ...bug, priority } : bug) ?? []
+  );
+  await updatePriorityQueue(projectId, bugId, priority);
+};
+
+
   //   Fetch members once
   useEffect(() => {
     if (!id) return;
@@ -161,7 +171,7 @@ const handleUpdateQueue = async (projectId: string, bugId: number, status: Statu
           selectP={selectP} setSelectP={setSelectP}
           updateQueue={handleUpdateQueue}
           removeQueue={removeQueue}
-          updatePriorityQueue={updatePriorityQueue}
+          updatePriorityQueue={handleUpdatePriority}
           currentUserRole={project.role}
         />
       </div>
