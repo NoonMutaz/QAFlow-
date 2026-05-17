@@ -269,9 +269,10 @@ const handleSubmit = async (e: React.FormEvent): Promise<void> => {
         </div>
 
         <div>
-          <label className="text-sm font-medium text-gray-700">Description</label>
+          <label className="text-sm font-medium text-gray-700">Description <span className="text-red-500">*</span></label>
           <textarea
             name="description"
+            required
             value={formData.description}
             onChange={handleChange}
             rows={3}

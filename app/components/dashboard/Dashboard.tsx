@@ -43,6 +43,16 @@ export default function Dashboard() {
     enabled: !!id,
   });
 
+
+const handleUpdateQueue = async (projectId: string, bugId: number, status: Status) => {
+  //   Optimistic update - instant UI response
+  queryClient.setQueryData(['bugs', id], (old: any[]) =>
+    old?.map((bug) => bug.id === bugId ? { ...bug, status } : bug) ?? []
+  );
+  // Then hit the API in background
+  await updateQueue(projectId, bugId, status);
+};
+
   //   Fetch members once
   useEffect(() => {
     if (!id) return;
@@ -149,7 +159,7 @@ export default function Dashboard() {
           projectQueue={projectQueue}
           select={select} setSelect={setSelect}
           selectP={selectP} setSelectP={setSelectP}
-          updateQueue={updateQueue}
+          updateQueue={handleUpdateQueue}
           removeQueue={removeQueue}
           updatePriorityQueue={updatePriorityQueue}
           currentUserRole={project.role}
