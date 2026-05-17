@@ -129,6 +129,7 @@ export default function Dashboard() {
             <QueueForm
               projectId={String(project.id)}
               currentUserRole={project.role}
+               existingBugs={projectQueue}
           onAdd={async (customer) => {
   const newBugId = await addQueue(String(project.id), customer); //  capture id
   queryClient.invalidateQueries({ queryKey: ['bugs', id] });

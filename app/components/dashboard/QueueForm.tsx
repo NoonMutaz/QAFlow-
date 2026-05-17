@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useAuthContext } from '@/app/context/AuthContext';
-import { useQueueContext, DuplicateMatch } from '@/app/context/QueueContext';
+import { useQueueContext, DuplicateMatch,Customer } from '@/app/context/QueueContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -25,6 +25,7 @@ interface QueueFormProps {
   onAdd: (data: NewCustomer) => Promise<number>;
   projectId: string;
   currentUserRole?: 'owner' | 'member' | 'viewer' | string;
+  existingBugs?: Customer[];
 }
 
 function getToken(): string | null {
@@ -36,6 +37,7 @@ export default function QueueForm({
   onAdd,
   projectId,
   currentUserRole = 'viewer',
+    existingBugs = [],  
 }: QueueFormProps) {
   const { user } = useAuthContext();
   const { fetchBugs, findDuplicates } = useQueueContext();
@@ -61,10 +63,14 @@ export default function QueueForm({
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
 
   // Similarity Alert Logic
-  useEffect(() => {
-    const textToSearch = formData.description || formData.actualResult;
-    setDuplicate(findDuplicates(projectId, textToSearch));
-  }, [formData.description, formData.actualResult, projectId, findDuplicates]);
+ useEffect(() => {
+    const description = formData.description?.trim();
+    const actualResult = formData.actualResult?.trim();
+    const textToSearch = description || actualResult;
+    const activeField = description ? "description" : "actualResult";
+
+    setDuplicate(findDuplicates(existingBugs, textToSearch, activeField));
+  }, [formData.description, formData.actualResult, existingBugs, findDuplicates]);
 
   useEffect(() => {
     setFormData((prev) => ({ ...prev, name: currentUserName }));

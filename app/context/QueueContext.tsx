@@ -35,7 +35,7 @@ interface QueueContextType {
   updateBugInState: (projectId: string, bugId: number, updates: Partial<Customer>) => void;
   fetchBugs: (projectId: string) => Promise<void>;
   clearQueue: () => void;
-  findDuplicates: (projectId: string, text: string) => DuplicateMatch | null;
+  findDuplicates: (bugs: Customer[], text: string, activeField?: string) => DuplicateMatch | null;
 }
 
 const QueueContext = createContext<QueueContextType | undefined>(undefined);
@@ -72,25 +72,9 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
 
 
 const fetchBugs = useCallback(async (projectId: string) => {
-  try {
-    const res = await fetch(`${API}/api/projects/${projectId}/bugs`, {
-      headers: authHeaders(),
-    });
-
-    if (!res.ok) {
-      throw new Error('Failed to fetch');
-    }
-
-    const data = await res.json();
-
-    setQueue((prev) => ({
-      ...prev,
-      [projectId]: data,
-    }));
-
-  } catch (err) {
-    console.error('Fetch failed:', err);
-  }
+  const res = await fetch(`${API}/api/projects/${projectId}/bugs`, { headers: authHeaders() });
+  if (!res.ok) throw new Error('Failed to fetch');
+  return res.json();
 }, []);
 
 
@@ -98,48 +82,33 @@ const fetchBugs = useCallback(async (projectId: string) => {
 
 
   //  FUSE LOGIC  
-  const findDuplicates = useCallback((projectId: string, text: string): DuplicateMatch | null => {
-    const projectBugs = queue[projectId] || [];
-    if (!text || text.trim().length < 3) return null;
+const findDuplicates = useCallback((bugs: Customer[], text: string, activeField?: string): DuplicateMatch | null => {
+  if (!text || text.trim().length < 3 || !bugs.length) return null;
 
-const fuse = new Fuse(projectBugs, {
-keys: [
-  { name: "bugId", weight: 2 },
-  { name: "description", weight: 1 },
-  { name: "actualResult", weight: 1 },
-],
-  includeMatches: true,
-  threshold: 0.4,
-  ignoreLocation: true,
-  minMatchCharLength: 2,
-});
+  const fuse = new Fuse(bugs, {
+    keys: [
+      { name: "bugId", weight: 2 },
+      { name: "description", weight: 1 },
+      { name: "actualResult", weight: 1 },
+    ],
+    includeMatches: true,
+    threshold: 0.4,
+    ignoreLocation: true,
+    minMatchCharLength: 2,
+  });
 
-    const results = fuse.search(text);
-    
-if (results.length > 0) {
+  const results = fuse.search(text);
+  if (results.length === 0) return null;
+
   const bestMatch = results[0];
+  const matchedKey =
+    bestMatch.matches?.find((m) => m.key === activeField)?.key ??
+    bestMatch.matches?.[0]?.key ??
+    activeField ??
+    "description";
 
-const matchedKey =
-  [...(bestMatch.matches ?? [])]
-    .sort((a, b) => {
-      const priority: Record<string, number> = {
-        bugId: 3,
-        actualResult: 2,
-        description: 1,
-      };
-
-      return (
-        (priority[b.key || ""] || 0) -
-        (priority[a.key || ""] || 0)
-      );
-    })?.[0]?.key ?? "description";
-  return {
-    item: bestMatch.item,
-    matchedKey,
-  };
-}
-    return null;
-  }, [queue]);
+  return { item: bestMatch.item, matchedKey };
+}, []); 
 
   const updateBugInState = useCallback((projectId: string, bugId: number, updates: Partial<Customer>) => {
     setQueue((prev) => ({
