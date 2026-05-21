@@ -43,7 +43,7 @@ export default function RegisterPage() {
               
               value={name}
              onChange={(e) => {
-    const cleanValue = e.target.value.replace(/[^a-zA-Z]/g, "");
+    const cleanValue = e.target.value.replace(/[^a-zA-Z\s]/g, "");
     setName(cleanValue);
   }}
               className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"

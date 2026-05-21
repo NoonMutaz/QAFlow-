@@ -45,10 +45,10 @@ const getToken = () => {
   return match ? match[2] : null;
 };
 
-const authHeaders = () => ({
-  'Content-Type': 'application/json',
-  Authorization: `Bearer ${getToken()}`,
-});
+// const authHeaders = () => ({
+//   'Content-Type': 'application/json',
+//   Authorization: `Bearer ${getToken()}`,
+// });
 export const QueueProvider = ({ children }: { children: ReactNode }) => {
   const [queue, setQueue] = useState<Record<string, Customer[]>>({});
 
