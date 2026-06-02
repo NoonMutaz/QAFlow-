@@ -7,7 +7,7 @@ import { useQueueContext } from '../context/QueueContext';
 import { useRouter } from 'next/navigation';
 
 export default function ProfilePage() {
-  const { user, token, clearAuth } = useAuthContext();
+  const { user, token, clearAuth ,updateUser} = useAuthContext();
   const { projects } = useProjects();
   const { queue, fetchBugs } = useQueueContext();
   const router = useRouter();
@@ -18,11 +18,11 @@ export default function ProfilePage() {
   const [form, setForm] = useState({ name: '', email: '' });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-//   useEffect(() => {
-//     if (user) {
-//       setForm({ name: user.name || '', email: user.email || '' });
-//     }
-//   }, [user]);
+  useEffect(() => {
+    if (user) {
+      setForm({ name: user.name || '', email: user.email || '' });
+    }
+  }, [user]);
 useEffect(() => {
   if (projects.length) {
 projects.forEach(p => fetchBugs(p.id.toString()));
@@ -59,8 +59,12 @@ const activeBugs = totalBugs - fixedBugs;
       });
 
       if (res.ok) {
+          const updatedUser = await res.json();
+
+         updateUser(updatedUser);
         alert('✅ Profile updated!');
         setIsEditing(false);
+        
       } else {
         alert('❌ Failed to update profile');
       }
@@ -208,14 +212,14 @@ const plans = [
                   <h2 className="text-lg font-bold text-gray-900">Personal Information</h2>
                   {!isEditing ? (
                     <button
-                    disabled
+                    // disabled
                     title='disabled for now'
                       onClick={() => setIsEditing(true)}
                       className="px-4 py-2 text-sm font-medium text-blue-600 border border-blue-200 rounded-xl hover:bg-blue-50 transition-all"
                     >
                       Edit Profile
                    <span className="text-xs text-red-500 ml-2">
-                     (Feature in development)
+                     {/* (Feature in development) */}
                     </span>   
                     </button>
                   ) : (
@@ -242,13 +246,15 @@ const plans = [
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">Full Name</label>
                     {isEditing ? (
                       <>
-                        <input
-                          value={form.name}
-                          onChange={(e) => setForm({ ...form, name: e.target.value })}
-                          className={`w-full px-4 py-3 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all ${
-                            errors.name ? 'border-red-300 bg-red-50' : 'border-gray-200'
-                          }`}
-                        />
+                       <input
+  value={form.name}
+  onChange={(e) =>
+    setForm({ ...form, name: e.target.value })
+  }
+  className={`w-full px-4 py-3 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all ${
+    errors.name ? 'border-red-300 bg-red-50' : 'border-gray-200'
+  }`}
+/>
                         {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
                       </>
                     ) : (
@@ -263,13 +269,15 @@ const plans = [
                     {isEditing ? (
                       <>
                         <input
-                          type="email"
-                          value={form.email}
-                          onChange={(e) => setForm({ ...form, email: e.target.value })}
-                          className={`w-full px-4 py-3 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all ${
-                            errors.email ? 'border-red-300 bg-red-50' : 'border-gray-200'
-                          }`}
-                        />
+  type="email"
+  value={form.email}
+  onChange={(e) =>
+    setForm({ ...form, email: e.target.value })
+  }
+  className={`w-full px-4 py-3 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all ${
+    errors.email ? 'border-red-300 bg-red-50' : 'border-gray-200'
+  }`}
+/>
                         {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
                       </>
                     ) : (

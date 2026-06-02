@@ -12,6 +12,7 @@ interface AuthContextType {
   token: string | null;
   isReady: boolean;
   setAuth: (user: AuthUser, token: string) => void;
+  updateUser: (user: AuthUser) => void;
   clearAuth: () => void;
 }
 
@@ -21,7 +22,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
+const updateUser = (updatedUser: AuthUser) => {
+  setUser(updatedUser);
 
+  localStorage.setItem(
+    "user",
+    JSON.stringify(updatedUser)
+  );
+};
   useEffect(() => {
     // Rehydrate from localStorage on mount
     const storedToken = localStorage.getItem("token");
@@ -49,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isReady, setAuth, clearAuth }}>
+    <AuthContext.Provider value={{ user, token, isReady, setAuth, clearAuth, updateUser, }}>
       {children}
     </AuthContext.Provider>
   );
