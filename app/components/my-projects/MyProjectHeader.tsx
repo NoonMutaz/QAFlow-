@@ -41,8 +41,8 @@ export default function MyProjectHeader({
                 Loading...
               </span>
             ) : (
-              `${filteredProjects.length} of ${projects.length} project${
-                projects.length !== 1 ? 's' : ''
+              `${filteredProjects.length} project${
+                projects.length !== 1 ? '' : ''
               }`
             )}
           </p>
