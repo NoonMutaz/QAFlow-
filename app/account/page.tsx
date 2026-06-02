@@ -294,7 +294,8 @@ const plans = [
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-red-50 border border-red-200 rounded-xl gap-3">
                     <div>
                       <p className="text-sm font-semibold text-gray-900">Delete Account</p>
-                      <p className="text-xs text-gray-500 mt-0.5">Permanently delete your account and all data    <span className="text-xs text-red-500 ml-2">
+                      <p className="text-xs text-gray-500 mt-0.5">Permanently delete your account and all data  
+                          <span className="text-xs text-red-500 ml-2">
                      (Feature in development)
                     </span>   </p>
                     </div>

@@ -224,7 +224,8 @@ const handleUpload = async (file: File, bugId: number) => {
     disabled={!canEdit}
     className="text-[11px] font-bold border border-gray-200 rounded-lg p-1.5 focus:ring-2 focus:ring-blue-400 outline-none bg-white min-w-[120px] disabled:opacity-50"
   >
-    <option value="">Unassigned </option>
+    <option className="text-xs text-red-500 ml-2" value=""> <span className="text-xs text-red-500 ml-2">(Feature in development)</span>  </option>
+  
  
   </select>
   {bug.assignedToEmail && (

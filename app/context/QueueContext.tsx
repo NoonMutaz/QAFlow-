@@ -104,8 +104,7 @@ const findDuplicates = useCallback((bugs: Customer[], text: string, activeField?
   if (!text || text.trim().length < 3 || !bugs.length) return null;
 
   // 1. Dynamic Keys Configuration based on the active field being typed into
-  let searchKeys: Fuse.FuseOptionKey<Customer>[] = [];
-
+let searchKeys: any[] = [];
   if (activeField === "bugId") {
     // Strict exact/close matching for specific IDs
     searchKeys = [{ name: "bugId", weight: 2 }];
