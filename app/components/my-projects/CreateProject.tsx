@@ -1,26 +1,32 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useProjects } from "../../context/ProjectContext";
 
 export default function CreateProject() {
   const router = useRouter();
+  const { addProject } = useProjects();
+
   const [projectName, setProjectName] = useState("");
   const [description, setDescription] = useState("");
   const [projectType, setProjectType] = useState("QA Dashboard");
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-const [isCheckingName, setIsCheckingName] = useState(false);
-const [nameCheckTimer, setNameCheckTimer] = useState<NodeJS.Timeout | null>(null);
-  const { addProject } = useProjects();
+
+  // IMPORTANT: null = unknown/checking, true = available, false = exists
+  const [isNameAvailable, setIsNameAvailable] = useState<boolean | null>(null);
+  const [isCheckingName, setIsCheckingName] = useState(false);
+
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const validateForm = () => {
-    const newErrors: { [key: string]: string } = {};
+    const newErrors: any = {};
 
     if (!projectName.trim()) {
       newErrors.projectName = "Project name is required";
-    } else if (projectName.length < 3) {
+    } else if (projectName.trim().length < 3) {
       newErrors.projectName = "Project name must be at least 3 characters";
     }
 
@@ -32,36 +38,103 @@ const [nameCheckTimer, setNameCheckTimer] = useState<NodeJS.Timeout | null>(null
     return Object.keys(newErrors).length === 0;
   };
 
-  // const handleCreate = async () => {
-  //   if (!validateForm()) return;
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
 
-  //   setIsSubmitting(true);
+    const name = projectName.trim();
 
-  //   try {
-  //     addProject({
-  //       id: crypto.randomUUID(),
-  //       name: projectName,
-  //       description,
-  //       type: projectType,
-  //       status:"active",
-  //         bugId: "",
-  //     });
+    // 1. Reset everything to clean slate immediately on empty
+    if (!name) {
+      setIsNameAvailable(null);
+      setErrors((p) => {
+        const { projectName, ...rest } = p;
+        return rest;
+      });
+      return;
+    }
 
-  //     router.push("/my-projects");
-  //   } catch (error) {
-  //     console.error("Error creating project:", error);
-  //     setErrors({ submit: "Failed to create project. Please try again." });
-  //   } finally {
-  //     setIsSubmitting(false);
-  //   }
-  // };
+    // 2. Clear out marks and show length error immediately
+    if (name.length < 3) {
+      setIsNameAvailable(null);
+      setErrors((p) => ({ ...p, projectName: "Project name must be at least 3 characters" }));
+      return;
+    }
+
+    // 3. CRITICAL: While typing, clear any old state flags completely so no icons show up falsely
+    setIsNameAvailable(null);
+    setIsCheckingName(true);
+    setErrors((p) => {
+      const { projectName, ...rest } = p;
+      return rest;
+    });
+
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2];
+
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/projects/check-name?name=${encodeURIComponent(name)}`,
+          {
+            headers: {
+              Authorization: token ? `Bearer ${token}` : "",
+            },
+          }
+        );
+
+        const data = await res.json();
+
+        // Hardened check: Checks for data.exists or nested data.data.exists as boolean or string
+        const nameExists = 
+          data?.exists === true || 
+          data?.exists === "true" || 
+          data?.data?.exists === true || 
+          data?.data?.exists === "true";
+
+        if (nameExists) {
+          // Explicitly turn off the green mark and force false state
+          setIsNameAvailable(false); 
+          setErrors((p) => ({
+            ...p,
+            projectName: "A project with this name already exists",
+          }));
+        } else {
+          // Explicitly turn on the green mark only when name is completely unique
+          setIsNameAvailable(true);
+          setErrors((p) => {
+            const { projectName, ...rest } = p;
+            return rest;
+          });
+        }
+      } catch (err) {
+        console.error("Validation error:", err);
+        setIsNameAvailable(null);
+      } finally {
+        setIsCheckingName(false);
+      }
+    }, 500);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [projectName]);
+
+  const canSubmit = useMemo(() => {
+    return (
+      !isSubmitting &&
+      !isCheckingName &&
+      isNameAvailable === true &&
+      !errors.projectName
+    );
+  }, [isSubmitting, isCheckingName, isNameAvailable, errors.projectName]);
+
   const handleCreate = async () => {
     if (!validateForm()) return;
+    if (!canSubmit) return;
 
     setIsSubmitting(true);
 
     try {
-      const token = localStorage.getItem("token");
+      const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2];
 
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/projects`,
@@ -69,79 +142,48 @@ const [nameCheckTimer, setNameCheckTimer] = useState<NodeJS.Timeout | null>(null
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            Authorization: token ? `Bearer ${token}` : "",
           },
           body: JSON.stringify({
-            name: projectName,
+            name: projectName.trim(),
             description,
             type: projectType,
           }),
-        },
+        }
       );
 
-    if (!res.ok) {
-  let data;
+      const data = await res.json();
 
-  try {
-    data = await res.json();
-  } catch {
-    data = null;
-  }
+      if (!res.ok) throw new Error(data?.message || "Failed to create project");
 
-  if (res.status === 409) {
-    setErrors({
-      projectName: data?.message || "Project name already exists",
-    });
-
-    setIsSubmitting(false);
-    return;
-  }
-
-  throw new Error(data?.message || "Failed to create project");
-}
-      const newProject = await res.json();
-
-      // update context AFTER backend success
-      addProject(newProject);
-
+      addProject(data);
       router.push("/my-projects");
-    } catch (error: any) {
-      console.error("Error creating project:", error);
-      setErrors({ submit: error.message || "Failed to create project" });
+    } catch (err: any) {
+      setErrors({ submit: err.message });
     } finally {
       setIsSubmitting(false);
     }
   };
+
   const handleCancel = () => {
     router.push("/my-projects");
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Decorative Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse delay-1000"></div>
       </div>
 
-      {/* Main Container */}
       <div className="relative w-full max-w-2xl">
         <div className="bg-white/90 backdrop-blur-xl shadow-2xl rounded-3xl p-8 md:p-10 border border-gray-100">
+          
           {/* Header */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4 shadow-lg">
-              <svg
-                className="w-8 h-8 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
@@ -164,97 +206,61 @@ const [nameCheckTimer, setNameCheckTimer] = useState<NodeJS.Timeout | null>(null
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 <span className="flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-blue-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-                    />
+                  <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                   </svg>
                   Project Name <span className="text-red-500">*</span>
                 </span>
               </label>
-          <div className="relative">
-  <input
-    type="text"
-    value={projectName}
-    onChange={(e) => {
-  const value = e.target.value.replace(/[^a-zA-Z0-9 ]/g, "");
-  setProjectName(value);
-  if (errors.projectName) setErrors({ ...errors, projectName: "" });
+              
+              <div className="relative">
+                <input
+                  type="text"
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value.replace(/[^a-zA-Z0-9 ]/g, ""))}
+                  placeholder="e.g., Mobile App Testing"
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:outline-none transition-all pr-10 ${
+                    errors.projectName || isNameAvailable === false
+                      ? "border-red-300 bg-red-50 focus:ring-red-400"
+                      : isNameAvailable === true
+                      ? "border-green-300 bg-green-50/20 focus:ring-green-400"
+                      : "border-gray-200 hover:border-gray-300 focus:ring-blue-500"
+                  }`}
+                />
+                
+                {/* Status Indicator Overlays */}
+                {isCheckingName && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <svg className="animate-spin h-4 w-4 text-gray-400" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  </div>
+                )}
+                
+                {/* Green check icon: ONLY visible if explicitly valid, not loading, and error text is cleared */}
+                {!isCheckingName && isNameAvailable === true && !errors.projectName && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                )}
 
-  // Clear previous timer
-  if (nameCheckTimer) clearTimeout(nameCheckTimer);
-
-  if (value.trim().length < 3) return;
-
-  // Check after user stops typing for 500ms
-  const timer = setTimeout(async () => {
-    setIsCheckingName(true);
-    try {
-      const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2];
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/projects/check-name?name=${encodeURIComponent(value.trim())}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const data = await res.json();
-      if (data.exists) {
-        setErrors(prev => ({ ...prev, projectName: "A project with this name already exists" }));
-      }
-    } catch {
-      // silently fail — don't block the user
-    } finally {
-      setIsCheckingName(false);
-    }
-  }, 500);
-
-  setNameCheckTimer(timer);
-}}
-    placeholder="e.g., Mobile App Testing"
-    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all pr-10 ${
-      errors.projectName
-        ? "border-red-300 bg-red-50"
-        : "border-gray-200 hover:border-gray-300"
-    }`}
-  />
-  {/* Checking spinner */}
-  {isCheckingName && (
-    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-      <svg className="animate-spin h-4 w-4 text-gray-400" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-      </svg>
-    </div>
-  )}
-  {/* Green check if name is available */}
-  {!isCheckingName && !errors.projectName && projectName.trim().length >= 3 && (
-    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-      <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-      </svg>
-    </div>
-  )}
-</div>
+                {/* Red warning icon: ONLY visible when name is explicitly taken */}
+                {!isCheckingName && isNameAvailable === false && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <svg className="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              
               {errors.projectName && (
                 <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   {errors.projectName}
                 </p>
@@ -265,18 +271,8 @@ const [nameCheckTimer, setNameCheckTimer] = useState<NodeJS.Timeout | null>(null
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 <span className="flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-purple-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
+                  <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                   Description
                 </span>
@@ -285,41 +281,20 @@ const [nameCheckTimer, setNameCheckTimer] = useState<NodeJS.Timeout | null>(null
                 value={description}
                 maxLength={100}
                 onChange={(e) => {
-                  const value = e.target.value.replace(/[^a-zA-Z0-9 ]/g, ""); 
-                  setDescription(value);
-                  if (errors.description)
-                    setErrors({ ...errors, description: "" });
+                  setDescription(e.target.value.replace(/[^a-zA-Z0-9 ]/g, ""));
+                  if (errors.description) {
+                    setErrors((p) => {
+                      const { description, ...rest } = p;
+                      return rest;
+                    });
+                  }
                 }}
                 placeholder="Briefly describe your project (optional)"
                 rows={3}
-                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all resize-none ${
-                  errors.description
-                    ? "border-red-300 bg-red-50"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
+                className="w-full px-4 py-3 border border-gray-200 hover:border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all resize-none"
               />
-              <div className="flex justify-between items-center mt-1">
-                {errors.description && (
-                  <p className="text-sm text-red-500 flex items-center gap-1">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    {errors.description}
-                  </p>
-                )}
-                <span
-                  className={`text-xs ${description.length > 80 ? "text-orange-500" : "text-gray-400"}`}
-                >
+              <div className="flex justify-end items-center mt-1">
+                <span className={`text-xs ${description.length > 80 ? "text-orange-500" : "text-gray-400"}`}>
                   {description.length}/100 characters
                 </span>
               </div>
@@ -329,44 +304,27 @@ const [nameCheckTimer, setNameCheckTimer] = useState<NodeJS.Timeout | null>(null
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 <span className="flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-green-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                    />
+                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                   </svg>
                   Project Type
                 </span>
               </label>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {[
-                  "QA Dashboard",
-                  "Bug Tracking",
-                  "Test Management",
-                  "Performance Testing",
-                ].map((type) => (
+                {["QA Dashboard", "Bug Tracking", "Test Management", "Performance Testing"].map((type) => (
                   <button
                     key={type}
-                    disabled={type === "Performance Testing"|| type === "Test Management"} // Example of a disabled option
+                    disabled={type === "Performance Testing" || type === "Test Management"}
                     type="button"
                     onClick={() => setProjectType(type)}
-                   className={`px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all
-  ${
-    type === "Performance Testing" || type === "Test Management"
-      ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-60 shadow-none"
-      : projectType === type
-      ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md"
-      : " border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-600 cursor-pointer"
-  }
-`}
+                    className={`px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
+                      type === "Performance Testing" || type === "Test Management"
+                        ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-60 shadow-none"
+                        : projectType === type
+                        ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md"
+                        : "border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-600 cursor-pointer"
+                    }`}
                   >
                     {type}
                   </button>
@@ -374,29 +332,19 @@ const [nameCheckTimer, setNameCheckTimer] = useState<NodeJS.Timeout | null>(null
               </div>
             </div>
 
-            {/* Submit Error */}
+            {/* Submit Error Block */}
             {errors.submit && (
               <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
                 <p className="text-sm text-red-600 flex items-center gap-2">
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   {errors.submit}
                 </p>
               </div>
             )}
 
-            {/* Action Buttons */}
+            {/* Actions Buttons */}
             <div className="flex gap-3 pt-4">
               <button
                 type="button"
@@ -405,45 +353,24 @@ const [nameCheckTimer, setNameCheckTimer] = useState<NodeJS.Timeout | null>(null
               >
                 Cancel
               </button>
+              
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={!canSubmit}
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 {isSubmitting ? (
                   <span className="flex items-center justify-center gap-2">
                     <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                        fill="none"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
                     Creating...
                   </span>
                 ) : (
                   <span className="flex items-center justify-center gap-2">
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                     Create Project
                   </span>
@@ -468,18 +395,8 @@ const [nameCheckTimer, setNameCheckTimer] = useState<NodeJS.Timeout | null>(null
           onClick={handleCancel}
           className="mt-6 flex items-center justify-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
         >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M10 19l-7-7m0 0l7-7m-7 7h18"
-            />
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
           Back to Projects
         </button>
