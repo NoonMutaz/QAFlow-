@@ -128,7 +128,7 @@ const handleUpload = async (file: File, bugId: number) => {
           <table className="w-full text-left border-collapse">
             <thead className="bg-gray-100 border-b border-gray-200">
               <tr>
-                {["ID", "Reporter", "Priority", "URL", "Expected", "Actual", "Description", "Status", "Created", "Note", "Attachment", "Actions"].map((h) => (
+                {["ID", "Reporter", "Priority", "URL", "Expected", "Actual", "Description", "Status", "Created", "Note", "Attachment", "Actions","Assigend to"].map((h) => (
                   <th key={h} className="px-4 py-4 text-[10px] font-black uppercase text-gray-600 tracking-wider whitespace-nowrap">
                     {h}
                   </th>
@@ -213,6 +213,31 @@ const handleUpload = async (file: File, bugId: number) => {
                         </svg>
                     </button>
                   </td>
+                  {/* Assignee */}
+<td className="px-4 py-4">
+  <select
+    value={bug.assignedToUserId ?? ""}
+    onChange={async (e) => {
+      const userId = e.target.value ? Number(e.target.value) : null;
+      await assignQueue(projectId, bug.id, userId);
+    }}
+    disabled={!canEdit}
+    className="text-[11px] font-bold border border-gray-200 rounded-lg p-1.5 focus:ring-2 focus:ring-blue-400 outline-none bg-white min-w-[120px] disabled:opacity-50"
+  >
+    <option value="">Unassigned </option>
+ 
+  </select>
+  {bug.assignedToEmail && (
+    <div className="flex items-center gap-1 mt-1">
+      <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-white text-[8px] font-bold">
+        {bug.assignedToEmail[0]?.toUpperCase()}
+      </div>
+      <span className="text-[9px] text-gray-500 truncate max-w-[80px]">
+        {bug.assignedToEmail.split('@')[0]}
+      </span>
+    </div>
+  )}
+</td>
                 </tr>
               ))}
             </tbody>

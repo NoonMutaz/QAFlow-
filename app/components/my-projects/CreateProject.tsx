@@ -11,7 +11,8 @@ export default function CreateProject() {
   const [projectType, setProjectType] = useState("QA Dashboard");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-
+const [isCheckingName, setIsCheckingName] = useState(false);
+const [nameCheckTimer, setNameCheckTimer] = useState<NodeJS.Timeout | null>(null);
   const { addProject } = useProjects();
 
   const validateForm = () => {
@@ -78,11 +79,26 @@ export default function CreateProject() {
         },
       );
 
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Failed to create project");
-      }
+    if (!res.ok) {
+  let data;
 
+  try {
+    data = await res.json();
+  } catch {
+    data = null;
+  }
+
+  if (res.status === 409) {
+    setErrors({
+      projectName: data?.message || "Project name already exists",
+    });
+
+    setIsSubmitting(false);
+    return;
+  }
+
+  throw new Error(data?.message || "Failed to create project");
+}
       const newProject = await res.json();
 
       // update context AFTER backend success
@@ -164,24 +180,67 @@ export default function CreateProject() {
                   Project Name <span className="text-red-500">*</span>
                 </span>
               </label>
-              <input
-                type="text"
-                value={projectName}
-                onChange={(e) => {
-  const value = e.target.value.replace(/[^a-zA-Z0-9 ]/g, ""); // allow letters, numbers, space
+          <div className="relative">
+  <input
+    type="text"
+    value={projectName}
+    onChange={(e) => {
+  const value = e.target.value.replace(/[^a-zA-Z0-9 ]/g, "");
   setProjectName(value);
+  if (errors.projectName) setErrors({ ...errors, projectName: "" });
 
-  if (errors.projectName) {
-    setErrors({ ...errors, projectName: "" });
-  }
+  // Clear previous timer
+  if (nameCheckTimer) clearTimeout(nameCheckTimer);
+
+  if (value.trim().length < 3) return;
+
+  // Check after user stops typing for 500ms
+  const timer = setTimeout(async () => {
+    setIsCheckingName(true);
+    try {
+      const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2];
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/projects/check-name?name=${encodeURIComponent(value.trim())}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await res.json();
+      if (data.exists) {
+        setErrors(prev => ({ ...prev, projectName: "A project with this name already exists" }));
+      }
+    } catch {
+      // silently fail — don't block the user
+    } finally {
+      setIsCheckingName(false);
+    }
+  }, 500);
+
+  setNameCheckTimer(timer);
 }}
-                placeholder="e.g., Mobile App Testing"
-                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all ${
-                  errors.projectName
-                    ? "border-red-300 bg-red-50"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-              />
+    placeholder="e.g., Mobile App Testing"
+    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all pr-10 ${
+      errors.projectName
+        ? "border-red-300 bg-red-50"
+        : "border-gray-200 hover:border-gray-300"
+    }`}
+  />
+  {/* Checking spinner */}
+  {isCheckingName && (
+    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+      <svg className="animate-spin h-4 w-4 text-gray-400" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+      </svg>
+    </div>
+  )}
+  {/* Green check if name is available */}
+  {!isCheckingName && !errors.projectName && projectName.trim().length >= 3 && (
+    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+      <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+  )}
+</div>
               {errors.projectName && (
                 <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
                   <svg
