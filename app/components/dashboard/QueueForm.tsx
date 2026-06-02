@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useAuthContext } from '@/app/context/AuthContext';
-import { useQueueContext, DuplicateMatch,Customer } from '@/app/context/QueueContext';
+import { useQueueContext, DuplicateMatch, Customer } from '@/app/context/QueueContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -28,16 +28,11 @@ interface QueueFormProps {
   existingBugs?: Customer[];
 }
 
-function getToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return window.localStorage.getItem('token');
-}
-
 export default function QueueForm({
   onAdd,
   projectId,
   currentUserRole = 'viewer',
-    existingBugs = [],  
+  existingBugs = [],  
 }: QueueFormProps) {
   const { user } = useAuthContext();
   const { fetchBugs, findDuplicates } = useQueueContext();
@@ -62,14 +57,31 @@ export default function QueueForm({
   const [uploading, setUploading] = useState(false);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
 
-  // Similarity Alert Logic
- useEffect(() => {
+  // ─── Smart Duplicate Check Logic ───────────────────────────────────────────
+  useEffect(() => {
     const description = formData.description?.trim();
     const actualResult = formData.actualResult?.trim();
-    const textToSearch = description || actualResult;
-    const activeField = description ? "description" : "actualResult";
 
-    setDuplicate(findDuplicates(existingBugs, textToSearch, activeField));
+    // 1. Check description field first
+    if (description && description.length >= 3) {
+      const match = findDuplicates(existingBugs, description, "description");
+      if (match) {
+        setDuplicate(match);
+        return; // Stop and trigger alert if duplicate found
+      }
+    }
+
+    // 2. Fallback to check actualResult field if description is clean
+    if (actualResult && actualResult.length >= 3) {
+      const match = findDuplicates(existingBugs, actualResult, "actualResult");
+      if (match) {
+        setDuplicate(match);
+        return;
+      }
+    }
+
+    // Clear alert if no duplicates found
+    setDuplicate(null);
   }, [formData.description, formData.actualResult, existingBugs, findDuplicates]);
 
   useEffect(() => {
@@ -116,68 +128,66 @@ export default function QueueForm({
     }));
   };
 
-const handleSubmit = async (e: React.FormEvent): Promise<void> => {
-  e.preventDefault();
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+    e.preventDefault();
 
-  if (!canAddBug) return;
-  if (duplicate) {
-    setError("Similar bug already exists");
-    return;
-  }
+    // if (!canAddBug) return;
+    // if (duplicate) {
+    //   setError("⚠️ Cannot submit. A similar bug has already been reported by the team.");
+    //   return;
+    // }
 
-  setUploading(true);
-  setError("");
+    setUploading(true);
+    setError("");
 
-  try {
-    const API = process.env.NEXT_PUBLIC_API_URL;
-    if (!API) throw new Error("API URL missing");
+    try {
+      const API = process.env.NEXT_PUBLIC_API_URL;
+      if (!API) throw new Error("API URL missing");
 
-    const newBugId = await onAdd({ ...formData, bugId: '' });
+      const newBugId = await onAdd({ ...formData, bugId: '' });
 
-    if (!newBugId) {
-      throw new Error("Failed to create bug");
-    }
+      if (!newBugId) {
+        throw new Error("Failed to create bug");
+      }
 
-    if (formData.attachment) {
-      const token = localStorage.getItem("token");
+      if (formData.attachment) {
+        const token = localStorage.getItem("token");
+        const fd = new FormData();
+        fd.append('file', formData.attachment);
 
-      const fd = new FormData();
-      fd.append('file', formData.attachment);
+        const res = await fetch(
+          `${API}/api/projects/${projectId}/bugs/${newBugId}/upload`,
+          {
+            method: 'POST',
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            body: fd,
+          }
+        );
 
-      const res = await fetch(
-        `${API}/api/projects/${projectId}/bugs/${newBugId}/upload`,
-        {
-          method: 'POST',
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-          body: fd,
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Upload failed: ${text}`);
         }
-      );
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Upload failed: ${text}`);
       }
 
       await fetchBugs(projectId);
+      resetForm();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to add bug';
+      console.error(err);
+      setError(message);
+    } finally {
+      setUploading(false);
     }
-
-    resetForm();
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Failed to add bug';
-    console.error(err);
-    setError(message);
-  } finally {
-    setUploading(false);
-  }
-};
+  };
 
   if (!canAddBug) {
     return (
       <div className="bg-white p-6 rounded-xl shadow border border-gray-100 flex flex-col items-center justify-center gap-3 min-h-[200px] text-center">
-        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">!</div>
+        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center font-bold text-gray-500">!</div>
         <div>
-          <p className="text-sm font-semibold text-gray-700">View Only</p>
-          <p className="text-xs text-gray-400 mt-1">Only owners and members can add bugs.</p>
+          <p className="text-sm font-semibold text-gray-700">View Only Mode</p>
+          <p className="text-xs text-gray-400 mt-1">Only owners and members have permission to report a new bug.</p>
         </div>
       </div>
     );
@@ -188,19 +198,23 @@ const handleSubmit = async (e: React.FormEvent): Promise<void> => {
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5">
         <h2 className="text-lg font-semibold text-gray-800">Add New Bug</h2>
 
-        {/* RE-INSERTED SIMILARITY ALERT */}
+        {/* ─── SIMILARITY ALERT BOX (ENGLISH) ─── */}
         {duplicate && (
-          <div className="p-3 bg-amber-50 border-l-4 border-amber-400 rounded-lg animate-in fade-in">
+          <div className="p-3.5 bg-amber-50/80 border-l-4 border-amber-500 rounded-r-xl animate-in fade-in slide-in-from-top-1 duration-200 shadow-xs">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-black text-amber-800 uppercase tracking-tighter">
-                Similarity Alert
+              <span className="text-[11px] font-black text-amber-800 uppercase tracking-wider">
+                Similarity Alert 
               </span>
-              <span className="text-[10px] bg-amber-200 px-1.5 py-0.5 rounded text-amber-900 font-bold">
-                Matched {duplicate.matchedKey}
+              <span className="text-[10px] bg-amber-200/70 px-2 py-0.5 rounded-md text-amber-900 font-bold border border-amber-300/40">
+                Matched: {duplicate.matchedKey}
               </span>
             </div>
-            <p className="text-sm font-bold text-blue-600 mt-1">Check {duplicate.item.bugId}</p>
-            {/* <p className="text-[11px] text-amber-700 italic line-clamp-1">{duplicate.item.description}</p> */}
+            <p className="text-sm font-bold text-blue-600 mt-1.5 hover:underline cursor-pointer">
+               {duplicate.item.bugId}
+            </p>
+            {/* <p className="text-[11px] text-amber-800/80 italic mt-1 line-clamp-2 bg-white/50 p-1.5 rounded-md border border-amber-200/30">
+              {duplicate.item.description}
+            </p> */}
           </div>
         )}
 
@@ -316,12 +330,20 @@ const handleSubmit = async (e: React.FormEvent): Promise<void> => {
           )}
         </div>
 
-        {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
-
+        {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm font-medium">{error}</div>}
+   {duplicate && (
+          <div className="p-3.5 bg-amber-50/80 border-l-4 border-amber-500 rounded-r-xl animate-in fade-in slide-in-from-top-1 duration-200 shadow-xs">
+          ⚠️ Are you sure you want to submit. A similar <span className="font-bold">{duplicate.matchedKey}</span> has already been reported by the team: 
+               <p className="text-sm font-bold text-blue-600 mt-1.5 hover:underline cursor-pointer">
+               {duplicate.item.bugId}
+            </p>
+          </div>
+        )}
         <button
           type="submit"
-          disabled={uploading || !!duplicate  }
-          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all text-sm disabled:opacity-50"
+          disabled={uploading  }
+            //  disabled={uploading || !!duplicate}
+          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {uploading ? 'Adding Bug...' : 'Add Bug'}
         </button>

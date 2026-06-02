@@ -220,7 +220,7 @@ export default function Contact() {
           {/* SIDE INFO */}
           <div className="flex flex-col justify-center space-y-8 text-sm">
             <Info title="  Email">
-              support@qaflow.com
+              noonalmutaz002@gmail.com
             </Info>
 
             <Info title=" Response time">

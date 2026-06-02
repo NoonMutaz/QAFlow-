@@ -103,22 +103,38 @@ const fetchBugs = useCallback(async (projectId: string) => {
 const findDuplicates = useCallback((bugs: Customer[], text: string, activeField?: string): DuplicateMatch | null => {
   if (!text || text.trim().length < 3 || !bugs.length) return null;
 
-  const fuse = new Fuse(bugs, {
-    keys: [
-      { name: "bugId", weight: 2 },
+  // 1. Dynamic Keys Configuration based on the active field being typed into
+  let searchKeys: Fuse.FuseOptionKey<Customer>[] = [];
+
+  if (activeField === "bugId") {
+    // Strict exact/close matching for specific IDs
+    searchKeys = [{ name: "bugId", weight: 2 }];
+  } else if (activeField === "description" || activeField === "actualResult") {
+    // Context matching for rich text fields
+    searchKeys = [{ name: activeField, weight: 1 }];
+  } else {
+    // Fallback: If no specific field is targeted, use global contextual fields
+    searchKeys = [
       { name: "description", weight: 1 },
-      { name: "actualResult", weight: 1 },
-    ],
+      { name: "actualResult", weight: 1 }
+    ];
+  }
+
+  const fuse = new Fuse(bugs, {
+    keys: searchKeys,
     includeMatches: true,
-    threshold: 0.4,
+    // 0.4 is perfect for paragraphs. For exact IDs, lower it to 0.2
+    threshold: activeField === "bugId" ? 0.2 : 0.4, 
     ignoreLocation: true,
-    minMatchCharLength: 2,
+    minMatchCharLength: 3, // Raised to 3 to prevent single/double character noise triggers
   });
 
   const results = fuse.search(text);
   if (results.length === 0) return null;
 
   const bestMatch = results[0];
+  
+  // 2. Identify exactly which property triggered the best match score
   const matchedKey =
     bestMatch.matches?.find((m) => m.key === activeField)?.key ??
     bestMatch.matches?.[0]?.key ??
@@ -126,7 +142,7 @@ const findDuplicates = useCallback((bugs: Customer[], text: string, activeField?
     "description";
 
   return { item: bestMatch.item, matchedKey };
-}, []); 
+}, []);
 
   const updateBugInState = useCallback((projectId: string, bugId: number, updates: Partial<Customer>) => {
     setQueue((prev) => ({
