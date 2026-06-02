@@ -219,7 +219,7 @@ const handleUpload = async (file: File, bugId: number) => {
     value={bug.assignedToUserId ?? ""}
     onChange={async (e) => {
       const userId = e.target.value ? Number(e.target.value) : null;
-      await assignQueue(projectId, bug.id, userId);
+      // await assignQueue(projectId, bug.id, userId);
     }}
     disabled={!canEdit}
     className="text-[11px] font-bold border border-gray-200 rounded-lg p-1.5 focus:ring-2 focus:ring-blue-400 outline-none bg-white min-w-[120px] disabled:opacity-50"
