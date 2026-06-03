@@ -2,7 +2,7 @@
 import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 import Fuse from 'fuse.js';
 
-// --- Types ---
+//  Types 
 export type Status = 'notFixed' | 'in-progress' | 'fixed';
 export type Priority = 'High' | 'Medium' | 'Low';
 

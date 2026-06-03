@@ -331,14 +331,7 @@ export default function QueueForm({
         </div>
 
         {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm font-medium">{error}</div>}
-   {duplicate && (
-          <div className="p-3.5 bg-amber-50/80 border-l-4 border-amber-500 rounded-r-xl animate-in fade-in slide-in-from-top-1 duration-200 shadow-xs">
-          ⚠️ Are you sure you want to submit. A similar <span className="font-bold">{duplicate.matchedKey}</span> has already been reported by the team: 
-               <p className="text-sm font-bold text-blue-600 mt-1.5 hover:underline cursor-pointer">
-               {duplicate.item.bugId}
-            </p>
-          </div>
-        )}
+   
         <button
           type="submit"
           disabled={uploading  }
@@ -347,7 +340,14 @@ export default function QueueForm({
         >
           {uploading ? 'Adding Bug...' : 'Add Bug'}
         </button>
-      </form>
+      </form>{duplicate && (
+          <div className="p-3.5 bg-amber-50/80 border-l-4 border-amber-500 rounded-r-xl animate-in fade-in slide-in-from-top-1 duration-200 shadow-xs">
+          ⚠️ Are you sure you want to submit. A similar <span className="font-bold">{duplicate.matchedKey}</span> has already been reported: 
+               <p className="text-sm font-bold text-blue-600 mt-1.5 hover:underline cursor-pointer">
+               {duplicate.item.bugId}
+            </p>
+          </div>
+        )}
     </div>
   );
 }

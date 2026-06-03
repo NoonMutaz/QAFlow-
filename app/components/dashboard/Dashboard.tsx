@@ -31,17 +31,19 @@ export default function Dashboard() {
   const [members, setMembers] = useState<any[]>([]);
 
   //  React Query handles polling - no useEffect needed
-  const { data: projectQueue = [] } = useQuery({
-    queryKey: ['bugs', id],
-    queryFn: () =>
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${id}/bugs`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      }).then((r) => r.json()),
-    refetchInterval: 9000,
-    refetchIntervalInBackground: false,
-    staleTime: 5000,
-    enabled: !!id,
-  });
+const { data: projectQueue = [] } = useQuery({
+  queryKey: ['bugs', id],
+  queryFn: () => {
+    const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2]; // ← cookie
+    return fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${id}/bugs`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then((r) => r.json());
+  },
+  refetchInterval: 9000,
+  refetchIntervalInBackground: false,
+  staleTime: 5000,
+  enabled: !!id,
+});
 
 
 const handleUpdateQueue = async (projectId: string, bugId: number, status: Status) => {
@@ -53,7 +55,15 @@ const handleUpdateQueue = async (projectId: string, bugId: number, status: Statu
   await updateQueue(projectId, bugId, status);
 };
 
-
+const handleRemoveQueue = async (projectId: string, bugId: number) => {
+  // Optimistic update
+  queryClient.setQueryData(['bugs', id], (old: any[]) =>
+    old?.filter((bug) => bug.id !== bugId) ?? []
+  );
+  await removeQueue(projectId, bugId);
+  // Refetch to confirm
+  queryClient.invalidateQueries({ queryKey: ['bugs', id] });
+};
 const handleUpdatePriority = async (projectId: string, bugId: number, priority: Priority) => {
   //   Optimistic update - instant UI response
   queryClient.setQueryData(['bugs', id], (old: any[]) =>
@@ -98,24 +108,41 @@ const handleUpdatePriority = async (projectId: string, bugId: number, priority: 
   }, [projectQueue, searchTerm, select, selectP]);
 
   const exportToExcel = (): void => {
-    const data = projectQueue.map((customer: any) => ({
-      "Bug ID": customer.bugId,
-      "Reported By": customer.name,
-      Description: customer.description,
-      Priority: customer.priority,
-      URL: customer.url,
-      "Expected Result": customer.expectedResult,
-      "Actual Result": customer.actualResult,
-      Status: customer.status,
-      Note: customer.note,
-      "Created At": new Date(customer.createdAt).toLocaleString(),
-    }));
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Queue");
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    saveAs(new Blob([excelBuffer], { type: "application/octet-stream" }), "Queue.xlsx");
-  };
+  const data = projectQueue.map((customer: any) => ({
+    "Bug ID": customer.bugId,
+    "Reported By": customer.name,
+    Description: customer.description,
+    Priority: customer.priority,
+    URL: customer.url,
+    "Expected Result": customer.expectedResult,
+    "Actual Result": customer.actualResult,
+    Status: customer.status,
+    Note: customer.note,
+    "Created At": new Date(customer.createdAt).toLocaleString(),
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(data);
+
+  // Set column widths
+  worksheet['!cols'] = [
+    { wch: 10 }, // Bug ID
+    { wch: 15 }, // Reported By
+    { wch: 30 }, // Description
+    { wch: 10 }, // Priority
+    { wch: 40 }, // URL
+    { wch: 30 }, // Expected Result
+    { wch: 30 }, // Actual Result
+    { wch: 12 }, // Status
+    { wch: 20 }, // Note
+    { wch: 20 }, // Created At
+  ];
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Bugs");
+
+  //  Use writeFile directly instead of manual Blob creation
+  XLSX.writeFile(workbook, "QAFlow-Bugs.xlsx");
+};
 
   const project = projects.find((p) => p.id.toString() === id);
 
@@ -150,10 +177,11 @@ const handleUpdatePriority = async (projectId: string, bugId: number, priority: 
               projectId={String(project.id)}
               currentUserRole={project.role}
                existingBugs={projectQueue}
-          onAdd={async (customer) => {
-  const newBugId = await addQueue(String(project.id), customer); //  capture id
-  queryClient.invalidateQueries({ queryKey: ['bugs', id] });
-  return newBugId; //  return it so QueueForm can use it for upload
+onAdd={async (customer) => {
+  const newBugId = await addQueue(String(project.id), customer);
+  // Force immediate refetch so new bug shows in table
+  await queryClient.invalidateQueries({ queryKey: ['bugs', id] });
+  return newBugId;
 }}
             />
           </div>
@@ -170,7 +198,7 @@ const handleUpdatePriority = async (projectId: string, bugId: number, priority: 
           select={select} setSelect={setSelect}
           selectP={selectP} setSelectP={setSelectP}
           updateQueue={handleUpdateQueue}
-          removeQueue={removeQueue}
+          removeQueue={handleRemoveQueue}
           updatePriorityQueue={handleUpdatePriority}
           currentUserRole={project.role}
         />

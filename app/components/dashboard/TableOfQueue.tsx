@@ -5,7 +5,7 @@ import RemoveModal from "./RemoveModal";
 import FilterByStatus from "./FilterByStatus";
 import FilterByPriority from "./FilterByPriority";
 
-// --- Helpers ---
+//Helpers 
 const isVideo = (url?: string): boolean => {
   if (!url) return false;
   return /\.(mp4|webm|ogg|mov|avi)$/i.test(url);
@@ -28,7 +28,7 @@ const PriorityBadge = ({ priority, onClick, disabled }: { priority: Priority; on
   );
 };
 
-// --- Main Component ---
+// Main Component
 export default function TableOfQueue({ 
   filteredQueue, 
   projectId, 
@@ -216,15 +216,15 @@ const handleUpload = async (file: File, bugId: number) => {
                   {/* Assignee */}
 <td className="px-4 py-4">
   <select
-    value={bug.assignedToUserId ?? ""}
+    // value={bug.assignedToUserId ?? ""}
     onChange={async (e) => {
       const userId = e.target.value ? Number(e.target.value) : null;
       // await assignQueue(projectId, bug.id, userId);
     }}
-    disabled={!canEdit}
+    // disabled={!canEdit}
     className="text-[11px] font-bold border border-gray-200 rounded-lg p-1.5 focus:ring-2 focus:ring-blue-400 outline-none bg-white min-w-[120px] disabled:opacity-50"
   >
-    <option className="text-xs text-red-500 ml-2" value=""> <span className="text-xs text-red-500 ml-2">(Feature in development)</span>  </option>
+    <option className="text-xs text-red-500 ml-2" value="">  (Feature in development)   </option>
   
  
   </select>
