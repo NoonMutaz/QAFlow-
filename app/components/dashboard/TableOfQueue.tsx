@@ -41,7 +41,7 @@ export default function TableOfQueue({
   selectP, 
   setSelectP 
 }: any) {
-  const { fetchBugs, updateBugInState } = useQueueContext();
+  const { fetchBugs, updateBugInState, projectMembers, fetchProjectMembers, assignBug } = useQueueContext();
   
   const [openModalId, setOpenModalId] = useState<number | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -87,6 +87,12 @@ const handleUpload = async (file: File, bugId: number) => {
   });
   if (res.ok) await fetchBugs(projectId);
 };
+
+useEffect(() => {
+  if (projectId) {
+    fetchProjectMembers(projectId.toString());
+  }
+}, [projectId, fetchProjectMembers]);
 
   return (
     <div className="space-y-4 font-sans">
@@ -214,26 +220,34 @@ const handleUpload = async (file: File, bugId: number) => {
                     </button>
                   </td>
                   {/* Assignee */}
+{/* Assignee Column */}
 <td className="px-4 py-4">
   <select
-    // value={bug.assignedToUserId ?? ""}
+    value={bug.assignedToUserId ?? ""}
     onChange={async (e) => {
-      const userId = e.target.value ? Number(e.target.value) : null;
-      // await assignQueue(projectId, bug.id, userId);
+      const val = e.target.value;
+      const targetUserId = val ? Number(val) : null;
+      // Triggers context method mapping to backend UpdateField switcher
+      await assignBug(projectId, bug.id, targetUserId);
     }}
-    // disabled={!canEdit}
-    className="text-[11px] font-bold border border-gray-200 rounded-lg p-1.5 focus:ring-2 focus:ring-blue-400 outline-none bg-white min-w-[120px] disabled:opacity-50"
+    disabled={!canEdit}
+    className="text-[11px] font-bold border border-gray-200 rounded-lg p-1.5 focus:ring-2 focus:ring-blue-400 outline-none bg-white min-w-[140px] disabled:opacity-50 transition-all cursor-pointer hover:border-gray-300"
   >
-    <option className="text-xs text-red-500 ml-2" value="">  (Feature in development)   </option>
-  
- 
+    <option value="">Unassigned</option>
+    {projectMembers.map((member: any) => (
+      <option key={member.userId} value={member.userId}>
+        {member.name}
+      </option>
+    ))}
   </select>
+
+  {/* Live User Email Avatar Indicator */}
   {bug.assignedToEmail && (
-    <div className="flex items-center gap-1 mt-1">
-      <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-white text-[8px] font-bold">
+    <div className="flex items-center gap-1 mt-1.5 transition-all">
+      <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-[8px] font-bold shadow-sm">
         {bug.assignedToEmail[0]?.toUpperCase()}
       </div>
-      <span className="text-[9px] text-gray-500 truncate max-w-[80px]">
+      <span className="text-[9px] text-gray-500 font-medium truncate max-w-[90px]" title={bug.assignedToEmail}>
         {bug.assignedToEmail.split('@')[0]}
       </span>
     </div>

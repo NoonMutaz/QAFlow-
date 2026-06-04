@@ -2,7 +2,7 @@
 import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 import Fuse from 'fuse.js';
 
-//  Types 
+// ─── TYPES ───────────────────────────────────────────────────────────────────
 export type Status = 'notFixed' | 'in-progress' | 'fixed';
 export type Priority = 'High' | 'Medium' | 'Low';
 
@@ -19,6 +19,14 @@ export interface Customer {
   actualResult: string;
   note: string;
   attachmentUrl?: string;
+  // Added assignment tracking fields to clear up typescript errors
+  
+  assignedToUserId?: number | null;
+  assignedToEmail?: string | null;
+  assignedById?: number | null;
+  assignedByName?: string | null;
+  assignedAt?: number | null; 
+  projectId: number;
 }
 
 export interface DuplicateMatch {
@@ -28,6 +36,9 @@ export interface DuplicateMatch {
 
 interface QueueContextType {
   queue: Record<string, Customer[]>;
+  projectMembers: any[];
+  myAssignedBugs: Customer[];
+  loadingMyBugs: boolean;
   addQueue: (projectId: string, customer: any) => Promise<number>;
   removeQueue: (projectId: string, id: number) => Promise<void>;
   updateQueue: (projectId: string, id: number, status: Status) => Promise<void>;
@@ -36,113 +47,112 @@ interface QueueContextType {
   fetchBugs: (projectId: string) => Promise<void>;
   clearQueue: () => void;
   findDuplicates: (bugs: Customer[], text: string, activeField?: string) => DuplicateMatch | null;
+  fetchProjectMembers: (projectId: string) => Promise<void>;
+  assignBug: (projectId: string, bugId: number, userId: number | null) => Promise<void>;
+  fetchMyAssignedBugs: () => Promise<void>;
 }
 
 const QueueContext = createContext<QueueContextType | undefined>(undefined);
 const API = process.env.NEXT_PUBLIC_API_URL ?? '';
-const getToken = () => {
-  const match = document.cookie.match(/(^| )token=([^;]+)/);
-  return match ? match[2] : null;
-};
 
-// const authHeaders = () => ({
-//   'Content-Type': 'application/json',
-//   Authorization: `Bearer ${getToken()}`,
-// });
 export const QueueProvider = ({ children }: { children: ReactNode }) => {
+  // ─── STATE HOOKS LAYER ─────────────────────────────────────────────────────
   const [queue, setQueue] = useState<Record<string, Customer[]>>({});
+  const [projectMembers, setProjectMembers] = useState<any[]>([]);
+  const [myAssignedBugs, setMyAssignedBugs] = useState<Customer[]>([]);
+  const [loadingMyBugs, setLoadingMyBugs] = useState<boolean>(false);
 
+  // Fallback headers parser configuration helper
   const authHeaders = () => ({
     'Content-Type': 'application/json',
     Authorization: `Bearer ${localStorage.getItem('token')}`,
   });
 
-// const fetchBugs = useCallback(async (projectId: string) => {
-//   try {
-//     const res = await fetch(`${API}/api/projects/${projectId}/bugs`, { headers: authHeaders() });
-//     if (res.ok) {
-//       const data = await res.json();
-//       setQueue((prev) => ({ ...prev, [projectId]: data }));
-//     }
-//   } catch (err) { console.error("Fetch failed", err); }
-// }, []);
+  // Helper function to extract cookies cleanly if fallback tracking is required
+  const getCookieToken = () => {
+    const match = document.cookie.match(/(^| )token=([^;]+)/);
+    return match ? match[2] : null;
+  };
 
-
-
-
-
-const fetchBugs = useCallback(async (projectId: string) => {
-  try {
-    const res = await fetch(
-      `${API}/api/projects/${projectId}/bugs`,
-      {
+  // ─── CORE BUGS FETCHERS ─────────────────────────────────────────────────────
+  const fetchBugs = useCallback(async (projectId: string) => {
+    try {
+      const res = await fetch(`${API}/api/projects/${projectId}/bugs`, {
         headers: authHeaders(),
-      }
-    );
+      });
 
-    if (!res.ok) {
-      throw new Error('Failed to fetch');
+      if (!res.ok) throw new Error('Failed to fetch project bugs');
+      const data = await res.json();
+
+      setQueue((prev) => ({
+        ...prev,
+        [projectId]: data,
+      }));
+    } catch (err) {
+      console.error('Fetch failed', err);
+    }
+  }, []);
+
+const fetchMyAssignedBugs = useCallback(async () => {
+    setLoadingMyBugs(true);
+    try {
+      // Clean target route match pointing to the overridden absolute API path
+      const res = await fetch(`${API}/api/bugs/me`, {
+        headers: authHeaders(), // Uses localStorage identically to fetchBugs!
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        setMyAssignedBugs(data);
+      } else {
+        console.error("Server responded with error status:", res.status);
+      }
+    } catch (err) {
+      console.error("Error fetching my assigned bugs:", err);
+    } finally {
+      setLoadingMyBugs(false);
+    }
+  }, []);
+
+  // ─── FUSE LOGIC DUPLICATIONS SCANNER ────────────────────────────────────────
+  const findDuplicates = useCallback((bugs: Customer[], text: string, activeField?: string): DuplicateMatch | null => {
+    if (!text || text.trim().length < 3 || !bugs.length) return null;
+
+    let searchKeys: any[] = [];
+    if (activeField === "bugId") {
+      searchKeys = [{ name: "bugId", weight: 2 }];
+    } else if (activeField === "description" || activeField === "actualResult") {
+      searchKeys = [{ name: activeField, weight: 1 }];
+    } else {
+      searchKeys = [
+        { name: "description", weight: 1 },
+        { name: "actualResult", weight: 1 }
+      ];
     }
 
-    const data = await res.json();
+    const fuse = new Fuse(bugs, {
+      keys: searchKeys,
+      includeMatches: true,
+      threshold: activeField === "bugId" ? 0.2 : 0.4, 
+      ignoreLocation: true,
+      minMatchCharLength: 3,
+    });
 
-    setQueue((prev) => ({
-      ...prev,
-      [projectId]: data,
-    }));
+    const results = fuse.search(text);
+    if (results.length === 0) return null;
 
-  } catch (err) {
-    console.error('Fetch failed', err);
-  }
-}, []);
+    const bestMatch = results[0];
+    
+    const matchedKey =
+      bestMatch.matches?.find((m) => m.key === activeField)?.key ??
+      bestMatch.matches?.[0]?.key ??
+      activeField ??
+      "description";
 
+    return { item: bestMatch.item, matchedKey };
+  }, []);
 
-
-
-  //  FUSE LOGIC  
-const findDuplicates = useCallback((bugs: Customer[], text: string, activeField?: string): DuplicateMatch | null => {
-  if (!text || text.trim().length < 3 || !bugs.length) return null;
-
-  // 1. Dynamic Keys Configuration based on the active field being typed into
-let searchKeys: any[] = [];
-  if (activeField === "bugId") {
-    // Strict exact/close matching for specific IDs
-    searchKeys = [{ name: "bugId", weight: 2 }];
-  } else if (activeField === "description" || activeField === "actualResult") {
-    // Context matching for rich text fields
-    searchKeys = [{ name: activeField, weight: 1 }];
-  } else {
-    // Fallback: If no specific field is targeted, use global contextual fields
-    searchKeys = [
-      { name: "description", weight: 1 },
-      { name: "actualResult", weight: 1 }
-    ];
-  }
-
-  const fuse = new Fuse(bugs, {
-    keys: searchKeys,
-    includeMatches: true,
-    // 0.4 is perfect for paragraphs. For exact IDs, lower it to 0.2
-    threshold: activeField === "bugId" ? 0.2 : 0.4, 
-    ignoreLocation: true,
-    minMatchCharLength: 3, // Raised to 3 to prevent single/double character noise triggers
-  });
-
-  const results = fuse.search(text);
-  if (results.length === 0) return null;
-
-  const bestMatch = results[0];
-  
-  // 2. Identify exactly which property triggered the best match score
-  const matchedKey =
-    bestMatch.matches?.find((m) => m.key === activeField)?.key ??
-    bestMatch.matches?.[0]?.key ??
-    activeField ??
-    "description";
-
-  return { item: bestMatch.item, matchedKey };
-}, []);
-
+  //   QUEUE STATE STATE MANAGERS  
   const updateBugInState = useCallback((projectId: string, bugId: number, updates: Partial<Customer>) => {
     setQueue((prev) => ({
       ...prev,
@@ -188,12 +198,73 @@ let searchKeys: any[] = [];
     if (res.ok) updateBugInState(projectId, id, { priority });
   };
 
+  // ─── COMMUNITY MEMBER MANAGEMENT AND WORK ITEM ASSIGNMENT ─────────────────
+  const fetchProjectMembers = useCallback(async (projectId: string) => {
+    try {
+      const token = getCookieToken() || localStorage.getItem('token');
+      const res = await fetch(`${API}/api/projects/${projectId}/members`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProjectMembers(data);
+      }
+    } catch (err) {
+      console.error("Failed fetching project members", err);
+    }
+  }, []);
+
+  const assignBug = useCallback(async (projectId: string, bugId: number, userId: number | null) => {
+    try {
+      const token = getCookieToken() || localStorage.getItem('token');
+      const res = await fetch(`${API}/api/projects/${projectId}/bugs/${bugId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          field: "assignedtouserid", 
+          value: userId ? userId.toString() : "" 
+        }),
+      });
+      
+      if (res.ok) {
+        const updatedBugData = await res.json();
+        
+        // Correctly call the fetch function now that it sits properly in parent scope
+        fetchMyAssignedBugs(); 
+        
+   updateBugInState(projectId, bugId, { 
+  assignedToUserId: userId,
+  assignedToEmail: updatedBugData.assignedToEmail,
+  assignedById: updatedBugData.assignedById,
+  assignedByName: updatedBugData.assignedByName,
+  assignedAt: updatedBugData.assignedAt
+});
+      }
+    } catch (err) {
+      console.error("Failed to assign bug", err);
+    }
+  }, [updateBugInState, fetchMyAssignedBugs]);
+
   return (
     <QueueContext.Provider value={{ 
-      queue, addQueue, removeQueue, updateQueue, 
-      updatePriorityQueue, updateBugInState, fetchBugs, 
+      queue, 
+      projectMembers,
+      myAssignedBugs,
+      loadingMyBugs,
+      addQueue, 
+      removeQueue, 
+      updateQueue, 
+      updatePriorityQueue, 
+      updateBugInState, 
+      fetchBugs, 
       findDuplicates, 
-      clearQueue: () => setQueue({}) 
+      clearQueue: () => setQueue({}),
+      fetchProjectMembers,
+      assignBug,
+      fetchMyAssignedBugs
     }}>
       {children}
     </QueueContext.Provider>
