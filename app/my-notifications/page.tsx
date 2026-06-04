@@ -1,150 +1,330 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useQueueContext } from '../context/QueueContext';
 import Link from 'next/link';
 
+// --- UI Utilities ---
+
+const PriorityBadge = ({ priority }: { priority: string }) => {
+  const styles = {
+    High: 'bg-red-50 text-red-700 border-red-100 ring-red-500/20',
+    Medium: 'bg-amber-50 text-amber-700 border-amber-100 ring-amber-500/20',
+    Low: 'bg-emerald-50 text-emerald-700 border-emerald-100 ring-emerald-500/20',
+  };
+
+  const styleKey = Object.keys(styles).includes(priority) ? priority : 'Low';
+
+  return (
+    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${styles[styleKey as keyof typeof styles]}`}>
+      {priority}
+    </span>
+  );
+};
+
+const StatusPill = ({ status }: { status: string }) => {
+  const displayStatus = status === 'notFixed' ? 'Open' : status;
+  
+  const styles = {
+    fixed: 'bg-slate-100 text-slate-500',
+    'in-progress': 'bg-indigo-50 text-indigo-600',
+    open: 'bg-slate-900 text-white',
+  };
+
+  const styleKey = Object.keys(styles).includes(status) ? status : 'open';
+
+  return (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider ${styles[styleKey as keyof typeof styles]}`}>
+      {displayStatus}
+    </span>
+  );
+};
+
+const SkeletonRow = () => (
+  <div className="animate-pulse flex items-center space-x-4 border-b border-slate-100 p-4">
+    <div className="h-4 w-16 rounded bg-slate-200" />
+    <div className="h-4 w-20 rounded bg-slate-200" />
+    <div className="h-4 flex-1 rounded bg-slate-200" />
+    <div className="h-8 w-24 rounded bg-slate-200" />
+  </div>
+);
+
+function CheckCircleIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
+
+function StatCard({ label, value, color }: { label: string, value: number, color: 'slate' | 'red' | 'indigo' }) {
+  const colorClasses = {
+    slate: 'text-slate-900',
+    red: 'text-red-600',
+    indigo: 'text-indigo-600',
+  };
+  
+  return (
+    <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">{label}</dt>
+      <dd className={`mt-1 text-3xl font-semibold tracking-tight ${colorClasses[color]}`}>
+        {value}
+      </dd>
+    </div>
+  );
+}
+
+// --- Main Component ---
+
 export default function Page() {
   const { myAssignedBugs, loadingMyBugs, fetchMyAssignedBugs } = useQueueContext();
+  
+  // Track currently inspected row data locally for immediate overlay injection
+  const [selectedBug, setSelectedBug] = useState<any | null>(null);
 
   useEffect(() => {
     fetchMyAssignedBugs();
   }, [fetchMyAssignedBugs]);
 
-  if (loadingMyBugs) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-2">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent" />
-          <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Loading your tasks...</p>
-        </div>
-      </div>
-    );
-  }
+  // --- Data Processing ---
 
-  // Safe client filter accounting for property naming variations
-  const openBugs = myAssignedBugs.filter(b => {
-    const currentStatus = b.status ?? (b as any).Status;
-    return currentStatus !== 'fixed';
-  });
+  const processedBugs = useMemo(() => {
+    if (!myAssignedBugs) return [];
+    
+    const sorted = [...myAssignedBugs].filter(b => {
+      const currentStatus = b.status ?? (b as any).Status;
+      return currentStatus !== 'fixed';
+    });
+
+    sorted.sort((a, b) => {
+      const pA = a.priority ?? (a as any).Priority;
+      const pB = b.priority ?? (b as any).Priority;
+      const priorityScore = { High: 3, Medium: 2, Low: 1 };
+      return (priorityScore[pB as keyof typeof priorityScore] || 1) - (priorityScore[pA as keyof typeof priorityScore] || 1);
+    });
+
+    return sorted;
+  }, [myAssignedBugs]);
+
+  const stats = useMemo(() => {
+    return {
+      total: processedBugs.length,
+      high: processedBugs.filter(b => (b.priority ?? (b as any).Priority) === 'High').length,
+      inProgress: processedBugs.filter(b => (b.status ?? (b as any).Status) === 'in-progress').length,
+    };
+  }, [processedBugs]);
+
+  // --- Render ---
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/40 p-4 md:p-8 font-sans">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8 font-sans relative">
+      <div className="mx-auto max-w-6xl space-y-8">
         
-        {/* Header section */}
-        <div className="flex items-center justify-between">
+        {/* Header Section */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-black text-gray-900 tracking-tight">My Assigned Tasks</h1>
-            <p className="text-xs text-gray-500 font-medium">Bugs currently routed to your queue across all projects.</p>
-          </div>
-          <div className="px-4 py-1.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-full text-xs font-bold shadow-sm">
-            Total Open: {openBugs.length}
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">My Queue</h1>
+            <p className="mt-1 text-sm text-slate-500">You have {stats.total} active assignments.</p>
           </div>
         </div>
 
-        {/* Task Grid / List layout */}
-        {myAssignedBugs.length === 0 ? (
-          <div className="bg-white border rounded-2xl p-16 text-center shadow-sm flex flex-col items-center justify-center text-gray-400">
-            <svg className="w-12 h-12 mb-3 opacity-20 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="text-sm font-bold tracking-widest uppercase text-gray-700">Inbox Zero!</p>
-            <p className="text-xs text-gray-400 mt-1">You don't have any bugs assigned to you right now.</p>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <StatCard label="Total Open" value={stats.total} color="slate" />
+          <StatCard label="Critical Priority" value={stats.high} color="red" />
+          <StatCard label="In Progress" value={stats.inProgress} color="indigo" />
+        </div>
+
+        {/* Main Content Area */}
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          
+          {/* Table Header */}
+          <div className="hidden sm:grid sm:grid-cols-12 border-b border-slate-100 bg-slate-50/50 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <div className="col-span-2">Task</div>
+            <div className="col-span-2">Priority</div>
+            <div className="col-span-5">Details</div>
+            <div className="col-span-3 text-right">Actions</div>
           </div>
-        ) : (
-          <div className="bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden">
-            <div className="divide-y divide-gray-100">
-              {myAssignedBugs.map((bug) => {
-                // Handle mixed-case property serialization safely
-                const bugIdentifier = bug.bugId ?? (bug as any).BugId;
+
+          {/* Loading State */}
+          {loadingMyBugs && (
+             <div className="divide-y divide-slate-100">
+               {[1,2,3].map(i => <SkeletonRow key={i} />)}
+             </div>
+          )}
+
+          {/* Empty State */}
+          {!loadingMyBugs && processedBugs.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="rounded-full bg-slate-50 p-4 ring-1 ring-slate-100">
+                <CheckCircleIcon className="h-8 w-8 text-emerald-500" />
+              </div>
+              <h3 className="mt-4 text-sm font-semibold text-slate-900">All caught up!</h3>
+              <p className="mt-1 max-w-sm text-sm text-slate-500">
+                You have no active bugs assigned to your queue.
+              </p>
+            </div>
+          )}
+
+          {/* List View */}
+          {!loadingMyBugs && processedBugs.length > 0 && (
+            <ul className="divide-y divide-slate-100" role="list">
+              {processedBugs.map((bug) => {
+                const bugId = bug.bugId ?? (bug as any).BugId;
                 const priority = bug.priority ?? (bug as any).Priority;
                 const status = bug.status ?? (bug as any).Status;
                 const description = bug.description ?? (bug as any).Description;
-                const url = bug.url ?? (bug as any).Url;
                 const projectId = bug.projectId ?? (bug as any).ProjectId;
                 
-                // Assignment tracking properties
-                const assignedByName = bug.assignedByName ?? (bug as any).AssignedByName;
-                const assignedAt = bug.assignedAt ?? (bug as any).AssignedAt;
+                const rowHighlight = priority === 'High' ? 'border-l-4 border-l-red-500' : '';
 
                 return (
-                  <div key={bug.id} className="p-4 hover:bg-slate-50/50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
+                  <li key={bug.id} className={`group relative flex flex-col gap-4 bg-white px-4 py-4 transition-colors hover:bg-slate-50 sm:grid sm:grid-cols-12 sm:items-center sm:gap-0 ${rowHighlight}`}>
                     
-                    {/* Left Metadata Side */}
-                    <div className="space-y-1 max-w-xl">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
-                          {bugIdentifier}
-                        </span>
-                        
-                        {/* Priority Badge */}
-                        <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full tracking-wider shadow-sm ${
-                          priority === 'High' ? 'bg-red-500 text-white' : 
-                          priority === 'Medium' ? 'bg-amber-400 text-amber-950' : 'bg-emerald-500 text-white'
-                        }`}>
-                          {priority}
-                        </span>
-
-                        {/* Status Badge */}
-                        <span className={`text-[9px] font-bold uppercase px-2 py-0.5 border rounded-md ${
-                          status == 'fixed' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
-                          status == 'in-progress' ? 'bg-purple-50 border-purple-200 text-purple-700' : 'bg-red-50 border-red-200 text-red-700'
-                        }`}>
-                          {status === 'notFixed' ? 'Not Fixed' : status}
-                        </span>
-                      </div>
-
-                      {/* Bug Description Summaries */}
-                      <h3 className="text-sm font-bold text-gray-800 line-clamp-1">
-                        {description || "No description provided"}
-                      </h3>
-                      
-                      {/* URL context link tracker */}
-                      {url && (
-                        <p className="text-[11px] text-gray-400 truncate max-w-md">
-                          URL: <span className="text-blue-500 italic hover:underline">{url}</span>
-                        </p>
-                      )}
-
-                      {/* NEW: Live Assignment Footer Context Metadata Row */}
-                      {assignedByName && (
-                        <div className="flex items-center gap-2 text-[11px] font-medium text-gray-500 pt-1.5 flex-wrap">
-                          <span className="flex items-center gap-1 bg-slate-100 border border-slate-200/60 px-2 py-0.5 rounded text-gray-600">
-                            👤 Assigned by: <strong className="text-gray-800">{assignedByName}</strong>
-                          </span> .
-                          {assignedAt && (
-                            <span className="text-gray-400 bg-gray-50 border border-gray-100 px-2 py-0.5 rounded">
-                              📅 {new Date(assignedAt).toLocaleDateString(undefined, {
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </span>
-                          )}
-                        </div>
-                      )}
+                    <div className="col-span-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+                      <span className="font-mono text-xs font-medium text-slate-500">{bugId}</span>
+                      <StatusPill status={status} />
                     </div>
 
-                    {/* Right Navigation Actions */}
-                    <div className="flex items-center gap-2 self-end sm:self-center">
-                      <Link 
-                        href={`/dashboard/${projectId}`}
-                        className="px-4 py-2 text-[11px] font-black tracking-wider uppercase text-gray-600 bg-white border border-gray-200 rounded-xl shadow-sm hover:bg-gray-50 transition-all group-hover:border-blue-200 group-hover:text-blue-600"
+                    <div className="col-span-2 flex items-center">
+                      <PriorityBadge priority={priority} />
+                    </div>
+
+                    <div className="col-span-5 flex flex-col gap-1">
+                      <p className="truncate font-medium text-slate-900 text-sm sm:text-base">
+                        {description || "No description provided"}
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-slate-400">
+                        <span>Assigned by {bug.assignedByName ?? (bug as any).AssignedByName}</span>
+                      </div>
+                    </div>
+
+                    <div className="col-span-3 flex items-center justify-end gap-2">
+                      {/* Interactive Button targeting state data projection instantly */}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedBug(bug)}
+                        className="flex items-center justify-center rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 ring-1 ring-inset ring-slate-200 transition-all hover:bg-slate-50 hover:ring-slate-300 shadow-sm"
                       >
-                        View Project ↗
+                        View bug
+                      </button>
+                      
+                      <Link
+                        href={`/dashboard/${projectId}`}
+                        className="flex items-center justify-center rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 ring-1 ring-inset ring-slate-200 transition-all hover:bg-slate-50 hover:ring-slate-300 shadow-sm"
+                      >
+                        View project
                       </Link>
                     </div>
-
-                  </div>
+                  </li>
                 );
               })}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      {/* OVERLAY PANEL MODAL: Reveals deep fields straight from table record context */}
+      {selectedBug && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm transition-opacity"
+          onClick={() => setSelectedBug(null)}
+        >
+          <div 
+            className="bg-white border border-slate-200 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col transform transition-transform max-h-[85vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header Content parameters */}
+            <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-start justify-between">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs font-bold tracking-tight text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md">
+                    {selectedBug.bugId ?? (selectedBug as any).BugId}
+                  </span>
+                  <PriorityBadge priority={selectedBug.priority ?? (selectedBug as any).Priority} />
+                  <StatusPill status={selectedBug.status ?? (selectedBug as any).Status} />
+                </div>
+                <h2 className="text-base font-bold text-slate-900 mt-2">Extended Assignment Diagnostics</h2>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setSelectedBug(null)}
+                className="text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200/80 p-1.5 px-2.5 rounded-lg text-xs font-bold transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Scrollable Context Fields layout */}
+            <div className="p-6 overflow-y-auto space-y-5 text-sm">
+              <div>
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5"> Description Summary</h4>
+                <p className="text-slate-700 bg-slate-50 border border-slate-100 p-3.5 rounded-xl font-medium whitespace-pre-wrap leading-relaxed">
+                  {selectedBug.description ?? (selectedBug as any).Description ?? "No core description provided."}
+                </p>
+              </div>
+
+              {/* Functional Expected vs Actual Blocks configuration */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Expected Blueprint Outcome</h4>
+                  <div className="text-xs text-slate-700 bg-emerald-50/30 border border-emerald-100/60 p-3 rounded-xl min-h-[70px] leading-relaxed">
+                    {selectedBug.expectedResult ?? (selectedBug as any).ExpectedResult ?? (
+                      <span className="text-slate-400 italic">No expected metrics defined.</span>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Observed Actual Failure Trace</h4>
+                  <div className="text-xs text-slate-700 bg-rose-50/30 border border-rose-100/60 p-3 rounded-xl min-h-[70px] leading-relaxed">
+                    {selectedBug.actualResult ?? (selectedBug as any).ActualResult ?? (
+                      <span className="text-slate-400 italic">No execution failure footprints logged.</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Developer notes section */}
+              <div>
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Administrative Patch Notes</h4>
+                <div className="text-xs text-slate-600 bg-slate-50 border border-slate-100 p-3 rounded-xl min-h-[60px]">
+                  {selectedBug.note ?? (selectedBug as any).Note ?? (
+                    <span className="text-slate-400 italic">No developer comments added.</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Dynamic Target URLs configuration block */}
+              {(selectedBug.url || (selectedBug as any).Url) && (
+                <div className="pt-2">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Origin Context Location URL</h4>
+                  <a 
+                    href={selectedBug.url ?? (selectedBug as any).Url}
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="text-xs text-blue-600 bg-blue-50/50 border border-blue-100 rounded-xl p-2.5 flex items-center justify-between font-medium hover:underline truncate"
+                  >
+                    <span>{selectedBug.url ?? (selectedBug as any).Url}</span>
+                    <span className="text-[10px] pl-2 text-blue-400">Target ↗</span>
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* Panel operations layout footer row */}
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-xs text-slate-400 px-5">
+              <span>Assigned by: <strong className="text-slate-700 font-semibold">{selectedBug.assignedByName ?? (selectedBug as any).AssignedByName ?? 'System'}</strong></span>
+              <button 
+                type="button"
+                onClick={() => setSelectedBug(null)}
+                className="px-4 py-1.5 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 shadow-sm transition-all"
+              >
+                Close View
+              </button>
             </div>
           </div>
-        )}
-
-      </div>
+        </div>
+      )}
     </div>
   );
 }
