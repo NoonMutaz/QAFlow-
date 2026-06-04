@@ -79,7 +79,6 @@ export default function Page() {
 
   const formatDate = (value: any) => {
     if (!value) return '';
-    // If it's already a clean formatted string fallback cleanly instead of breaking on an invalid date parse
     if (typeof value === 'string' && isNaN(Number(value)) && value.includes(',')) return value;
     
     const timestamp = isNaN(Number(value)) ? Date.parse(value) : Number(value);
@@ -158,18 +157,21 @@ export default function Page() {
           {/* List View */}
           {!loadingMyBugs && processedBugs.length > 0 && (
             <ul className="divide-y divide-slate-100" role="list">
-              {processedBugs.map((bug) => {
-                const bugId = bug.bugId ?? (bug as any).BugId;
-                const priority = bug.priority ?? (bug as any).Priority;
-                const status = bug.status ?? (bug as any).Status;
-                const description = bug.description ?? (bug as any).Description;
-                const projectId = bug.projectId ?? (bug as any).ProjectId;
+              {processedBugs.map((bugItem) => {
+                // Cast to any to bypass strict 'Customer' key checks during mapping loops
+                const bug = bugItem as any;
+
+                const bugId = bug.bugId ?? bug.BugId;
+                const priority = bug.priority ?? bug.Priority;
+                const status = bug.status ?? bug.Status;
+                const description = bug.description ?? bug.Description;
+                const projectId = bug.projectId ?? bug.ProjectId;
                 
                 // 1. True Bug Creation Date
-                const actualBugDate = bug.bugDate ?? bug.bugCreatedAt ?? bug.reportedAt ?? bug.createdAt ?? (bug as any).BugDate;
+                const actualBugDate = bug.bugDate ?? bug.bugCreatedAt ?? bug.reportedAt ?? bug.createdAt ?? bug.BugDate;
                 
                 // 2. Queue Assignment Timestamp
-                const assignmentDate = bug.assignedAt ?? bug.assignDate ?? bug.assignedDate ?? (bug as any).AssignedAt;
+                const assignmentDate = bug.assignedAt ?? bug.assignDate ?? bug.assignedDate ?? bug.AssignedAt;
                 
                 const rowHighlight = priority === 'High' ? 'border-l-4 border-l-red-500' : '';
                 const isRowUpdating = updatingId === bug.id;
@@ -204,10 +206,10 @@ export default function Page() {
                       {/* Meta timestamps row */}
                       <div className="flex flex-col gap-0.5 text-[11px] text-slate-400">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span>Assigned by <strong className="text-slate-600 font-medium">{bug.assignedByName ?? (bug as any).AssignedByName}</strong></span>
+                          <span>Assigned by <strong className="text-slate-600 font-medium">{bug.assignedByName ?? bug.AssignedByName}</strong></span>
                           {assignmentDate && (
                             <span className="text-slate-500 bg-slate-100 border border-slate-200/60 px-1.5 py-0.5 rounded font-mono text-[10px]">
-                              {formatDate(assignmentDate)}
+                              Assigned: {formatDate(assignmentDate)}
                             </span>
                           )}
                         </div>
@@ -222,7 +224,7 @@ export default function Page() {
                     <div className="col-span-3 flex items-center justify-end gap-2">
                       <button
                         type="button"
-                        onClick={() => setSelectedBug(bug)}
+                        onClick={() => setSelectedBug(bugItem)}
                         className="flex items-center justify-center rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 ring-1 ring-inset ring-slate-200 transition-all hover:bg-slate-50 hover:ring-slate-300 shadow-sm"
                       >
                         View bug
