@@ -119,21 +119,30 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  // FIXED: Standardized URL route parameter matching your .NET project endpoints configuration
-const fetchActivityLogs = async (projectId: number) => {
-  const token = localStorage.getItem("token");
+  // FIXED: Changed parameter type to 'string', wrapped in useCallback, and wired up state management hooks
+  const fetchActivityLogs = useCallback(async (projectId: string) => {
+    setLoadingLogs(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `${API}/api/projects/${projectId}/activity`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
 
-  const response = await fetch(
-    `${API}/api/projects/${projectId}/activity`, //  Added /api/
-    {
-      headers: {
-        Authorization: `Bearer ${token}`
+      if (response.ok) {
+        const data = await response.json();
+        setActivityLogs(data); // Safely sets global state array for your Activity page
       }
+    } catch (err) {
+      console.error("Error fetching activity logs:", err);
+    } finally {
+      setLoadingLogs(false); // Shuts down UI skeleton loading filters
     }
-  );
-
-  return await response.json();
-};
+  }, []);
 
   // ─── FUSE LOGIC DUPLICATIONS SCANNER ────────────────────────────────────────
   const findDuplicates = useCallback((bugs: Customer[], text: string, activeField?: string): DuplicateMatch | null => {
