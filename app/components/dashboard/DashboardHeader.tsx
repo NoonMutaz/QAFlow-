@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import Link from 'next/link'; // Import Link for routing
 
 export interface Project {
   id: number;
@@ -26,7 +27,7 @@ interface DashboardHeaderProps {
   project: Project;
   id: string | number;
   queue: Queue;
-  members?: Member[]; // 
+  members?: Member[];
 }
 
 export default function DashboardHeader({ project, id, queue, members = [] }: DashboardHeaderProps) {
@@ -44,12 +45,12 @@ export default function DashboardHeader({ project, id, queue, members = [] }: Da
   };
 
   return (
-    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-gray-100 pb-5 dark:border-zinc-900">
       <div className="flex flex-col gap-1">
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+        <h1 className="text-3xl font-bold text-gray-900 tracking-tight dark:text-gray-50">
           {project.name || 'QA Dashboard'}
         </h1>
-        <p className="text-xs sm:text-sm text-gray-500 mt-1 leading-snug break-words">
+        <p className="text-xs sm:text-sm text-gray-500 mt-1 leading-snug break-words dark:text-gray-400">
           {project.description || 'Monitor bugs, test cases, and status in real time'}
         </p>
 
@@ -65,7 +66,7 @@ export default function DashboardHeader({ project, id, queue, members = [] }: Da
                 <div
                   key={member.userId}
                   title={`${member.email} (${member.role})`}
-                  className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-bold shadow-sm hover:scale-105 transition-transform ${
+                  className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-bold shadow-sm hover:scale-105 transition-transform dark:border-zinc-950 ${
                     getRoleColor(member.role)
                   }`}
                 >
@@ -73,17 +74,17 @@ export default function DashboardHeader({ project, id, queue, members = [] }: Da
                 </div>
               ))}
               {members.length > 3 && (
-                <div className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-bold shadow-sm hover:scale-105 transition-transform bg-gradient-to-br from-purple-400 to-purple-600 cursor-pointer`}>
+                <div className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-bold shadow-sm hover:scale-105 transition-transform bg-gradient-to-br from-purple-400 to-purple-600 cursor-pointer dark:border-zinc-950`}>
                   +{members.length - 3}
                 </div>
               )}
             </div>
 
-            {/* Members Menu - Same exact styling */}
+            {/* Members Dropdown Menu */}
             {isMenuOpen && (
-              <div className="absolute top-14 left-0 w-72 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                <div className="p-3 border-b border-gray-100">
-                  <h3 className="text-sm font-semibold text-gray-900">
+              <div className="absolute top-14 left-0 w-72 bg-white border border-gray-200 rounded-lg shadow-lg z-50 dark:bg-zinc-950 dark:border-zinc-800">
+                <div className="p-3 border-b border-gray-100 dark:border-zinc-900">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                     Team Members ({members.length})
                   </h3>
                 </div>
@@ -91,16 +92,15 @@ export default function DashboardHeader({ project, id, queue, members = [] }: Da
                   {members.map((member) => (
                     <div
                       key={member.userId}
-                      className="flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0"
+                      className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-zinc-900/50 transition-colors border-b border-gray-50 dark:border-zinc-900/50 last:border-b-0"
                     >
                       <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm ${getRoleColor(member.role)}`}>
                         {member.email[0]?.toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                             <p className="text-xs text-gray-500 capitalize">{member.role}</p>
-                        <p className="text-sm font-medium text-gray-900 truncate">{member.name}</p>
-                        <p className="text-sm font-medium text-gray-900 truncate">{member.email}</p>
-                   
+                        <p className="text-xs text-gray-500 capitalize dark:text-gray-400">{member.role}</p>
+                        <p className="text-sm font-medium text-gray-900 truncate dark:text-gray-100">{member.name}</p>
+                        <p className="text-sm font-medium text-gray-900 truncate dark:text-gray-100">{member.email}</p>
                       </div>
                     </div>
                   ))}
@@ -111,11 +111,31 @@ export default function DashboardHeader({ project, id, queue, members = [] }: Da
         )}
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="h-12 w-px bg-gray-200" />
+      {/* Action Area (Activity Logs Button & Active Count Metrics) */}
+      <div className="flex items-center justify-between sm:justify-start gap-4 mt-2 md:mt-0">
+        
+        {/* ADDED: Activity Log Button */}
+        <Link
+          href={`/dashboard/${id}/activity`}
+          className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:text-gray-900 transition dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-zinc-50"
+        >
+          <svg 
+            className="h-4 w-4 text-gray-500 dark:text-zinc-400" 
+            fill="none" 
+            viewBox="0 0 24 24" 
+            strokeWidth="2" 
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+          </svg>
+          Activity Log
+        </Link>
+
+        <div className="hidden sm:block h-8 w-px bg-gray-200 dark:bg-zinc-800" />
+
         <div className="text-right">
-          <p className="text-xs text-gray-500">Active</p>
-          <p className="text-2xl font-bold text-purple-600">{activeCount}</p>
+          <p className="text-xs text-gray-500 dark:text-zinc-400">Active Bugs</p>
+          <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{activeCount}</p>
         </div>
       </div>
     </div>

@@ -19,8 +19,6 @@ export interface Customer {
   actualResult: string;
   note: string;
   attachmentUrl?: string;
-  // Added assignment tracking fields to clear up typescript errors
-  
   assignedToUserId?: number | null;
   assignedToEmail?: string | null;
   assignedById?: number | null;
@@ -34,11 +32,26 @@ export interface DuplicateMatch {
   matchedKey: string;
 }
 
+export interface ActivityLog {
+  id: number;
+  action: string;
+  entityType: string;
+  entityId: number | null;
+  details: string;
+  createdAt: string;
+  user: {
+    name: string;
+    email: string;
+  };
+}
+
 interface QueueContextType {
   queue: Record<string, Customer[]>;
   projectMembers: any[];
   myAssignedBugs: Customer[];
   loadingMyBugs: boolean;
+  activityLogs: ActivityLog[];
+  loadingLogs: boolean;
   addQueue: (projectId: string, customer: any) => Promise<number>;
   removeQueue: (projectId: string, id: number) => Promise<void>;
   updateQueue: (projectId: string, id: number, status: Status) => Promise<void>;
@@ -50,6 +63,7 @@ interface QueueContextType {
   fetchProjectMembers: (projectId: string) => Promise<void>;
   assignBug: (projectId: string, bugId: number, userId: number | null) => Promise<void>;
   fetchMyAssignedBugs: () => Promise<void>;
+  fetchActivityLogs: (projectId: string) => Promise<void>;
 }
 
 const QueueContext = createContext<QueueContextType | undefined>(undefined);
@@ -61,51 +75,42 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
   const [projectMembers, setProjectMembers] = useState<any[]>([]);
   const [myAssignedBugs, setMyAssignedBugs] = useState<Customer[]>([]);
   const [loadingMyBugs, setLoadingMyBugs] = useState<boolean>(false);
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState<boolean>(false);
 
-  // Fallback headers parser configuration helper
   const authHeaders = () => ({
     'Content-Type': 'application/json',
     Authorization: `Bearer ${localStorage.getItem('token')}`,
   });
 
-  // Helper function to extract cookies cleanly if fallback tracking is required
   const getCookieToken = () => {
     const match = document.cookie.match(/(^| )token=([^;]+)/);
     return match ? match[2] : null;
   };
 
-  // ─── CORE BUGS FETCHERS ─────────────────────────────────────────────────────
+  // ─── CORE FETCHERS ──────────────────────────────────────────────────────────
   const fetchBugs = useCallback(async (projectId: string) => {
     try {
       const res = await fetch(`${API}/api/projects/${projectId}/bugs`, {
         headers: authHeaders(),
       });
-
       if (!res.ok) throw new Error('Failed to fetch project bugs');
       const data = await res.json();
-
-      setQueue((prev) => ({
-        ...prev,
-        [projectId]: data,
-      }));
+      setQueue((prev) => ({ ...prev, [projectId]: data }));
     } catch (err) {
       console.error('Fetch failed', err);
     }
   }, []);
 
-const fetchMyAssignedBugs = useCallback(async () => {
+  const fetchMyAssignedBugs = useCallback(async () => {
     setLoadingMyBugs(true);
     try {
-      // Clean target route match pointing to the overridden absolute API path
       const res = await fetch(`${API}/api/bugs/me`, {
-        headers: authHeaders(), // Uses localStorage identically to fetchBugs!
+        headers: authHeaders(),
       });
-      
       if (res.ok) {
         const data = await res.json();
         setMyAssignedBugs(data);
-      } else {
-        console.error("Server responded with error status:", res.status);
       }
     } catch (err) {
       console.error("Error fetching my assigned bugs:", err);
@@ -113,6 +118,22 @@ const fetchMyAssignedBugs = useCallback(async () => {
       setLoadingMyBugs(false);
     }
   }, []);
+
+  // FIXED: Standardized URL route parameter matching your .NET project endpoints configuration
+const fetchActivityLogs = async (projectId: number) => {
+  const token = localStorage.getItem("token");
+
+  const response = await fetch(
+    `${API}/api/projects/${projectId}/activity`, //  Added /api/
+    {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    }
+  );
+
+  return await response.json();
+};
 
   // ─── FUSE LOGIC DUPLICATIONS SCANNER ────────────────────────────────────────
   const findDuplicates = useCallback((bugs: Customer[], text: string, activeField?: string): DuplicateMatch | null => {
@@ -142,7 +163,6 @@ const fetchMyAssignedBugs = useCallback(async () => {
     if (results.length === 0) return null;
 
     const bestMatch = results[0];
-    
     const matchedKey =
       bestMatch.matches?.find((m) => m.key === activeField)?.key ??
       bestMatch.matches?.[0]?.key ??
@@ -152,7 +172,7 @@ const fetchMyAssignedBugs = useCallback(async () => {
     return { item: bestMatch.item, matchedKey };
   }, []);
 
-  //   QUEUE STATE STATE MANAGERS  
+  // ─── QUEUE OPERATIONS ───────────────────────────────────────────────────────
   const updateBugInState = useCallback((projectId: string, bugId: number, updates: Partial<Customer>) => {
     setQueue((prev) => ({
       ...prev,
@@ -198,7 +218,6 @@ const fetchMyAssignedBugs = useCallback(async () => {
     if (res.ok) updateBugInState(projectId, id, { priority });
   };
 
-  // ─── COMMUNITY MEMBER MANAGEMENT AND WORK ITEM ASSIGNMENT ─────────────────
   const fetchProjectMembers = useCallback(async (projectId: string) => {
     try {
       const token = getCookieToken() || localStorage.getItem('token');
@@ -231,17 +250,15 @@ const fetchMyAssignedBugs = useCallback(async () => {
       
       if (res.ok) {
         const updatedBugData = await res.json();
-        
-        // Correctly call the fetch function now that it sits properly in parent scope
         fetchMyAssignedBugs(); 
         
-   updateBugInState(projectId, bugId, { 
-  assignedToUserId: userId,
-  assignedToEmail: updatedBugData.assignedToEmail,
-  assignedById: updatedBugData.assignedById,
-  assignedByName: updatedBugData.assignedByName,
-  assignedAt: updatedBugData.assignedAt
-});
+        updateBugInState(projectId, bugId, { 
+          assignedToUserId: userId,
+          assignedToEmail: updatedBugData.assignedToEmail,
+          assignedById: updatedBugData.assignedById,
+          assignedByName: updatedBugData.assignedByName,
+          assignedAt: updatedBugData.assignedAt
+        });
       }
     } catch (err) {
       console.error("Failed to assign bug", err);
@@ -254,6 +271,8 @@ const fetchMyAssignedBugs = useCallback(async () => {
       projectMembers,
       myAssignedBugs,
       loadingMyBugs,
+      activityLogs,
+      loadingLogs,
       addQueue, 
       removeQueue, 
       updateQueue, 
@@ -264,7 +283,8 @@ const fetchMyAssignedBugs = useCallback(async () => {
       clearQueue: () => setQueue({}),
       fetchProjectMembers,
       assignBug,
-      fetchMyAssignedBugs
+      fetchMyAssignedBugs,
+      fetchActivityLogs
     }}>
       {children}
     </QueueContext.Provider>

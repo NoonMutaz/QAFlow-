@@ -1,9 +1,9 @@
 import React from 'react'
-import Assigend from '../components/assigned-Page/Assigend'
+import ActivityPage from '../../../components/ActivityPage/ActivityPage'
 export default function page() {
   return (
     <div>
-      <Assigend/>
+      <ActivityPage/>
     </div>
   )
 }
