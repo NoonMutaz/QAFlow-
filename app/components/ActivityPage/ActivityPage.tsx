@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 
 export default function ActivityPage() {
   const [activities, setActivities] = useState<any[]>([]);
+  // ADDED: State to track the project details
+  const [project, setProject] = useState<{ name: string } | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<{ type: 'access' | 'not_found' | 'generic'; message: string } | null>(null);
   
@@ -25,12 +27,29 @@ export default function ActivityPage() {
       const token = localStorage.getItem("token");
       const API = process.env.NEXT_PUBLIC_API_URL ?? '';
 
+      //  Fetch Project Details 
+      const projectRes = await fetch(`${API}/api/projects/${projectId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (projectRes.status === 404) {
+        setError({
+          type: 'not_found',
+          message: `Project #${projectId} could not be found. It may have been deleted or never existed.`
+        });
+        return;
+      }
+
+      if (projectRes.ok) {
+        const projectData = await projectRes.json();
+        setProject(projectData);
+      }
+
+      // 2. Fetch Activity Logs
       const res = await fetch(
         `${API}/api/projects/${projectId}/activity`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
@@ -39,15 +58,6 @@ export default function ActivityPage() {
         setError({
           type: 'access',
           message: 'Access Denied. Only the project owner is authorized to view the system activity logs.'
-        });
-        return;
-      }
-
-      // Handle 404 Not Found (Project does not exist)
-      if (res.status === 404) {
-        setError({
-          type: 'not_found',
-          message: `Project #${projectId} could not be found. It may have been deleted or never existed.`
         });
         return;
       }
@@ -89,7 +99,6 @@ export default function ActivityPage() {
     return (
       <div className="mx-auto max-w-md p-6 my-12 text-center">
         <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-          {/* SVG Warning Icon Dynamic Colors */}
           <div className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full ${
             error.type === 'access' ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400' : 'bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400'
           }`}>
@@ -117,12 +126,6 @@ export default function ActivityPage() {
             >
               Back to Project Workspace
             </button>
-            <button
-              onClick={load}
-              className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
-            >
-              Retry Connection
-            </button>
           </div>
         </div>
       </div>
@@ -132,13 +135,28 @@ export default function ActivityPage() {
   // ─── UI MAIN ACTIVITY FEED STATE ───────────────────────────────────────────
   return (
     <div className="mx-auto max-w-4xl p-6">
+      
+      {/* ADDED: Back to Dashboard link header */}
+      <button 
+        onClick={() => router.push(`/dashboard/${projectId}`)}
+        className="mb-4 inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-900 transition dark:text-zinc-400 dark:hover:text-zinc-200"
+      >
+        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+        </svg>
+        Back to Workspace
+      </button>
+
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
         <div className="border-b border-gray-100 p-5 dark:border-zinc-900">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-50">
-            Project Audit Logs
+          
+          {/* Renders the active Project Name dynamically */}
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-50">
+            {project?.name ? `${project.name} •  Logs` : 'Project Audit Logs'}
           </h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            Real time infrastructure operations for Project Context Target <span className="font-mono bg-gray-100 text-gray-700 px-1 py-0.5 rounded dark:bg-zinc-800 dark:text-zinc-300">#{projectId}</span>
+          
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Real-time infrastructure operations for Project Context Target <span className="font-mono bg-gray-100 text-gray-700 px-1 py-0.5 rounded dark:bg-zinc-800 dark:text-zinc-300">#{projectId}</span>
           </p>
         </div>
 
@@ -151,8 +169,6 @@ export default function ActivityPage() {
             <div className="relative border-l border-gray-200 pl-6 space-y-6 dark:border-zinc-800">
               {activities.map((item) => (
                 <div key={item.id} className="relative group">
-                  
-                  {/* Custom Timeline Bullet Point Indicator */}
                   <span className="absolute -left-[31px] top-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-blue-500 bg-white ring-4 ring-white transition group-hover:scale-110 dark:bg-zinc-950 dark:ring-zinc-950" />
                   
                   <div className="rounded-lg border border-gray-100 bg-gray-50/50 p-4 transition hover:bg-gray-50 dark:border-zinc-900 dark:bg-zinc-900/30 dark:hover:bg-zinc-900/60">
@@ -160,10 +176,9 @@ export default function ActivityPage() {
                       <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">
                         {item.user?.name ?? item.user?.email ?? 'System Identity'}
                       </span>
-                  <span className="text-[10px] text-gray-400 font-mono dark:text-zinc-500">
-  {/* The regex replaces any space with 'T' and appends 'Z' if it's missing to force proper UTC localization */}
-  {new Date(item.createdAt.endsWith('Z') ? item.createdAt : `${item.createdAt.replace(' ', 'T')}Z`).toLocaleString()}
-</span>
+                      <span className="text-[10px] text-gray-400 font-mono dark:text-zinc-500">
+                        {new Date(item.createdAt.endsWith('Z') ? item.createdAt : `${item.createdAt.replace(' ', 'T')}Z`).toLocaleString()}
+                      </span>
                     </div>
 
                     <div className="inline-flex items-center rounded bg-blue-50 px-2 py-0.5 text-[10px] font-bold tracking-wide text-blue-700 uppercase dark:bg-blue-950/50 dark:text-blue-400">

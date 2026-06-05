@@ -149,9 +149,64 @@ const handleUpdatePriority = async (projectId: string, bugId: number, priority: 
   if (!projects.length) {
     return <div className="min-h-screen flex items-center justify-center"><p className="text-gray-400 text-lg">Loading project...</p></div>;
   }
-  if (!project) {
-    return <div className="min-h-screen flex items-center justify-center"><p className="text-red-500 text-lg">Project not found</p></div>;
-  }
+if (!project) {
+  return (
+    <div className="min-h-[85vh] w-full flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+      <div className="max-w-md w-full bg-white border border-gray-200 rounded-2xl p-8 shadow-sm dark:bg-zinc-950 dark:border-zinc-800">
+        
+        {/* Decorative Alert Folder SVG Container */}
+        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 shadow-inner dark:bg-blue-950/30 dark:text-blue-400">
+          <svg 
+            className="h-8 w-8" 
+            fill="none" 
+            viewBox="0 0 24 24" 
+            strokeWidth="1.5" 
+            stroke="currentColor"
+          >
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              d="M2.25 13.5h3.86a2.25 2.25 0 0 1 2.008 1.24l.885 1.77a2.25 2.25 0 0 0 2.007 1.24h1.98a2.25 2.25 0 0 0 2.007-1.24l.885-1.77a2.25 2.25 0 0 1 2.007-1.24h3.86m-18 1.5V7.5A2.25 2.25 0 0 1 4.5 5.25h15A2.25 2.25 0 0 1 21.75 7.5v9a2.25 2.25 0 0 1-2.25 2.25h-15A2.25 2.25 0 0 1 2.25 16.5Z" 
+            />
+          </svg>
+        </div>
+
+        {/* Content Details */}
+        <h3 className="text-xl font-bold text-gray-900 tracking-tight dark:text-gray-50">
+          Project Not found
+        </h3>
+        
+        <p className="mt-2.5 text-sm text-gray-500 leading-relaxed dark:text-gray-400">
+         This project doesn't exist or you don't have permission to view it. Double-check your workspace ID or return to your active dashboard.
+        </p>
+
+        {/* Action Button Container */}
+        <div className="mt-6">
+          <button
+            onClick={() => window.location.href = '/my-projects'}
+            className="inline-flex items-center justify-center gap-2 w-full sm:w-auto rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-gray-800 transition dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
+          >
+            {/* Home/Dashboard Navigation SVG */}
+            <svg 
+              className="h-4 w-4" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              strokeWidth="2" 
+              stroke="currentColor"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" 
+              />
+            </svg>
+            Return to projects 
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
   return (
     <div className="min-h-screen px-4 md:px-8 lg:px-12 py-8 space-y-8">
