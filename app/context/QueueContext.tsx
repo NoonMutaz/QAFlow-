@@ -2,7 +2,7 @@
 import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 import Fuse from 'fuse.js';
 
-// ─── TYPES ───────────────────────────────────────────────────────────────────
+//  TYPES 
 export type Status = 'notFixed' | 'in-progress' | 'fixed';
 export type Priority = 'High' | 'Medium' | 'Low';
 
@@ -70,7 +70,7 @@ const QueueContext = createContext<QueueContextType | undefined>(undefined);
 const API = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 export const QueueProvider = ({ children }: { children: ReactNode }) => {
-  // ─── STATE HOOKS LAYER ─────────────────────────────────────────────────────
+  //  STATE HOOKS LAYER 
   const [queue, setQueue] = useState<Record<string, Customer[]>>({});
   const [projectMembers, setProjectMembers] = useState<any[]>([]);
   const [myAssignedBugs, setMyAssignedBugs] = useState<Customer[]>([]);
@@ -78,17 +78,20 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState<boolean>(false);
 
-  const authHeaders = () => ({
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${localStorage.getItem('token')}`,
-  });
-
+  // cookie Utility to extract auth token directly from document cookies
   const getCookieToken = () => {
+    if (typeof document === 'undefined') return null; // SSR safety check
     const match = document.cookie.match(/(^| )token=([^;]+)/);
     return match ? match[2] : null;
   };
 
-  // ─── CORE FETCHERS ──────────────────────────────────────────────────────────
+  // Main authorization header builder using the cookie 
+  const authHeaders = () => ({
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${getCookieToken()}`,
+  });
+
+  //  CORE FETCHERS 
   const fetchBugs = useCallback(async (projectId: string) => {
     try {
       const res = await fetch(`${API}/api/projects/${projectId}/bugs`, {
@@ -119,28 +122,24 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  // FIXED: Changed parameter type to 'string', wrapped in useCallback, and wired up state management hooks
   const fetchActivityLogs = useCallback(async (projectId: string) => {
     setLoadingLogs(true);
     try {
-      const token = localStorage.getItem("token");
       const response = await fetch(
         `${API}/api/projects/${projectId}/activity`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+          headers: authHeaders() // ⚡ Updated to match authHeaders cookie strategy
         }
       );
 
       if (response.ok) {
         const data = await response.json();
-        setActivityLogs(data); // Safely sets global state array for your Activity page
+        setActivityLogs(data); 
       }
     } catch (err) {
       console.error("Error fetching activity logs:", err);
     } finally {
-      setLoadingLogs(false); // Shuts down UI skeleton loading filters
+      setLoadingLogs(false); 
     }
   }, []);
 
@@ -181,7 +180,7 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
     return { item: bestMatch.item, matchedKey };
   }, []);
 
-  // ─── QUEUE OPERATIONS ───────────────────────────────────────────────────────
+  // QUEUE OPERATIONS 
   const updateBugInState = useCallback((projectId: string, bugId: number, updates: Partial<Customer>) => {
     setQueue((prev) => ({
       ...prev,
@@ -229,9 +228,8 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchProjectMembers = useCallback(async (projectId: string) => {
     try {
-      const token = getCookieToken() || localStorage.getItem('token');
       const res = await fetch(`${API}/api/projects/${projectId}/members`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: authHeaders(), // ⚡ Removed localStorage fallback entirely
       });
       if (res.ok) {
         const data = await res.json();
@@ -244,13 +242,9 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
 
   const assignBug = useCallback(async (projectId: string, bugId: number, userId: number | null) => {
     try {
-      const token = getCookieToken() || localStorage.getItem('token');
       const res = await fetch(`${API}/api/projects/${projectId}/bugs/${bugId}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
+        headers: authHeaders(), // ⚡ Standardized on centralized cookie-auth headers wrapper
         body: JSON.stringify({ 
           field: "assignedtouserid", 
           value: userId ? userId.toString() : "" 

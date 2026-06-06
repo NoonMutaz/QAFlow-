@@ -44,13 +44,13 @@ export default function DashboardHeader({ project, id, queue, members = [] }: Da
     (c) => c.status === 'in-progress',
   ).length;
 
-  // 📊 Auto-fetch analytics data directly on header load
+  //   Auto-fetch analytics data directly on header load
   useEffect(() => {
     if (!id) return;
 
     const fetchAnalytics = async () => {
       try {
-        // 🍪 FIX: Read the token from cookies instead of localStorage
+        //  Read the token from cookies instead of localStorage
         const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2];
         const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
         
@@ -186,7 +186,7 @@ export default function DashboardHeader({ project, id, queue, members = [] }: Da
             Top Contributor:
           </p>
           <p className="text-sm font-semibold text-zinc-800 truncate max-w-[130px] mt-0.5 dark:text-zinc-200" title={topDev}>
-            {topDev} {/* ✨ FIX: Display topDev variable here instead of activeTester */}
+            {topDev} {/*  Display topDev variable here instead of activeTester */}
           </p>
         </div>
 

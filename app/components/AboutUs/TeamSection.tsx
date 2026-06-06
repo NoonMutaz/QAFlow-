@@ -23,6 +23,16 @@ export default function TeamSection() {
        // { name: "Twitter", icon: " ", link: "#" },
       ],
     },
+     {
+      name: "Latifa Khalid Alanazi",
+      role: "QA Engineer",
+      photo:
+        "https://tse4.mm.bing.net/th/id/OIP._CaPhpRAjmgPpYL4Y9vXkwHaE8?rs=1&pid=ImgDetMain&o=7&rm=3",
+      socials: [
+        { name: "LinkedIn", icon: "LinkdIn", link: "https://www.linkedin.com/posts/latifa-khalid-alanazi-0bba08378_softwaretesting-qa-tricentis-share-7454705907478900736-uMdh?utm_source=share&utm_medium=member_desktop&rcm=ACoAAEF5VQUBLEcNESuw26oBof7jqW3y688farM" },
+       // { name: "Twitter", icon: " ", link: "#" },
+      ],
+    },
   ];
 
   return (
