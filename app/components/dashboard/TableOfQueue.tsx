@@ -46,6 +46,9 @@ export default function TableOfQueue({
   const [openModalId, setOpenModalId] = useState<number | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
+  // --- Track upload states per bug ID ---
+  const [uploadingBugIds, setUploadingBugIds] = useState<{ [key: number]: boolean }>({});
+
   // --- Pagination State ---
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
@@ -54,20 +57,9 @@ export default function TableOfQueue({
   const canEditViwer = ["viewer", "member"].includes(currentUserRole);
   const canDelete = currentUserRole === "owner";
 
-  // Reset to page 1 when filters change
-  // useEffect(() => {
-  //   setCurrentPage(1);
-  // }, [select, selectP]);
-useEffect(() => {
-  setCurrentPage(1);
-}, [filteredQueue.length]);
-  // Calculate Stats
-  // const stats = useMemo(() => ({
-  //   total: filteredQueue.length,
-  //   fixed: filteredQueue.filter((b: any) => b.status === 'fixed').length,
-  //   inProgress: filteredQueue.filter((b: any) => b.status === 'in-progress').length,
-  //   notFixed: filteredQueue.filter((b: any) => b.status === 'notFixed').length,
-  // }), [filteredQueue]);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filteredQueue.length]);
 
   // Pagination Logic
   const totalPages = Math.max(1, Math.ceil(filteredQueue.length / pageSize));
@@ -76,47 +68,45 @@ useEffect(() => {
     return filteredQueue.slice(start, start + pageSize);
   }, [filteredQueue, currentPage]);
 
-const handleUpload = async (file: File, bugId: number) => {
-  const fd = new FormData();
-  fd.append("file", file);
-  const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2];
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/bugs/${bugId}/upload`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-    body: fd,
-  });
-  if (res.ok) await fetchBugs(projectId);
-};
+  const handleUpload = async (file: File, bugId: number) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2];
+    
+    // Set loading to true for this specific bug row
+    setUploadingBugIds(prev => ({ ...prev, [bugId]: true }));
 
-useEffect(() => {
-  if (projectId) {
-    fetchProjectMembers(projectId.toString());
-  }
-}, [projectId, fetchProjectMembers]);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/bugs/${bugId}/upload`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        
+        if (typeof updateBugInState === 'function') {
+          updateBugInState(projectId, bugId, { attachmentUrl: data.attachmentUrl });
+        }
+      }
+    } catch (error) {
+      console.error("Upload failed", error);
+    } finally {
+      // Clear loading state for this bug row
+      setUploadingBugIds(prev => ({ ...prev, [bugId]: false }));
+    }
+  };
+
+  useEffect(() => {
+    if (projectId) {
+      fetchProjectMembers(projectId.toString());
+    }
+  }, [projectId, fetchProjectMembers]);
 
   return (
     <div className="space-y-4 font-sans">
       
-      {/* Stats Bar */}
-      {/* <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-center">
-        <div className="bg-white p-4 rounded-2xl border shadow-sm flex flex-col">
-          <span className="text-gray-500 text-xs font-bold uppercase">Total Bugs</span>
-          <span className="text-2xl font-black text-gray-800">{stats.total}</span>
-        </div>
-        <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 shadow-sm flex flex-col text-emerald-700">
-          <span className="text-xs font-bold uppercase">Fixed</span>
-          <span className="text-2xl font-black">{stats.fixed}</span>
-        </div>
-        <div className="bg-purple-50 p-4 rounded-2xl border border-purple-100 shadow-sm flex flex-col text-purple-700">
-          <span className="text-xs font-bold uppercase">In Progress</span>
-          <span className="text-2xl font-black">{stats.inProgress}</span>
-        </div>
-        <div className="bg-red-50 p-4 rounded-2xl border border-red-100 shadow-sm flex flex-col text-red-700">
-          <span className="text-xs font-bold uppercase">Not Fixed</span>
-          <span className="text-2xl font-black">{stats.notFixed}</span>
-        </div>
-      </div> */}
-
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-gray-50 rounded-2xl border">
         <div className="flex items-center gap-3">
@@ -146,8 +136,8 @@ useEffect(() => {
                 <tr key={bug.id} className="hover:bg-blue-50/30 transition-colors group">
                   <td className="px-4 py-4 font-mono text-xs font-bold text-blue-600">{bug.bugId}</td>
                   <td className="px-4 py-4 text-xs font-semibold text-gray-700">{bug.name}</td>
-                  <td className="px-4 py-4">
-                    <PriorityBadge 
+                  <td className="px-4 py-4" title="click to change">
+                    <PriorityBadge
                       priority={bug.priority} 
                       onClick={() => {
                         const order: Priority[] = ["High", "Medium", "Low"];
@@ -172,7 +162,6 @@ useEffect(() => {
                     <select
                       value={bug.status}
                       onChange={(e) => updateQueue(projectId, bug.id, e.target.value as Status)}
-                      // disabled={!canEdit}
                       className={`text-[11px] font-bold border rounded-lg p-1.5 focus:ring-2 focus:ring-blue-400 outline-none cursor-pointer ${bug.status === 'fixed' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : bug.status === 'in-progress' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-red-100 text-red-700 border-red-200'}`}
                     >
                       <option value="notFixed">Not Fixed</option>
@@ -183,19 +172,20 @@ useEffect(() => {
 
                   <td className="px-4 py-4 text-[10px] text-gray-500 font-medium whitespace-nowrap">
                    {new Date(bug.createdAt).toLocaleString(undefined, {
-  year: 'numeric',
-  month: 'short',
-  day: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit'
-})}
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
                   </td>
 
                   <td className="px-4 py-4"><EditableCell value={bug.note || ""} field="note" bugId={bug.id} projectId={projectId} canEdit={canEdit} updateBugInState={updateBugInState} placeholder="Team notes..." /></td>
                   
+                  {/* Attachment Column with New Upload Indicator */}
                   <td className="px-4 py-4">
-                    <div className="flex flex-col gap-2">
-                      {bug.attachmentUrl && (
+                    <div className="flex flex-col gap-2 relative min-w-[80px]">
+                      {bug.attachmentUrl && !uploadingBugIds[bug.id] && (
                         <div className="relative w-12 h-10 rounded-lg border overflow-hidden bg-black cursor-pointer shadow-sm hover:scale-110 transition-transform" onClick={() => setPreviewUrl(`${process.env.NEXT_PUBLIC_API_URL}${bug.attachmentUrl}`)}>
                           {isVideo(bug.attachmentUrl) ? (
                             <div className="flex items-center justify-center h-full text-white"><svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.841z"/></svg></div>
@@ -204,10 +194,19 @@ useEffect(() => {
                           )}
                         </div>
                       )}
-                      {canEdit && (
+                      
+                      {canEdit && !uploadingBugIds[bug.id] && (
                         <label className="text-[9px] font-black text-blue-600 cursor-pointer uppercase hover:underline">
                           Upload <input type="file" className="hidden" accept="image/*,video/*" onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0], bug.id)} />
                         </label>
+                      )}
+
+                      {/* Dynamic Saving Indicator */}
+                      {uploadingBugIds[bug.id] && (
+                        <div className="flex items-center gap-1 text-blue-600 text-[10px] font-bold animate-pulse">
+                          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-ping" />
+                          Saving...
+                        </div>
                       )}
                     </div>
                   </td>
@@ -216,43 +215,40 @@ useEffect(() => {
                     <button onClick={() => setOpenModalId(bug.id)} disabled={!canDelete} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all disabled:opacity-20">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
+                      </svg>
                     </button>
                   </td>
-                  {/* Assignee */}
-{/* Assignee Column */}
-<td className="px-4 py-4">
-  <select
-    value={bug.assignedToUserId ?? ""}
-    onChange={async (e) => {
-      const val = e.target.value;
-      const targetUserId = val ? Number(val) : null;
-      // Triggers context method mapping to backend UpdateField switcher
-      await assignBug(projectId, bug.id, targetUserId);
-    }}
-    disabled={!canEdit}
-    className="text-[11px] font-bold border border-gray-200 rounded-lg p-1.5 focus:ring-2 focus:ring-blue-400 outline-none bg-white min-w-[140px] disabled:opacity-50 transition-all cursor-pointer hover:border-gray-300"
-  >
-    <option value="">Unassigned</option>
-    {projectMembers.map((member: any) => (
-      <option key={member.userId} value={member.userId}>
-        {member.name}
-      </option>
-    ))}
-  </select>
 
-  {/* Live User Email Avatar Indicator */}
-  {bug.assignedToEmail && (
-    <div className="flex items-center gap-1 mt-1.5 transition-all">
-      <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-[8px] font-bold shadow-sm">
-        {bug.assignedToEmail[0]?.toUpperCase()}
-      </div>
-      <span className="text-[9px] text-gray-500 font-medium truncate max-w-[90px]" title={bug.assignedToEmail}>
-        {bug.assignedToEmail.split('@')[0]}
-      </span>
-    </div>
-  )}
-</td>
+                  <td className="px-4 py-4">
+                    <select
+                      value={bug.assignedToUserId ?? ""}
+                      onChange={async (e) => {
+                        const val = e.target.value;
+                        const targetUserId = val ? Number(val) : null;
+                        await assignBug(projectId, bug.id, targetUserId);
+                      }}
+                      disabled={!canEdit}
+                      className="text-[11px] font-bold border border-gray-200 rounded-lg p-1.5 focus:ring-2 focus:ring-blue-400 outline-none bg-white min-w-[140px] disabled:opacity-50 transition-all cursor-pointer hover:border-gray-300"
+                    >
+                      <option value="">Unassigned</option>
+                      {projectMembers.map((member: any) => (
+                        <option key={member.userId} value={member.userId}>
+                          {member.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    {bug.assignedToEmail && (
+                      <div className="flex items-center gap-1 mt-1.5 transition-all">
+                        <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-[8px] font-bold shadow-sm">
+                          {bug.assignedToEmail[0]?.toUpperCase()}
+                        </div>
+                        <span className="text-[9px] text-gray-500 font-medium truncate max-w-[90px]" title={bug.assignedToEmail}>
+                          {bug.assignedToEmail.split('@')[0]}
+                        </span>
+                      </div>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -314,22 +310,21 @@ function EditableCell({ value, field, bugId, projectId, canEdit, updateBugInStat
 
   useEffect(() => { setLocal(value); }, [value]);
 
- const save = async () => {
-  if (!canEdit || local === value) { setEditing(false); return; }
-  setLoading(true);
-  try {
-    const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2];
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/bugs/${bugId}`, {
-      method: "PATCH",
-      headers: { 
-        "Content-Type": "application/json", 
-        Authorization: `Bearer ${token}` // ← cookie instead of localStorage
-      },
-      body: JSON.stringify({ field: field.toLowerCase(), value: local }),
-    });
- 
+  const save = async () => {
+    if (!canEdit || local === value) { setEditing(false); return; }
+    setLoading(true);
+    try {
+      const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2];
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/bugs/${bugId}`, {
+        method: "PATCH",
+        headers: { 
+          "Content-Type": "application/json", 
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ field: field.toLowerCase(), value: local }),
+      });
+   
       if (res.ok) {
-        // Correct check for function existence
         if (typeof updateBugInState === 'function') {
           updateBugInState(projectId, bugId, { [field]: local });
         }
@@ -365,15 +360,10 @@ function EditableCell({ value, field, bugId, projectId, canEdit, updateBugInStat
         </div>
       )}
       {loading && (
-    <div className="absolute
-
--top-10 right-0 flex items-center gap-1 px-3 py-1.5 bg-blue-100 border border-blue-200 text-blue-800 text-xs rounded-full shadow-Ig z-10">
-
-<div className="w-2 h-2 bg-blue-500 rounded-full animate-ping" />
-
-Saving...
-
-</div>
+        <div className="absolute -top-10 right-0 flex items-center gap-1 px-3 py-1.5 bg-blue-100 border border-blue-200 text-blue-800 text-xs rounded-full shadow-lg z-10">
+          <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping" />
+          Saving...
+        </div>
       )}
     </div>
   );
