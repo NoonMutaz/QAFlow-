@@ -28,7 +28,7 @@ export function useProjectsQueue(projects: Project[]) {
         if (!res.ok) throw new Error('Failed to fetch bugs');
         return res.json();
       },
-      // ⏱️ Safely poll in the background every 5 seconds (or whatever interval you prefer)
+      //  Safely poll in the background every 5 seconds (or whatever interval you prefer)
       refetchInterval: 5000, 
       // Only run the query if we actually have projects loaded
       enabled: !!project.id,

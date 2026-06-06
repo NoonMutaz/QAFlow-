@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect } from 'react';
+
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 
 export interface Project {
@@ -19,14 +20,12 @@ interface Member {
 
 interface QueueItem {
   status: string;
+  priority?: string;
+  assignedByName?: string; // Standard camelCase fallback 
+  AssignedByName?: string; // Exact match to your .NET model property
 }
 
 type Queue = Record<string | number, QueueItem[]>;
-
-interface AnalyticsData {
-  topContributor: string;
-  mostActiveTester: string;
-}
 
 interface DashboardHeaderProps {
   project: Project;
@@ -37,44 +36,58 @@ interface DashboardHeaderProps {
 
 export default function DashboardHeader({ project, id, queue, members = [] }: DashboardHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activeTester, setActiveTester] = useState<string>('Loading...');
-  const [topDev, setTopDev] = useState<string>('Loading...'); 
 
-  const activeCount = (queue[id] ?? []).filter(
-    (c) => c.status === 'in-progress',
-  ).length;
+  // 🖥️ Client-side analytics parsing computed instantly from context memory
+  const { activeCount, topDev, activeTester } = useMemo(() => {
+    const projectQueue = queue[id] ?? [];
+    
+    // 1. Calculate Active Bugs Counter (Matching your backend's "notFixed" schema status)
+    const activeBugs = projectQueue.filter(
+      (item) => item.status === 'notFixed' || item.status === 'in-progress' || item.status === 'active'
+    ).length;
 
-  //   Auto-fetch analytics data directly on header load
-  useEffect(() => {
-    if (!id) return;
+    if (projectQueue.length === 0) {
+      return { activeCount: 0, topDev: 'None', activeTester: 'None' };
+    }
 
-    const fetchAnalytics = async () => {
-      try {
-        //   Read the token from cookies instead of localStorage
-        const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2];
-        const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
-        
-        const res = await fetch(`${API}/api/projects/${id}/analytics`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+    // Frequency counters dictionaries
+    const contributorCounts: Record<string, number> = {};
+    const testerCounts: Record<string, number> = {};
 
-        if (res.ok) {
-          const result: AnalyticsData = await res.json();
-          setActiveTester(result.mostActiveTester || 'None');
-          setTopDev(result.topContributor || 'None'); 
-        } else {
-          setActiveTester('N/A');
-          setTopDev('N/A');
+    projectQueue.forEach((item) => {
+      // Safely extract the field matching your EF Core entity definition
+      const assignedUser = item.AssignedByName || item.assignedByName || '';
+
+      if (assignedUser && assignedUser !== 'Unassigned' && assignedUser !== 'None') {
+        // Top Contributor criteria: Most bugs marked as "Fixed"
+        if (item.status === 'Fixed') {
+          contributorCounts[assignedUser] = (contributorCounts[assignedUser] || 0) + 1;
         }
-      } catch (err) {
-        console.error("Error loading header analytics", err);
-        setActiveTester('N/A');
-        setTopDev('N/A');
+
+        // Tester criteria: Until a dedicated 'CreatedBy' column is added, match the backend's current assignment tracking
+        testerCounts[assignedUser] = (testerCounts[assignedUser] || 0) + 1;
       }
+    });
+
+    // Helper to find the user with the most counts
+    const getTopUser = (counts: Record<string, number>) => {
+      let topUser = 'None';
+      let maxCount = 0;
+      Object.entries(counts).forEach(([user, count]) => {
+        if (count > maxCount) {
+          maxCount = count;
+          topUser = user;
+        }
+      });
+      return topUser;
     };
 
-    fetchAnalytics();
-  }, [id]);
+    return {
+      activeCount: activeBugs,
+      topDev: getTopUser(contributorCounts),
+      activeTester: getTopUser(testerCounts),
+    };
+  }, [queue, id]);
 
   const getRoleColor = (role: Member['role']) => {
     return role === 'owner'
@@ -177,13 +190,13 @@ export default function DashboardHeader({ project, id, queue, members = [] }: Da
 
         <div className="hidden sm:block h-8 w-px bg-gray-200 dark:bg-zinc-800" />
 
-        {/* Top Contributor */}
+        {/* Top Developer Metric */}
         {/* <div className="text-right min-w-[120px]">
           <p className="text-xs font-medium text-gray-400 uppercase tracking-wider dark:text-zinc-500 flex items-center justify-end gap-1">
-            <svg className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" fill="currentColor" viewBox="0 0 24 24">
+            <svg className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400" fill="currentColor" viewBox="0 0 24 24">
               <path d="M11.48 3.499c.151-.39.71-.39.862 0l2.394 6.128 6.562.338c.42.022.588.54.262.858l-4.97 4.834 1.624 6.4c.104.414-.352.746-.71.535L12 18.732l-5.632 3.454c-.358.22-.814-.112-.71-.535l1.624-6.4-4.97-4.834c-.326-.317-.158-.836.262-.858l6.562-.338 2.394-6.128z" />
             </svg>
-            Top Contributor:
+            Top Dev:
           </p>
           <p className="text-sm font-semibold text-zinc-800 truncate max-w-[130px] mt-0.5 dark:text-zinc-200" title={topDev}>
             {topDev}
@@ -192,10 +205,10 @@ export default function DashboardHeader({ project, id, queue, members = [] }: Da
 
         <div className="hidden sm:block h-8 w-px bg-gray-200 dark:bg-zinc-800" />
 
-        {/* Top Tester */}
+        {/* Top Active Tester Metric */}
         <div className="text-right min-w-[120px]">
           <p className="text-xs font-medium text-gray-400 uppercase tracking-wider dark:text-zinc-500 flex items-center justify-end gap-1">
-              <svg className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" fill="currentColor" viewBox="0 0 24 24">
+            <svg className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" fill="currentColor" viewBox="0 0 24 24">
               <path d="M11.48 3.499c.151-.39.71-.39.862 0l2.394 6.128 6.562.338c.42.022.588.54.262.858l-4.97 4.834 1.624 6.4c.104.414-.352.746-.71.535L12 18.732l-5.632 3.454c-.358.22-.814-.112-.71-.535l1.624-6.4-4.97-4.834c-.326-.317-.158-.836.262-.858l6.562-.338 2.394-6.128z" />
             </svg>
             Top Contributor:
