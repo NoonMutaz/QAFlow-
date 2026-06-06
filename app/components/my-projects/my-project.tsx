@@ -17,7 +17,24 @@ const projectTypes = ['QA Dashboard', 'Bug Tracking'];
 const ITEMS_PER_PAGE = 6; // Adjust this number to change projects per page
 
 const isOwner = (role?: string) => role === 'owner';
+import { useQueries } from '@tanstack/react-query';
 
+export function useProjectsQueue(projects: Project[]) {
+  return useQueries({
+    queries: projects.map((project) => ({
+      queryKey: ['bugs', project.id],
+      queryFn: async () => {
+        const res = await fetch(`/api/projects/${project.id}/bugs`);
+        if (!res.ok) throw new Error('Failed to fetch bugs');
+        return res.json();
+      },
+      // ⏱️ Safely poll in the background every 5 seconds (or whatever interval you prefer)
+      refetchInterval: 5000, 
+      // Only run the query if we actually have projects loaded
+      enabled: !!project.id,
+    })),
+  });
+}
 export default function MyProjects() {
   const { projects, deleteProject, handleOpenProject, isLoading, isOpeningProject, setIsOpeningProject } = useProjects();
   const { queue, fetchBugs } = useQueueContext();

@@ -50,7 +50,7 @@ export default function DashboardHeader({ project, id, queue, members = [] }: Da
 
     const fetchAnalytics = async () => {
       try {
-        //  Read the token from cookies instead of localStorage
+        //   Read the token from cookies instead of localStorage
         const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2];
         const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
         
@@ -178,7 +178,7 @@ export default function DashboardHeader({ project, id, queue, members = [] }: Da
         <div className="hidden sm:block h-8 w-px bg-gray-200 dark:bg-zinc-800" />
 
         {/* Top Contributor */}
-        <div className="text-right min-w-[120px]">
+        {/* <div className="text-right min-w-[120px]">
           <p className="text-xs font-medium text-gray-400 uppercase tracking-wider dark:text-zinc-500 flex items-center justify-end gap-1">
             <svg className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" fill="currentColor" viewBox="0 0 24 24">
               <path d="M11.48 3.499c.151-.39.71-.39.862 0l2.394 6.128 6.562.338c.42.022.588.54.262.858l-4.97 4.834 1.624 6.4c.104.414-.352.746-.71.535L12 18.732l-5.632 3.454c-.358.22-.814-.112-.71-.535l1.624-6.4-4.97-4.834c-.326-.317-.158-.836.262-.858l6.562-.338 2.394-6.128z" />
@@ -186,7 +186,22 @@ export default function DashboardHeader({ project, id, queue, members = [] }: Da
             Top Contributor:
           </p>
           <p className="text-sm font-semibold text-zinc-800 truncate max-w-[130px] mt-0.5 dark:text-zinc-200" title={topDev}>
-            {topDev} {/*  Display topDev variable here instead of activeTester */}
+            {topDev}
+          </p>
+        </div> */}
+
+        <div className="hidden sm:block h-8 w-px bg-gray-200 dark:bg-zinc-800" />
+
+        {/* Top Tester */}
+        <div className="text-right min-w-[120px]">
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wider dark:text-zinc-500 flex items-center justify-end gap-1">
+              <svg className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M11.48 3.499c.151-.39.71-.39.862 0l2.394 6.128 6.562.338c.42.022.588.54.262.858l-4.97 4.834 1.624 6.4c.104.414-.352.746-.71.535L12 18.732l-5.632 3.454c-.358.22-.814-.112-.71-.535l1.624-6.4-4.97-4.834c-.326-.317-.158-.836.262-.858l6.562-.338 2.394-6.128z" />
+            </svg>
+            Top Contributor:
+          </p>
+          <p className="text-sm font-semibold text-zinc-800 truncate max-w-[130px] mt-0.5 dark:text-zinc-200" title={activeTester}>
+            {activeTester}
           </p>
         </div>
 
