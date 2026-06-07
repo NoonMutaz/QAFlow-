@@ -18,12 +18,12 @@ interface NewCustomer {
   description: string;
   note: string;
   bugId: string;
-  testCaseId: string | number | null; // Updated to support dynamic backend parsing safely
+  testCaseId: string | number | null; 
   attachment?: File | null;
 }
 
 interface QueueFormProps {
-  onAdd: (data: any) => Promise<number>;
+  onAdd: (data: any) => Promise<any>; // ✨ Widened type to allow safe object/number properties checks
   projectId: string;
   testCases?: any[]; 
   currentUserRole?: 'owner' | 'member' | 'viewer' | string;
@@ -52,7 +52,7 @@ export default function QueueForm({
     description: '',
     note: '',
     bugId: '',
-    testCaseId: '', // Keep as string internally for the HTML <select> element
+    testCaseId: '', 
     attachment: null,
   });
 
@@ -130,68 +130,66 @@ export default function QueueForm({
     }));
   };
 
-// Find this section inside QueueForm.tsx and update the handleSubmit:
-const handleSubmit = async (e: React.FormEvent): Promise<void> => {
-  e.preventDefault();
-  setUploading(true);
-  setError("");
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+    e.preventDefault();
+    setUploading(true);
+    setError("");
 
-  try {
-    const API = process.env.NEXT_PUBLIC_API_URL;
-    if (!API) throw new Error("API URL missing");
+    try {
+      const API = process.env.NEXT_PUBLIC_API_URL;
+      if (!API) throw new Error("API URL missing");
 
-    const parsedTestCaseId = formData.testCaseId === '' ? null : parseInt(formData.testCaseId, 10);
+      const parsedTestCaseId = formData.testCaseId === '' ? null : parseInt(formData.testCaseId, 10);
 
-    // Ensure properties match exactly what your C# models expect
-    const submissionPayload = {
-      name: formData.name,
-      priority: formData.priority,
-      url: formData.url,
-      expectedResult: formData.expectedResult,
-      actualResult: formData.actualResult,
-      description: formData.description,
-      note: formData.note,
-      testCaseId: parsedTestCaseId
-    };
+      const submissionPayload = {
+        name: formData.name,
+        priority: formData.priority,
+        url: formData.url,
+        expectedResult: formData.expectedResult,
+        actualResult: formData.actualResult,
+        description: formData.description,
+        note: formData.note,
+        testCaseId: parsedTestCaseId
+      };
 
-    // Returns the fully built bug object from the backend
-    const createdBug = await onAdd(submissionPayload);
-    const newBugId = createdBug?.id || createdBug;
-
-    if (!newBugId) {
-      throw new Error("Failed to create bug");
-    }
-
-    if (formData.attachment) {
-      const token = localStorage.getItem("token");
-      const fd = new FormData();
-      fd.append('file', formData.attachment);
-
-      const res = await fetch(
-        `${API}/api/projects/${projectId}/bugs/${newBugId}/upload`,
-        {
-          method: 'POST',
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-          body: fd,
-        }
-      );
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Upload failed: ${text}`);
+      // Safely resolves whether backend returned an ID or a nested object payload
+      const createdBug = await onAdd(submissionPayload);
+      const newBugId = createdBug && typeof createdBug === 'object' ? createdBug.id : createdBug;
+      
+      if (!newBugId) {
+        throw new Error("Failed to create bug");
       }
-    }
 
-    await fetchBugs(projectId);
-    resetForm();
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Failed to add bug';
-    console.error(err);
-    setError(message);
-  } finally {
-    setUploading(false);
-  }
-};
+      if (formData.attachment) {
+        const token = localStorage.getItem("token");
+        const fd = new FormData();
+        fd.append('file', formData.attachment);
+
+        const res = await fetch(
+          `${API}/api/projects/${projectId}/bugs/${newBugId}/upload`,
+          {
+            method: 'POST',
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            body: fd,
+          }
+        );
+
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Upload failed: ${text}`);
+        }
+      }
+
+      await fetchBugs(projectId);
+      resetForm();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to add bug';
+      console.error(err);
+      setError(message);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   if (!canAddBug) {
     return (
@@ -370,8 +368,8 @@ const handleSubmit = async (e: React.FormEvent): Promise<void> => {
       </form>
       
       {duplicate && (
-        <div className="p-3.5 bg-amber-50/80 border-l-4 border-amber-500 rounded-r-xl mt-3 animate-in fade-in slide-in-from-top-1 duration-200 shadow-xs">
-          ⚠️ Are you sure you want to submit. A similar <span className="font-bold">{duplicate.matchedKey}</span> has already been reported: 
+        <div className="p-3.5 bg-amber-50/80 border-l-4 border-amber-500 rounded-r-xl mt-3 text-xs text-amber-950">
+          ⚠️ Are you sure you want to submit? A similar <span className="font-bold">{duplicate.matchedKey}</span> has already been reported: 
           <p className="text-sm font-bold text-blue-600 mt-1.5 hover:underline cursor-pointer">
             {duplicate.item.bugId}
           </p>
