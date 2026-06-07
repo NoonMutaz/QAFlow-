@@ -148,6 +148,14 @@ export default function TableOfQueue({
             <tbody className="divide-y divide-gray-100">
               {paginatedData.map((bug: any) => {
                 const isExpanded = !!expandedBugIds[bug.id];
+                
+                // Fallback check matching C# or JS variable styling cases
+            // 1. Safe extraction check that handles numbers (like 0) and nested object shapes safely
+const actualTestCaseId = bug.testCaseId ?? bug.TestCaseId ?? bug.testcaseId ?? bug.TestCaseID ?? bug.TestCase?.id ?? bug.TestCase?.Id;
+const hasTestCase = (actualTestCaseId !== undefined && actualTestCaseId !== null && actualTestCaseId !== '') || !!bug.TestCase;
+
+// 2. Comprehensive fallback tracker for the title string
+const testCaseTitle = bug.testCase?.title || bug.TestCase?.title || bug.TestCase?.Title || `ID: ${actualTestCaseId}`;
                 return (
                   <React.Fragment key={bug.id}>
                     
@@ -192,11 +200,24 @@ export default function TableOfQueue({
                         />
                       </td>
                       
-                      {/* Truncated Description Snippet */}
+                      {/* Truncated Description Snippet + Linked Test Case Tag */}
                       <td className="px-4 py-4 max-w-[200px] md:max-w-md">
-                        <p className="text-xs text-gray-600 truncate font-medium">
-                          {bug.description || <span className="text-gray-300 italic">No details written</span>}
-                        </p>
+                        <div className="flex flex-col gap-1">
+                          <p className="text-xs text-gray-600 truncate font-medium">
+                            {bug.description || <span className="text-gray-300 italic">No details written</span>}
+                          </p>
+                          {/* ◄ 1. PRIMARY TABLE ROW TAG DISPLAY */}
+                          {hasTestCase && (
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-[9px] font-bold border border-blue-150 max-w-full">
+                                <svg className="w-2.5 h-2.5 text-blue-500 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <span className="truncate"> {testCaseTitle}</span>
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </td>
 
                       {/* Status Dropdown */}
@@ -258,7 +279,19 @@ export default function TableOfQueue({
                             
                             {/* Left Side: Reproductions and URL strings (2/3 width) */}
                             <div className="space-y-4 lg:col-span-2">
-                              <h4 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 border-b pb-1">Reproduction & Environment</h4>
+                              <div className="flex items-center justify-between border-b pb-1">
+                                <h4 className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Reproduction & Environment</h4>
+                                
+                                {/* ◄ 2. FULL EXPANDED PANEL DISPLAY LINE */}
+                                {hasTestCase ? (
+                                  <span className="text-[10px] font-extrabold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                    TEST CASE: <span className="text-gray-700 font-medium font-sans">{testCaseTitle}</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] text-gray-400 italic">No Test Case Linked</span>
+                                )}
+                              </div>
                               
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>

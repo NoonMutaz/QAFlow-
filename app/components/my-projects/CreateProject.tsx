@@ -4,6 +4,13 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useProjects } from "../../context/ProjectContext";
 
+// Explicit Interface
+interface FormErrors {
+  projectName?: string;
+  description?: string;
+  submit?: string;
+}
+
 export default function CreateProject() {
   const router = useRouter();
   const { addProject } = useProjects();
@@ -13,17 +20,16 @@ export default function CreateProject() {
   const [projectType, setProjectType] = useState("QA Dashboard");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  // Now using the interface instead of 'any'
+  const [errors, setErrors] = useState<FormErrors>({});
 
-  // IMPORTANT: null = unknown/checking, true = available, false = exists
   const [isNameAvailable, setIsNameAvailable] = useState<boolean | null>(null);
   const [isCheckingName, setIsCheckingName] = useState(false);
 
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  const validateForm = () => {
-    const newErrors: any = {};
-
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
     if (!projectName.trim()) {
       newErrors.projectName = "Project name is required";
     } else if (projectName.trim().length < 3) {
@@ -36,6 +42,93 @@ export default function CreateProject() {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const name = projectName.trim();
+
+    if (!name) {
+      setIsNameAvailable(null);
+      setErrors((p) => {
+        const { projectName, ...rest } = p;
+        return rest;
+      });
+      return;
+    }
+
+    if (name.length < 3) {
+      setIsNameAvailable(null);
+      setErrors((p) => ({ ...p, projectName: "Project name must be at least 3 characters" }));
+      return;
+    }
+
+    setIsNameAvailable(null);
+    setIsCheckingName(true);
+    setErrors((p) => {
+      const { projectName, ...rest } = p;
+      return rest;
+    });
+
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2];
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/projects/check-name?name=${encodeURIComponent(name)}`,
+          { headers: { Authorization: token ? `Bearer ${token}` : "" } }
+        );
+
+        const data = await res.json();
+        const nameExists = data?.exists === true || data?.data?.exists === true;
+
+        if (nameExists) {
+          setIsNameAvailable(false);
+          setErrors((p) => ({ ...p, projectName: "A project with this name already exists" }));
+        } else {
+          setIsNameAvailable(true);
+        }
+      } catch (err) {
+        setIsNameAvailable(null);
+      } finally {
+        setIsCheckingName(false);
+      }
+    }, 500);
+
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [projectName]);
+
+  const canSubmit = useMemo(() => 
+    !isSubmitting && !isCheckingName && isNameAvailable === true && !errors.projectName
+  , [isSubmitting, isCheckingName, isNameAvailable, errors.projectName]);
+
+  const handleCreate = async () => {
+    if (!validateForm()) return;
+    if (!canSubmit) return;
+
+    setIsSubmitting(true);
+    try {
+      const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2];
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json", 
+          Authorization: token ? `Bearer ${token}` : "" 
+        },
+        body: JSON.stringify({ name: projectName.trim(), description, type: projectType }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "Failed to create project");
+
+      addProject(data);
+      router.push("/my-projects");
+    } catch (err: unknown) {
+      // handle errors in TS
+      const message = err instanceof Error ? err.message : "An unexpected error occurred";
+      setErrors({ submit: message });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   useEffect(() => {
@@ -118,52 +211,55 @@ export default function CreateProject() {
     };
   }, [projectName]);
 
-  const canSubmit = useMemo(() => {
-    return (
-      !isSubmitting &&
-      !isCheckingName &&
-      isNameAvailable === true &&
-      !errors.projectName
-    );
-  }, [isSubmitting, isCheckingName, isNameAvailable, errors.projectName]);
+//   const canSubmit = useMemo(() => {
+//     return (
+//       !isSubmitting &&
+//       !isCheckingName &&
+//       isNameAvailable === true &&
+//       !errors.projectName
+//     );
+//   }, [isSubmitting, isCheckingName, isNameAvailable, errors.projectName]);
 
-  const handleCreate = async () => {
-    if (!validateForm()) return;
-    if (!canSubmit) return;
+//   const handleCreate = async () => {
+//     if (!validateForm()) return;
+//     if (!canSubmit) return;
 
-    setIsSubmitting(true);
+//     setIsSubmitting(true);
 
-    try {
-      const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2];
+//     try {
+//       const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2];
 
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/projects`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: token ? `Bearer ${token}` : "",
-          },
-          body: JSON.stringify({
-            name: projectName.trim(),
-            description,
-            type: projectType,
-          }),
-        }
-      );
+//       const res = await fetch(
+//         `${process.env.NEXT_PUBLIC_API_URL}/api/projects`,
+//         {
+//           method: "POST",
+//           headers: {
+//             "Content-Type": "application/json",
+//             Authorization: token ? `Bearer ${token}` : "",
+//           },
+//           body: JSON.stringify({
+//             name: projectName.trim(),
+//             description,
+//             type: projectType,
+//           }),
+//         }
+//       );
 
-      const data = await res.json();
+//       const data = await res.json();
 
-      if (!res.ok) throw new Error(data?.message || "Failed to create project");
+//       if (!res.ok) throw new Error(data?.message || "Failed to create project");
 
-      addProject(data);
-      router.push("/my-projects");
-    } catch (err: any) {
-      setErrors({ submit: err.message });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+//       addProject(data);
+//       router.push("/my-projects");
+//     } catch (err: unknown) {
+//      if (err instanceof Error) {
+//     setErrors({ submit: err.message });
+//   } else {
+//     setErrors({ submit: 'An unexpected error occurred' });
+//   }
+// } finally {
+//   setIsSubmitting(false);
+// }};
 
   const handleCancel = () => {
     router.push("/my-projects");

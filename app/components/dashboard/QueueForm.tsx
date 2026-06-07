@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
@@ -18,12 +18,14 @@ interface NewCustomer {
   description: string;
   note: string;
   bugId: string;
+  testCaseId: string | number | null; // Updated to support dynamic backend parsing safely
   attachment?: File | null;
 }
 
 interface QueueFormProps {
-  onAdd: (data: NewCustomer) => Promise<number>;
+  onAdd: (data: any) => Promise<number>;
   projectId: string;
+  testCases?: any[]; 
   currentUserRole?: 'owner' | 'member' | 'viewer' | string;
   existingBugs?: Customer[];
 }
@@ -31,6 +33,7 @@ interface QueueFormProps {
 export default function QueueForm({
   onAdd,
   projectId,
+  testCases = [], 
   currentUserRole = 'viewer',
   existingBugs = [],  
 }: QueueFormProps) {
@@ -40,7 +43,7 @@ export default function QueueForm({
   const currentUserName = user?.name ?? 'Current User';
   const canAddBug = currentUserRole === 'owner' || currentUserRole === 'member';
 
-  const [formData, setFormData] = useState<NewCustomer>({
+  const [formData, setFormData] = useState<Omit<NewCustomer, 'testCaseId'> & { testCaseId: string }>({
     name: currentUserName,
     priority: 'Medium',
     url: '',
@@ -49,6 +52,7 @@ export default function QueueForm({
     description: '',
     note: '',
     bugId: '',
+    testCaseId: '', // Keep as string internally for the HTML <select> element
     attachment: null,
   });
 
@@ -62,16 +66,14 @@ export default function QueueForm({
     const description = formData.description?.trim();
     const actualResult = formData.actualResult?.trim();
 
-    // 1. Check description field first
     if (description && description.length >= 3) {
       const match = findDuplicates(existingBugs, description, "description");
       if (match) {
         setDuplicate(match);
-        return; // Stop and trigger alert if duplicate found
+        return;
       }
     }
 
-    // 2. Fallback to check actualResult field if description is clean
     if (actualResult && actualResult.length >= 3) {
       const match = findDuplicates(existingBugs, actualResult, "actualResult");
       if (match) {
@@ -80,7 +82,6 @@ export default function QueueForm({
       }
     }
 
-    // Clear alert if no duplicates found
     setDuplicate(null);
   }, [formData.description, formData.actualResult, existingBugs, findDuplicates]);
 
@@ -108,6 +109,7 @@ export default function QueueForm({
       description: '',
       note: '',
       bugId: '',
+      testCaseId: '', 
       attachment: null,
     });
     setDuplicate(null);
@@ -128,58 +130,68 @@ export default function QueueForm({
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
-    e.preventDefault();
+// Find this section inside QueueForm.tsx and update the handleSubmit:
+const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+  e.preventDefault();
+  setUploading(true);
+  setError("");
 
-    // if (!canAddBug) return;
-    // if (duplicate) {
-    //   setError("⚠️ Cannot submit. A similar bug has already been reported by the team.");
-    //   return;
-    // }
+  try {
+    const API = process.env.NEXT_PUBLIC_API_URL;
+    if (!API) throw new Error("API URL missing");
 
-    setUploading(true);
-    setError("");
+    const parsedTestCaseId = formData.testCaseId === '' ? null : parseInt(formData.testCaseId, 10);
 
-    try {
-      const API = process.env.NEXT_PUBLIC_API_URL;
-      if (!API) throw new Error("API URL missing");
+    // Ensure properties match exactly what your C# models expect
+    const submissionPayload = {
+      name: formData.name,
+      priority: formData.priority,
+      url: formData.url,
+      expectedResult: formData.expectedResult,
+      actualResult: formData.actualResult,
+      description: formData.description,
+      note: formData.note,
+      testCaseId: parsedTestCaseId
+    };
 
-      const newBugId = await onAdd({ ...formData, bugId: '' });
+    // Returns the fully built bug object from the backend
+    const createdBug = await onAdd(submissionPayload);
+    const newBugId = createdBug?.id || createdBug;
 
-      if (!newBugId) {
-        throw new Error("Failed to create bug");
-      }
-
-      if (formData.attachment) {
-        const token = localStorage.getItem("token");
-        const fd = new FormData();
-        fd.append('file', formData.attachment);
-
-        const res = await fetch(
-          `${API}/api/projects/${projectId}/bugs/${newBugId}/upload`,
-          {
-            method: 'POST',
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-            body: fd,
-          }
-        );
-
-        if (!res.ok) {
-          const text = await res.text();
-          throw new Error(`Upload failed: ${text}`);
-        }
-      }
-
-      await fetchBugs(projectId);
-      resetForm();
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to add bug';
-      console.error(err);
-      setError(message);
-    } finally {
-      setUploading(false);
+    if (!newBugId) {
+      throw new Error("Failed to create bug");
     }
-  };
+
+    if (formData.attachment) {
+      const token = localStorage.getItem("token");
+      const fd = new FormData();
+      fd.append('file', formData.attachment);
+
+      const res = await fetch(
+        `${API}/api/projects/${projectId}/bugs/${newBugId}/upload`,
+        {
+          method: 'POST',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: fd,
+        }
+      );
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Upload failed: ${text}`);
+      }
+    }
+
+    await fetchBugs(projectId);
+    resetForm();
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to add bug';
+    console.error(err);
+    setError(message);
+  } finally {
+    setUploading(false);
+  }
+};
 
   if (!canAddBug) {
     return (
@@ -198,7 +210,7 @@ export default function QueueForm({
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5">
         <h2 className="text-lg font-semibold text-gray-800">Add New Bug</h2>
 
-        {/* ─── SIMILARITY ALERT BOX (ENGLISH) ─── */}
+        {/* ─── SIMILARITY ALERT BOX ─── */}
         {duplicate && (
           <div className="p-3.5 bg-amber-50/80 border-l-4 border-amber-500 rounded-r-xl animate-in fade-in slide-in-from-top-1 duration-200 shadow-xs">
             <div className="flex items-center gap-2">
@@ -212,11 +224,27 @@ export default function QueueForm({
             <p className="text-sm font-bold text-blue-600 mt-1.5 hover:underline cursor-pointer">
                {duplicate.item.bugId}
             </p>
-            {/* <p className="text-[11px] text-amber-800/80 italic mt-1 line-clamp-2 bg-white/50 p-1.5 rounded-md border border-amber-200/30">
-              {duplicate.item.description}
-            </p> */}
           </div>
         )}
+
+        {/* ─── LINK TO TEST CASE DROPDOWN ─── */}
+        <div>
+          <label className="text-sm font-medium text-gray-700">Link to Test Case</label>
+          <select
+            name="testCaseId"
+            value={formData.testCaseId}
+            onChange={handleChange}
+            className="w-full mt-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white border-gray-300"
+            disabled={uploading}
+          >
+            <option value="">-- No Test Case Linked --</option>
+            {testCases.map((tc: any) => (
+              <option key={tc.id} value={tc.id}>
+                {tc.title}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <div>
           <label className="text-sm font-medium text-gray-700">Reported By</label>
@@ -334,20 +362,21 @@ export default function QueueForm({
    
         <button
           type="submit"
-          disabled={uploading  }
-            //  disabled={uploading || !!duplicate}
+          disabled={uploading}
           className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {uploading ? 'Adding Bug...' : 'Add Bug'}
         </button>
-      </form>{duplicate && (
-          <div className="p-3.5 bg-amber-50/80 border-l-4 border-amber-500 rounded-r-xl animate-in fade-in slide-in-from-top-1 duration-200 shadow-xs">
+      </form>
+      
+      {duplicate && (
+        <div className="p-3.5 bg-amber-50/80 border-l-4 border-amber-500 rounded-r-xl mt-3 animate-in fade-in slide-in-from-top-1 duration-200 shadow-xs">
           ⚠️ Are you sure you want to submit. A similar <span className="font-bold">{duplicate.matchedKey}</span> has already been reported: 
-               <p className="text-sm font-bold text-blue-600 mt-1.5 hover:underline cursor-pointer">
-               {duplicate.item.bugId}
-            </p>
-          </div>
-        )}
+          <p className="text-sm font-bold text-blue-600 mt-1.5 hover:underline cursor-pointer">
+            {duplicate.item.bugId}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
