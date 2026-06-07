@@ -4,7 +4,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
     name: 'Starter',
     price: '$0',
-    priceId: 'price_free_forever', // معرف بوابة الدفع (مجاني)
+    priceId: 'price_free_forever', // 
     period: 'forever',
     badge: '',
     tone: 'For trying QAFlow',

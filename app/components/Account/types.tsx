@@ -16,4 +16,5 @@ export interface SubscriptionPlan {
   cta: string;
   tone: string;
   current: boolean;
+  priceId: string;
 }
