@@ -47,7 +47,7 @@ export default function DashboardHeader({ project, id, queue, members = [] }: Da
     
     // 1. Calculate Active Bugs Counter
     const activeBugs = projectQueue.filter(
-      (item) => item.status === 'notFixed' || item.status === 'in-progress' || item.status === 'active'
+      (item) =>  item.status === 'in-progress' || item.status === 'active'
     ).length;
 
     if (projectQueue.length === 0) {
@@ -85,7 +85,7 @@ export default function DashboardHeader({ project, id, queue, members = [] }: Da
           userIdToNameMap[creatorId] = creatorName;
         } else {
           const matchedMember = members.find((m) => String(m.userId) === String(creatorId));
-          userIdToNameMap[creatorId] = matchedMember ? matchedMember.name : `User ID: ${creatorId}`;
+          userIdToNameMap[creatorId] = matchedMember ? matchedMember.name : `loading..`;
         }
       } else {
         // If past bugs completely lack a creatorId, skip them so statistics aren't falsely skewed
