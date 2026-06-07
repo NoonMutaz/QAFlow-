@@ -10,16 +10,19 @@ export interface PlanLimits {
   maxProjects: number;
   maxBugs: number;
   maxMembers: number;
+  hasSmartAlerts: boolean;
+  hasAnalytics: boolean;
 }
+
+// 2. التعريف الكامل لواجهة خطة الاشتراك المطابقة لملف الثوابت (constants)
 export interface SubscriptionPlan {
   name: string;
   price: string;
+  priceId: string;
   period: string;
   badge: string;
-  features: string[];
-  cta: string;
   tone: string;
   current: boolean;
-  priceId: string;
-  limits: PlanLimits;
+  features: string[];
+  limits: PlanLimits; //    (Object)  
 }
