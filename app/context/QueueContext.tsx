@@ -2,7 +2,7 @@
 import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 import Fuse from 'fuse.js';
 
-//  TYPES 
+// ─── TYPES ──────────────────────────────────────────────────────────────────
 export type Status = 'notFixed' | 'in-progress' | 'fixed';
 export type Priority = 'High' | 'Medium' | 'Low';
 
@@ -39,7 +39,7 @@ export interface ActivityLog {
   entityId: number | null;
   details: string;
   createdAt: string;
-  user: {
+  user : {
     name: string;
     email: string;
   };
@@ -70,7 +70,7 @@ const QueueContext = createContext<QueueContextType | undefined>(undefined);
 const API = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 export const QueueProvider = ({ children }: { children: ReactNode }) => {
-  //  STATE HOOKS LAYER 
+  // ─── STATE HOOKS LAYER ────────────────────────────────────────────────────
   const [queue, setQueue] = useState<Record<string, Customer[]>>({});
   const [projectMembers, setProjectMembers] = useState<any[]>([]);
   const [myAssignedBugs, setMyAssignedBugs] = useState<Customer[]>([]);
@@ -78,7 +78,7 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState<boolean>(false);
 
-  // cookie Utility to extract auth token directly from document cookies
+  // Cookie Utility to extract auth token directly from document cookies
   const getCookieToken = () => {
     if (typeof document === 'undefined') return null; // SSR safety check
     const match = document.cookie.match(/(^| )token=([^;]+)/);
@@ -91,7 +91,7 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
     Authorization: `Bearer ${getCookieToken()}`,
   });
 
-  //  CORE FETCHERS 
+  // ─── CORE FETCHERS ────────────────────────────────────────────────────────
   const fetchBugs = useCallback(async (projectId: string) => {
     try {
       const res = await fetch(`${API}/api/projects/${projectId}/bugs`, {
@@ -128,7 +128,7 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
       const response = await fetch(
         `${API}/api/projects/${projectId}/activity`,
         {
-          headers: authHeaders() // ⚡ Updated to match authHeaders cookie strategy
+          headers: authHeaders()
         }
       );
 
@@ -180,7 +180,7 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
     return { item: bestMatch.item, matchedKey };
   }, []);
 
-  // QUEUE OPERATIONS 
+  // ─── QUEUE OPERATIONS ──────────────────────────────────────────────────────
   const updateBugInState = useCallback((projectId: string, bugId: number, updates: Partial<Customer>) => {
     setQueue((prev) => ({
       ...prev,
@@ -194,9 +194,19 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
       headers: authHeaders(),
       body: JSON.stringify(customer),
     });
+    
     if (res.ok) {
       const newBug = await res.json();
-      setQueue((prev) => ({ ...prev, [projectId]: [...(prev[projectId] ?? []), newBug] }));
+      
+      // 🟢 تحديث الـ State فوراً بالـ newBug الذي يحتوي على الـ AssignedByName الجديد القادم من الباكيند
+      setQueue((prev) => ({ 
+        ...prev, 
+        [projectId]: [...(prev[projectId] ?? []), newBug] 
+      }));
+
+      // تحديث قائمة الـ Bugs الخاصة بالمستخدم مباشرة بعد الإضافة
+      fetchMyAssignedBugs();
+      
       return newBug.id;
     }
     return 0;
@@ -229,7 +239,7 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
   const fetchProjectMembers = useCallback(async (projectId: string) => {
     try {
       const res = await fetch(`${API}/api/projects/${projectId}/members`, {
-        headers: authHeaders(), // ⚡ Removed localStorage fallback entirely
+        headers: authHeaders(),
       });
       if (res.ok) {
         const data = await res.json();
@@ -244,7 +254,7 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
     try {
       const res = await fetch(`${API}/api/projects/${projectId}/bugs/${bugId}`, {
         method: "PATCH",
-        headers: authHeaders(), // ⚡ Standardized on centralized cookie-auth headers wrapper
+        headers: authHeaders(),
         body: JSON.stringify({ 
           field: "assignedtouserid", 
           value: userId ? userId.toString() : "" 

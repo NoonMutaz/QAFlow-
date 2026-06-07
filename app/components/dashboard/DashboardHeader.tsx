@@ -21,8 +21,12 @@ interface Member {
 interface QueueItem {
   status: string;
   priority?: string;
-  assignedByName?: string; // Standard camelCase fallback 
-  AssignedByName?: string; // Exact match to your .NET model property
+  assignedByName?: string; 
+  AssignedByName?: string; 
+  createdByName?: string;
+  CreatedByName?: string;
+  createdById?: string | number;
+  CreatedById?: string | number;
 }
 
 type Queue = Record<string | number, QueueItem[]>;
@@ -37,11 +41,11 @@ interface DashboardHeaderProps {
 export default function DashboardHeader({ project, id, queue, members = [] }: DashboardHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // 🖥️ Client-side analytics parsing computed instantly from context memory
+  // Client-side analytics parsing computed instantly from context memory
   const { activeCount, topDev, activeTester } = useMemo(() => {
     const projectQueue = queue[id] ?? [];
     
-    // 1. Calculate Active Bugs Counter (Matching your backend's "notFixed" schema status)
+    // 1. Calculate Active Bugs Counter
     const activeBugs = projectQueue.filter(
       (item) => item.status === 'notFixed' || item.status === 'in-progress' || item.status === 'active'
     ).length;
@@ -50,26 +54,46 @@ export default function DashboardHeader({ project, id, queue, members = [] }: Da
       return { activeCount: 0, topDev: 'None', activeTester: 'None' };
     }
 
-    // Frequency counters dictionaries
+    // Frequency counters and identity maps
     const contributorCounts: Record<string, number> = {};
-    const testerCounts: Record<string, number> = {};
+    
+    // Tracks counts purely by unique User ID keys
+    const testerIdCounts: Record<string | number, number> = {};
+    // Maps unique User IDs directly to their corresponding string Names
+    const userIdToNameMap: Record<string | number, string> = {};
 
     projectQueue.forEach((item) => {
-      // Safely extract the field matching your EF Core entity definition
       const assignedUser = item.AssignedByName || item.assignedByName || '';
+      
+      // Extract both the unique ID and the Name from the entity model
+      const creatorId = item.CreatedById ?? item.createdById;
+      const creatorName = item.CreatedByName || item.createdByName || '';
 
+      // Top Developer logic
       if (assignedUser && assignedUser !== 'Unassigned' && assignedUser !== 'None') {
-        // Top Contributor criteria: Most bugs marked as "Fixed"
-        if (item.status === 'Fixed') {
+        if (item.status === 'Fixed' || item.status === 'fixed') {
           contributorCounts[assignedUser] = (contributorCounts[assignedUser] || 0) + 1;
         }
+      }
 
-        // Tester criteria: Until a dedicated 'CreatedBy' column is added, match the backend's current assignment tracking
-        testerCounts[assignedUser] = (testerCounts[assignedUser] || 0) + 1;
+      // Top Tester logic: Check the unique User ID first
+      if (creatorId !== undefined && creatorId !== null && creatorId !== '') {
+        testerIdCounts[creatorId] = (testerIdCounts[creatorId] || 0) + 1;
+        
+        // If the backend didn't supply a name string, match it up against the project members array
+        if (creatorName) {
+          userIdToNameMap[creatorId] = creatorName;
+        } else {
+          const matchedMember = members.find((m) => String(m.userId) === String(creatorId));
+          userIdToNameMap[creatorId] = matchedMember ? matchedMember.name : `User ID: ${creatorId}`;
+        }
+      } else {
+        // If past bugs completely lack a creatorId, skip them so statistics aren't falsely skewed
+        return;
       }
     });
 
-    // Helper to find the user with the most counts
+    // Helper to extract top developer name from string record keys
     const getTopUser = (counts: Record<string, number>) => {
       let topUser = 'None';
       let maxCount = 0;
@@ -82,12 +106,26 @@ export default function DashboardHeader({ project, id, queue, members = [] }: Da
       return topUser;
     };
 
+    // Evaluate the top tester using the secure identity ID map keys
+    let topTesterId: string | number = '';
+    let maxTesterCount = 0;
+
+    Object.entries(testerIdCounts).forEach(([id, count]) => {
+      if (count > maxTesterCount) {
+        maxTesterCount = count;
+        topTesterId = id;
+      }
+    });
+
+    // Resolve the top tester ID back to its readable string name for the UI layout
+    const finalTesterName = topTesterId ? (userIdToNameMap[topTesterId] || 'None') : 'None';
+
     return {
       activeCount: activeBugs,
       topDev: getTopUser(contributorCounts),
-      activeTester: getTopUser(testerCounts),
+      activeTester: finalTesterName,
     };
-  }, [queue, id]);
+  }, [queue, id, members]); 
 
   const getRoleColor = (role: Member['role']) => {
     return role === 'owner'
@@ -187,21 +225,6 @@ export default function DashboardHeader({ project, id, queue, members = [] }: Da
           </svg>
           Activity Log
         </Link>
-
-        <div className="hidden sm:block h-8 w-px bg-gray-200 dark:bg-zinc-800" />
-
-        {/* Top Developer Metric */}
-        {/* <div className="text-right min-w-[120px]">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wider dark:text-zinc-500 flex items-center justify-end gap-1">
-            <svg className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M11.48 3.499c.151-.39.71-.39.862 0l2.394 6.128 6.562.338c.42.022.588.54.262.858l-4.97 4.834 1.624 6.4c.104.414-.352.746-.71.535L12 18.732l-5.632 3.454c-.358.22-.814-.112-.71-.535l1.624-6.4-4.97-4.834c-.326-.317-.158-.836.262-.858l6.562-.338 2.394-6.128z" />
-            </svg>
-            Top Dev:
-          </p>
-          <p className="text-sm font-semibold text-zinc-800 truncate max-w-[130px] mt-0.5 dark:text-zinc-200" title={topDev}>
-            {topDev}
-          </p>
-        </div> */}
 
         <div className="hidden sm:block h-8 w-px bg-gray-200 dark:bg-zinc-800" />
 
