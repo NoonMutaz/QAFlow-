@@ -79,7 +79,7 @@ export default function ActivityPage() {
     }
   };
 
-  // 🟢 EXPORT ACTION: Generate Spreadsheet Document (.csv)
+  //  EXPORT ACTION: Generate Spreadsheet Document (.csv)
   const exportToCSV = () => {
     if (activities.length === 0) return;
 
@@ -106,7 +106,7 @@ export default function ActivityPage() {
     document.body.removeChild(link);
   };
 
-  // ─── UI LOADING STATE ──────────────────────────────────────────────────────
+  //   UI LOADING STATE  
   if (loading) {
     return (
       <div className="mx-auto max-w-4xl p-6">
@@ -121,7 +121,7 @@ export default function ActivityPage() {
     );
   }
 
-  // ─── UI ERROR STATES (ACCESS / NOT FOUND) ──────────────────────────────────
+  //   UI ERROR STATES (ACCESS / NOT FOUND)  
   if (error) {
     return (
       <div className="mx-auto max-w-md p-6 my-12 text-center">
@@ -159,11 +159,11 @@ export default function ActivityPage() {
     );
   }
 
-  // ─── UI MAIN ACTIVITY FEED STATE ───────────────────────────────────────────
+  //   UI MAIN ACTIVITY FEED STATE  
   return (
     <div className="mx-auto max-w-4xl p-6">
       
-      {/* 🛠️ print:hidden prevents back buttons from displaying inside the printed PDF file */}
+      {/*  hidden prevents back buttons from displaying inside the printed PDF file */}
       <button 
         onClick={() => router.push(`/dashboard/${projectId}`)}
         className="mb-4 inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-900 transition dark:text-zinc-400 dark:hover:text-zinc-200 print:hidden"
@@ -187,7 +187,7 @@ export default function ActivityPage() {
             </p>
           </div>
 
-          {/* 🔘 Export Action Controls Block */}
+          {/*  Export Action Controls Block */}
           {activities.length > 0 && (
             <div className="flex flex-wrap items-center gap-2 print:hidden">
               
