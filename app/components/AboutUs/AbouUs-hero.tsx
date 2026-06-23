@@ -1,13 +1,17 @@
-import React from "react";
+import Image from "next/image";
 
 export default function AboutUsHero() {
   return (
-    <section className="relative py-4 px-6 bg-white">
-      <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+    // Removed bg-white so the -z-10 background is actually visible
+    // Added overflow-hidden to prevent canvas scrollbar issues
+    <section className="relative py-4 px-6 overflow-hidden">
+      
+ 
 
+      <div className="relative z-10 max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+        
         {/* LEFT - Message */}
         <div>
-
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 text-gray-600 text-sm mb-6">
             <span className="w-2 h-2 bg-green-500 rounded-full" />
@@ -25,13 +29,6 @@ export default function AboutUsHero() {
             QAFlow helps teams track bugs, assign work, and monitor progress without spreadsheets, chaos, or lost context.
           </p>
 
-          {/* fix points */}
-          {/* <div className="mt-6 grid grid-cols-3 gap-4 max-w-md">
-            <Stat value="Fast" label="Workflow" />
-            <Stat value="Real-time" label="Tracking" />
-            <Stat value="Clean" label="UI" />
-          </div> */}
-
           {/* CTAs */}
           <div className="mt-10 flex flex-col sm:flex-row gap-3">
             <a
@@ -43,7 +40,7 @@ export default function AboutUsHero() {
 
             <a
               href="/contactus"
-              className="px-6 py-3 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 transition text-center"
+              className="px-6 py-3 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 transition text-center backdrop-blur-sm bg-white/50" // Added slight blur/bg for readability over the canvas
             >
               Talk to us
             </a>
@@ -53,39 +50,29 @@ export default function AboutUsHero() {
           <p className="mt-4 text-xs text-gray-400">
             Built for frontend teams, QA engineers, and product teams.
           </p>
-
         </div>
 
-        {/* RIGHT - Product framing (not just image) */}
+        {/* RIGHT - Product framing */}
         <div className="relative">
-
           <div className="rounded-2xl border border-gray-200 shadow-sm overflow-hidden bg-white">
-            <img
-              src="./QAdashboard.png"
+            <Image
+              src="/QAdashboard.png"
               alt="QA dashboard preview"
               className="w-full object-cover"
+              width={500}
+              height={400}
+              priority
             />
           </div>
 
-          {/* Floating context card (adds meaning to image) */}
+          {/* Floating context card */}
           <div className="absolute -bottom-6 -left-6 bg-white border border-gray-100 shadow-lg rounded-xl p-4 w-48">
             <p className="text-xs text-gray-500">Live projects</p>
             <p className="text-lg font-semibold text-gray-900">QAFlow</p>
           </div>
-
         </div>
 
       </div>
     </section>
   );
 }
-
-
-// function Stat({ value, label }) {
-//   return (
-//     <div className="text-center">
-//       <p className="text-sm font-semibold text-gray-900">{value}</p>
-//       <p className="text-xs text-gray-500">{label}</p>
-//     </div>
-//   );
-// }

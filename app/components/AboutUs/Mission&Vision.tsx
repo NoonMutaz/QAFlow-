@@ -1,5 +1,3 @@
-import React from "react";
-
 export default function MissionVision() {
   return (
     <div>
@@ -10,7 +8,7 @@ export default function MissionVision() {
               Our Mission & Vision
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              We're committed to transforming how teams approach quality
+              We&apos;re committed to transforming how teams approach quality
               assurance
             </p>
           </div>
@@ -70,7 +68,7 @@ export default function MissionVision() {
                 Our Vision
               </h3>
               <p className="text-gray-600 leading-relaxed">
-                To become the world's most trusted QA management platform,
+                To become the world&apos;s most trusted QA management platform,
                 empowering teams to deliver flawless software experiences
                 through intelligent automation and collaboration.
               </p>

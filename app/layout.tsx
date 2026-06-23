@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Header from "./components/header/Header";
+// import Header from "./components/header/Header";
 import { Providers } from './Providers';
 import {SearchProvider} from "./context/SearchContext" 
 import { AuthProvider } from "./context/AuthContext";
 import {QueueProvider} from "./context/QueueContext" 
 import "./globals.css";
 import InviteNotifications from "./components/my-projects/InviteNotifications";
+   
 
 import HeaderWrapper from "./components/header/HeaderWrapper";
 import { ProjectProvider } from "./context/ProjectContext";
@@ -47,6 +48,8 @@ export default function RootLayout({
       <SearchProvider>
         <QueueProvider>  <ProjectProvider>
           <HeaderWrapper />
+     
+
         <InviteNotifications /> 
              {children}
               <Footer/>

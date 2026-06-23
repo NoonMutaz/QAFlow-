@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import AboutUsHero from "./AbouUs-hero";
 import AboutusValues from "./Aboutus-values";
 import MissionVision from "./Mission&Vision";

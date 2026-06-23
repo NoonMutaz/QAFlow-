@@ -220,7 +220,7 @@ export default function Dashboard() {
         <div className="lg:col-span-1">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-8">
             <QueueForm
-              testCases={testCases} // ◄ ADDED THIS PROP HERE TO SEND DATA DOWN
+              testCases={testCases} // 
               projectId={String(project.id)}
               currentUserRole={project.role}
               existingBugs={projectQueue}

@@ -1,16 +1,49 @@
-import React from 'react'
+'use client';
 
- 
 import { useRouter } from "next/navigation";
+import dynamic from 'next/dynamic';
+
+// Disable SSR so the canvas doesn't glitch during Next.js hydration
+const Lightfall = dynamic(() => import('../Lightfall'), { ssr: false });
+
+const LIGHTFALL_COLORS = ['#A6C8FF', '#5227FF', '#FF9FFC'];
+
 export default function HomeHero() {
-    const router = useRouter();
-    const handleCreateProject = () => {
+  const router = useRouter();
+  
+  const handleCreateProject = () => {
     router.push("/createProject");
   };
 
-    return (
+  return (
     <div>
-       <section className="relative py-20 px-6 overflow-hidden">
+      {/* CRITICAL: 'isolate' forces the -z-10 canvas to stay inside this section */}
+      {/* instead of falling behind the main page's white/purple gradient background */}
+      <section className="relative isolate overflow-hidden py-20 px-6">
+        
+        {/* Background */}
+        <div className="absolute inset-0 z-0">
+<div style={{ width: '100%', height: 600, position: 'relative' }}>
+<Lightfall
+  colors={[ '#5227FF', '#FF9FFC', '#B497CF' ]}
+  mouseForce={28}
+  cursorSize={40}
+  isViscous
+  viscous={37}
+  iterationsViscous={34}
+  iterationsPoisson={20}
+  resolution={0.5}
+  isBounce={false}
+  autoDemo
+  autoSpeed={0.6}
+  autoIntensity={2.2}
+  takeoverDuration={0.25}
+  autoResumeDelay={3000}
+  autoRampDuration={0.6}
+/>
+</div>
+      </div>
+
         <div className="relative max-w-6xl mx-auto text-center">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full border border-indigo-100 shadow-sm mb-8">
@@ -37,23 +70,17 @@ export default function HomeHero() {
               onClick={handleCreateProject}
               className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-primary-600 text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
               Get Started
             </button>
             <a
               href="/aboutUs"
               className="inline-flex items-center gap-2 px-8 py-4 bg-white text-gray-700 border border-gray-200 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-300 hover:shadow-lg transition-all duration-300"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
               Learn More
             </a>
           </div>
         </div>
       </section>
     </div>
-  )
+  );
 }

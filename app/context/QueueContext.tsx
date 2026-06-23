@@ -69,6 +69,7 @@ interface QueueContextType {
 const QueueContext = createContext<QueueContextType | undefined>(undefined);
 const API = process.env.NEXT_PUBLIC_API_URL ?? '';
 
+
 export const QueueProvider = ({ children }: { children: ReactNode }) => {
   //  STATE HOOKS LAYER 
   const [queue, setQueue] = useState<Record<string, Customer[]>>({});
@@ -92,19 +93,33 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
   });
 
   //  CORE FETCHERS 
-  const fetchBugs = useCallback(async (projectId: string) => {
-    try {
-      const res = await fetch(`${API}/api/projects/${projectId}/bugs`, {
-        headers: authHeaders(),
-        
-      });
-      if (!res.ok) throw new Error('Failed to fetch project bugs');
-      const data = await res.json();
-      setQueue((prev) => ({ ...prev, [projectId]: data }));
-    } catch (err) {
-      console.error('Fetch failed', err);
+const fetchBugs = useCallback(async (projectId: string) => {
+  try {
+    const token = getCookieToken();
+    console.log('=== fetchBugs debug ===');
+    console.log('projectId:', projectId);
+    console.log('token exists:', !!token);
+    console.log('token value:', token?.substring(0, 20) + '...');
+    console.log('API URL:', API);
+
+    const res = await fetch(`${API}/api/projects/${projectId}/bugs`, {
+      headers: authHeaders(),
+    });
+
+    console.log('response status:', res.status);
+    console.log('response ok:', res.ok);
+
+    if (!res.ok) {
+      const body = await res.text();
+      console.log('error body:', body);
+      throw new Error('Failed to fetch project bugs');
     }
-  }, []);
+    const data = await res.json();
+    setQueue((prev) => ({ ...prev, [projectId]: data }));
+  } catch (err) {
+    console.error('Fetch failed', err);
+  }
+}, []);
 
   const fetchMyAssignedBugs = useCallback(async () => {
     setLoadingMyBugs(true);

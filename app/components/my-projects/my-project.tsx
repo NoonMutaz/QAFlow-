@@ -12,12 +12,12 @@ import RemoveModal from './RemoveModal';
 import MyProjectHeader from './MyProjectHeader';
 import ProjectCard from './ProjectCard';
 import CreateProjectForm from './EditProjectForm';
+import { useQueries } from '@tanstack/react-query';
 
 const projectTypes = ['QA Dashboard', 'Bug Tracking'];
-const ITEMS_PER_PAGE = 6; // Adjust this number to change projects per page
+const ITEMS_PER_PAGE = 6;
 
 const isOwner = (role?: string) => role === 'owner';
-import { useQueries } from '@tanstack/react-query';
 
 export function useProjectsQueue(projects: Project[]) {
   return useQueries({
@@ -28,13 +28,12 @@ export function useProjectsQueue(projects: Project[]) {
         if (!res.ok) throw new Error('Failed to fetch bugs');
         return res.json();
       },
-      //  Safely poll in the background every 5 seconds (or whatever interval you prefer)
-      refetchInterval: 5000, 
-      // Only run the query if we actually have projects loaded
+      refetchInterval: 5000,
       enabled: !!project.id,
     })),
   });
 }
+
 export default function MyProjects() {
   const { projects, deleteProject, handleOpenProject, isLoading, isOpeningProject, setIsOpeningProject } = useProjects();
   const { queue, fetchBugs } = useQueueContext();
@@ -59,7 +58,7 @@ export default function MyProjects() {
     isProjectSubmitting, handleUpdateProject, handleSendInvite,
   } = useProjectActions();
 
-  useEffect(() => { setIsOpeningProject(false); }, []);
+  useEffect(() => { setIsOpeningProject(false); }, [setIsOpeningProject]);
 
   useEffect(() => {
     if (projects.length > 0) projects.forEach((p) => fetchBugs(String(p.id)));
@@ -122,68 +121,84 @@ export default function MyProjects() {
   const anyModalOpen = openModalId !== null || inviteModal !== null || settingsModalProjectId !== null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/60">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-slate-50/80 to-indigo-50/40 selection:bg-indigo-100 selection:text-indigo-900">
+      {/* Background Modal Overlay */}
       {anyModalOpen && (
-        <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
+        <div className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm transition-opacity"
           onClick={() => { setOpenModalId(null); setInviteModal(null); setSettingsModalProjectId(null); }}
         />
       )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        <MyProjectHeader  isLoading={isLoading} filteredProjects={filteredProjects} projects={projects} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+      {/* Main Content Wrapper */}
+      <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col space-y-8">
         
-        {/* Swapped filteredProjects directly with paginatedProjects slice mapping array */}
-        <ProjectCard
-          handleDeleteClick={handleDeleteClick}
-          handleInviteClick={handleInviteClick}
-          handleOpenProject={(projectId: number) => handleOpenProject(projectId)}
-          openProjectSettings={openProjectSettings}
-          isLoading={isLoading}
-          filteredProjects={paginatedProjects}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          projects={projects}
-          getProjectStatus={getProjectStatus}
-          queue={queue}
-          isOwner={isOwner}
-        />
+        {/* Header Segment */}
+        <div className="shrink-0">
+          <MyProjectHeader 
+            isLoading={isLoading} 
+            filteredProjects={filteredProjects} 
+            projects={projects} 
+            searchTerm={searchTerm} 
+            setSearchTerm={setSearchTerm} 
+          />
+        </div>
+        
+        {/* Cards Grid Segment - Allows cards to grow and fill available space */}
+        <div className="flex-1">
+          <ProjectCard
+            handleDeleteClick={handleDeleteClick}
+            handleInviteClick={handleInviteClick}
+            handleOpenProject={(projectId: number) => handleOpenProject(projectId)}
+            openProjectSettings={openProjectSettings}
+            isLoading={isLoading}
+            filteredProjects={paginatedProjects}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            projects={projects}
+            getProjectStatus={getProjectStatus}
+            queue={queue}
+            isOwner={isOwner}
+          />
+        </div>
 
-        {/* Pagination UI Controls Block Component layout */}
+        {/* Enhanced Pagination UI */}
         {!isLoading && filteredProjects.length > 0 && (
-          <div className="flex items-center justify-between border-t border-gray-200/60 bg-white/60 backdrop-blur-md px-6 py-4 rounded-2xl shadow-sm mt-4">
-            {/* Mobile layout step elements buttons */}
-            <div className="flex flex-1 justify-between sm:hidden">
+          <div className="shrink-0 flex flex-col sm:flex-row items-center justify-between border border-slate-200/60 bg-white/80 backdrop-blur-xl px-6 py-4 rounded-2xl shadow-sm">
+            
+            {/* Mobile Pagination Buttons */}
+            <div className="flex w-full sm:hidden justify-between gap-3">
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="inline-flex items-center rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                className="flex-1 inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
               >
                 Previous
               </button>
               <button
-                onClick={() => setCurrentPage((prev) => Math.min(prev - 1, totalPages))}
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))} // FIXED BUG HERE
                 disabled={currentPage === totalPages}
-                className="ml-3 inline-flex items-center rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                className="flex-1 inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
               >
                 Next
               </button>
             </div>
 
-            {/* Desktop Full Pagination Layout Structure View */}
+            {/* Desktop Pagination Layout */}
             <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm text-gray-600">
-                  Showing <span className="font-semibold text-gray-900">{filteredProjects.length === 0 ? 0 : startIndexDisplay}</span> to{' '}
-                  <span className="font-semibold text-gray-900">{endIndexDisplay}</span> of{' '}
-                  <span className="font-semibold text-gray-900">{filteredProjects.length}</span> projects
+                <p className="text-sm text-slate-500">
+                  Showing <span className="font-semibold text-slate-900">{filteredProjects.length === 0 ? 0 : startIndexDisplay}</span> to{' '}
+                  <span className="font-semibold text-slate-900">{endIndexDisplay}</span> of{' '}
+                  <span className="font-semibold text-slate-900">{filteredProjects.length}</span> projects
                 </p>
               </div>
+              
               <div>
-                <nav className="isolate inline-flex -space-x-px rounded-xl shadow-xs gap-1" aria-label="Pagination">
+                <nav className="isolate inline-flex items-center gap-1.5" aria-label="Pagination">
                   <button
                     onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                     disabled={currentPage === 1}
-                    className="relative inline-flex items-center rounded-xl bg-white px-3 py-2 text-gray-400 border border-gray-200 hover:bg-gray-50 focus:z-20 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    className="relative inline-flex items-center rounded-xl bg-white p-2 text-slate-400 border border-slate-200 hover:bg-slate-50 hover:text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95"
                   >
                     <span className="sr-only">Previous</span>
                     <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -191,28 +206,30 @@ export default function MyProjects() {
                     </svg>
                   </button>
 
-                  {Array.from({ length: totalPages }, (_, index) => {
-                    const pageNumber = index + 1;
-                    return (
-                      <button
-                        key={pageNumber}
-                        onClick={() => setCurrentPage(pageNumber)}
-                        aria-current={currentPage === pageNumber ? 'page' : undefined}
-                        className={`relative inline-flex items-center rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
-                          currentPage === pageNumber
-                            ? 'z-10 bg-blue-600 text-white shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
-                            : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 focus:z-20'
-                        }`}
-                      >
-                        {pageNumber}
-                      </button>
-                    );
-                  })}
+                  <div className="flex items-center gap-1 bg-slate-100/50 p-1 rounded-xl border border-slate-100">
+                    {Array.from({ length: totalPages }, (_, index) => {
+                      const pageNumber = index + 1;
+                      return (
+                        <button
+                          key={pageNumber}
+                          onClick={() => setCurrentPage(pageNumber)}
+                          aria-current={currentPage === pageNumber ? 'page' : undefined}
+                          className={`relative inline-flex items-center justify-center min-w-[36px] h-9 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                            currentPage === pageNumber
+                              ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/60'
+                              : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
+                          }`}
+                        >
+                          {pageNumber}
+                        </button>
+                      );
+                    })}
+                  </div>
 
                   <button
                     onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                     disabled={currentPage === totalPages}
-                    className="relative inline-flex items-center rounded-xl bg-white px-3 py-2 text-gray-400 border border-gray-200 hover:bg-gray-50 focus:z-20 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    className="relative inline-flex items-center rounded-xl bg-white p-2 text-slate-400 border border-slate-200 hover:bg-slate-50 hover:text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95"
                   >
                     <span className="sr-only">Next</span>
                     <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -224,21 +241,26 @@ export default function MyProjects() {
             </div>
           </div>
         )}
-
-        {isOpeningProject && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-            <div className="relative bg-white rounded-2xl shadow-2xl px-8 py-6 flex flex-col items-center gap-4 animate-scaleIn">
-              <div className="h-12 w-12 border-4 border-gray-300 border-t-black rounded-full animate-spin" />
-              <div className="text-center">
-                <p className="text-sm text-gray-500">Opening project...</p>
-                <p className="text-lg font-semibold">Please wait</p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
+      {/* Opening Project Loading Overlay */}
+      {isOpeningProject && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/30 backdrop-blur-md transition-opacity" />
+          <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl px-10 py-8 flex flex-col items-center gap-5 border border-white/50 animate-in fade-in zoom-in duration-300">
+            <div className="relative flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full border-4 border-indigo-100 animate-ping opacity-20"></div>
+              <div className="h-14 w-14 border-4 border-slate-100 border-t-indigo-600 rounded-full animate-spin"></div>
+            </div>
+            <div className="text-center space-y-1">
+              <p className="text-lg font-bold text-slate-900 tracking-tight">Opening Workspace</p>
+              <p className="text-sm font-medium text-slate-500">Preparing your project board...</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modals Container */}
       {openModalId !== null && deleteModalProject && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-auto">
           <RemoveModal
