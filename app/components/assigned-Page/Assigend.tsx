@@ -19,13 +19,15 @@ export default function Assigned() {
     fetchMyAssignedBugs();
   }, [fetchMyAssignedBugs]);
 
-  // NOTE: myAssignedBugs is cast to RawAssignedBug[] here because QueueContext
+  //   myAssignedBugs is cast to RawAssignedBug[] here because QueueContext
   // doesn't currently export a typed shape for it. Once it does, this cast
   // can be dropped in favor of typing the context value directly.
-  const allBugs = useMemo<AssignedBug[]>(
-    () => ((myAssignedBugs ?? []) as RawAssignedBug[]).map(normalizeBug),
-    [myAssignedBugs]
-  );
+const allBugs = useMemo<AssignedBug[]>(
+  () => (myAssignedBugs ?? []).map((bug) =>
+    normalizeBug(bug as unknown as RawAssignedBug)
+  ),
+  [myAssignedBugs]
+);
 
   const visibleBugs = useMemo(() => sortAssignedBugs(allBugs), [allBugs]);
 
