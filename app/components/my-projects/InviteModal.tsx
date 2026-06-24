@@ -251,7 +251,7 @@ const handleRoleUpdate = async (memberId: string, role: Member['role']) => {
                     className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
                   />
                   <p className="text-xs text-gray-400 mt-1.5">
-                    They&apos;ll get a notification to accept or decline the invite.
+                  Only registered users can be invited. They&apos;ll get a notification to accept or decline the invite.
                   </p>
                 </div>
 
