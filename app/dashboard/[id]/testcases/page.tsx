@@ -3,6 +3,7 @@ import React, { useState, useEffect, use } from "react";
 import CreateTestCase from "./CreateTestCase";
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useLanguage } from '../../../i18n/LanguageProvider';
 
 interface LinkedBug {
   id: number;
@@ -23,6 +24,7 @@ interface TestCase {
 }
 
 export default function TestCasesPage({ params }: { params: Promise<{ id: string }> }) {
+  const { t } = useLanguage();
   const [testCases, setTestCases] = useState<TestCase[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [expandedCases, setExpandedCases] = useState<Record<number, boolean>>({});
@@ -47,7 +49,7 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
       const data = await res.json();
       setTestCases(data);
     } catch (err) {
-      setError("Failed to load the SBC clauses. Please try again.");
+      setError(t("Failed to load the SBC clauses. Please try again."));
     } finally {
       setIsLoading(false);
     }
@@ -78,7 +80,7 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
     } catch (err) {
       console.error(err);
       setTestCases((prev) => prev.map((t) => (t.id === tc.id ? { ...t, status: previous } : t)));
-      setError("Could not save the result. Please try again.");
+      setError(t("Could not save the result. Please try again."));
     }
   };
 
@@ -92,7 +94,7 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
       setTestCases((prev) => prev.filter((t) => t.id !== tcId));
     } catch (err) {
       console.error(err);
-      setError("Could not delete the clause. Please try again.");
+      setError(t("Could not delete the clause. Please try again."));
     } finally {
       setConfirmDelete(null);
     }
@@ -104,35 +106,35 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
       <div className="mb-8 pb-6 border-b border-gray-200">
         <div className="flex flex-col sm:flex-row justify-between items-start gap-6">
           <div>
-            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">SBC Clauses</h1>
-            <p className="text-sm text-gray-500 mt-1.5">The code requirements this project is inspected against, and the findings linked to each.</p>
+            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">{t("SBC Clauses")}</h1>
+            <p className="text-sm text-gray-500 mt-1.5">{t("The code requirements this project is inspected against, and the findings linked to each.")}</p>
           </div>
 
           <div className="flex gap-3">
             <button onClick={() => router.back()} className="px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-gray-700 font-semibold text-sm hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-sm">
-              Back
+              {t("Back")}
             </button>
             <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-blue-700 transition-colors shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-              + Add SBC clause
+              {t("+ Add SBC clause")}
             </button>
           </div>
         </div>
 
         {/* Legend Row */}
         <div className="flex w-fit items-center gap-6 mt-6 px-4 py-2.5 bg-white rounded-lg border border-gray-200 shadow-sm">
-          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Linked findings:</span>
+          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t("Linked findings:")}</span>
           <div className="flex gap-4">
             <div className="flex items-center gap-2 text-xs text-gray-700 font-medium">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm"></span> Fixed
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm"></span> {t("Fixed")}
             </div>
             <div className="flex items-center gap-2 text-xs text-gray-700 font-medium">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm"></span> In Progress
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm"></span> {t("In Progress")}
             </div>
             <div className="flex items-center gap-2 text-xs text-gray-700 font-medium">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm"></span> Awaiting approval
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm"></span> {t("Awaiting approval")}
             </div>
             <div className="flex items-center gap-2 text-xs text-gray-700 font-medium">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm"></span> Not Fixed
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm"></span> {t("Not Fixed")}
             </div>
           </div>
         </div>
@@ -142,7 +144,7 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 flex justify-between items-center">
           <p className="text-sm font-medium">{error}</p>
-          <button onClick={fetchTestCases} className="text-xs font-bold underline hover:text-red-800">Retry</button>
+          <button onClick={fetchTestCases} className="text-xs font-bold underline hover:text-red-800">{t("Retry")}</button>
         </div>
       )}
 
@@ -161,10 +163,10 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
             </svg>
           </div>
-          <h3 className="text-lg font-bold text-gray-900 mb-1">No SBC clauses yet</h3>
-          <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">Add the code requirements this project must meet, from the SBC Library or manually. Findings will be linked to them.</p>
+          <h3 className="text-lg font-bold text-gray-900 mb-1">{t("No SBC clauses yet")}</h3>
+          <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">{t("Add the code requirements this project must meet, from the SBC Library or manually. Findings will be linked to them.")}</p>
           <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-blue-700 shadow-sm transition-colors">
-            Add first clause
+            {t("Add first clause")}
           </button>
         </div>
       ) : (
@@ -198,7 +200,7 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
                     </div>
                     
                     <p className="pl-9 text-sm mt-1 text-gray-600">
-                      <span className="font-medium text-gray-700">Required:</span> {tc.expectedResult}
+                      <span className="font-medium text-gray-700">{t("Required:")}</span> {tc.expectedResult}
                     </p>
                     
                     {bugs.length > 0 && (
@@ -231,54 +233,39 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
                           ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                           : 'bg-rose-50 text-rose-700 border-rose-200'
                         }`}>
-                        {isFullyFixed ? "✓ All fixed" : `${openBugs} open finding${openBugs === 1 ? '' : 's'}` }
+                        {isFullyFixed ? t("✓ All fixed") : t(openBugs === 1 ? "{n} open finding" : "{n} open findings", { n: openBugs })}
                       </span>
                     ) : isCompliant ? (
                       <span className="flex items-center gap-2">
                         <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
-                          ✓ Compliant
+                          {t("✓ Compliant")}
                         </span>
                         <button
                           onClick={() => void handleStatusChange(tc, 'passed')}
                           className="text-xs font-medium text-gray-400 hover:text-gray-700 hover:underline"
                         >
-                          Undo
+                          {t("Undo")}
                         </button>
                       </span>
                     ) : (
-                      <span className="flex flex-wrap items-center justify-end gap-2">
-                        <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-500">
-                          Not inspected
-                        </span>
-                        <button
-                          onClick={() => void handleStatusChange(tc, 'passed')}
-                          className="rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
-                        >
-                          Mark compliant
-                        </button>
-                        <Link
-                          href={`/dashboard/${projectId}`}
-                          className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50"
-                        >
-                          Report finding
-                        </Link>
-                      </span>
+                      // hidden for now: "Not inspected" + Mark compliant / Report finding (see git history)
+                      null
                     )}
                     {confirmDelete === tc.id ? (
                       <span className="flex items-center gap-1">
                         <button onClick={() => void handleDelete(tc.id)} className="rounded-lg bg-red-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-red-700">
-                          Delete
+                          {t("Delete")}
                         </button>
                         <button onClick={() => setConfirmDelete(null)} className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-gray-600">
-                          Cancel
+                          {t("Cancel")}
                         </button>
                       </span>
                     ) : (
                       <button
                         onClick={() => setConfirmDelete(tc.id)}
                         className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                        title={bugs.length ? 'Delete clause (linked findings are kept)' : 'Delete clause'}
-                        aria-label="Delete clause"
+                        title={bugs.length ? t('Delete clause (linked findings are kept)') : t('Delete clause')}
+                        aria-label={t("Delete clause")}
                       >
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -290,7 +277,7 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
 
                 {expandedCases[tc.id] && (
                   <div className="mt-5 ml-9 p-5 bg-gray-50 rounded-xl border border-gray-100/80 shadow-inner">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">Inspection checklist</h4>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">{t("Inspection checklist")}</h4>
                     {tc.steps && tc.steps.length > 0 ? (
                       <div className="space-y-2">
                         {tc.steps.map((step, idx) => (
@@ -301,7 +288,7 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
                         ))}
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-400 italic">No checklist items.</p>
+                      <p className="text-sm text-gray-400 italic">{t("No checklist items.")}</p>
                     )}
                   </div>
                 )}

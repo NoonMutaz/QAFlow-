@@ -1,6 +1,7 @@
 'use client';
 
 import Link from "next/link";
+import { useLanguage } from "../../i18n/LanguageProvider";
 
 const actions = [
   {
@@ -25,12 +26,13 @@ const actions = [
 
 /** Quick actions into the app, shown at the bottom of the home page. */
 export default function HomeCard() {
+  const { t } = useLanguage();
   return (
     <section className="border-t border-slate-200 bg-white px-6 py-20">
       <div className="mx-auto max-w-5xl">
         <div className="text-center">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">Get to work</h2>
-          <p className="mt-3 text-slate-600">Jump straight into a project.</p>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">{t("Get to work")}</h2>
+          <p className="mt-3 text-slate-600">{t("Jump straight into a project.")}</p>
         </div>
 
         <div className="mt-10 grid gap-6 md:grid-cols-2">
@@ -46,11 +48,11 @@ export default function HomeCard() {
                 </svg>
               </span>
               <span className="flex-1">
-                <span className="block text-lg font-semibold text-slate-900">{a.title}</span>
-                <span className="mt-1 block text-sm leading-relaxed text-slate-600">{a.text}</span>
+                <span className="block text-lg font-semibold text-slate-900">{t(a.title)}</span>
+                <span className="mt-1 block text-sm leading-relaxed text-slate-600">{t(a.text)}</span>
                 <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-emerald-700">
-                  {a.cta}
-                  <span aria-hidden="true" className="transition group-hover:translate-x-0.5">→</span>
+                  {t(a.cta)}
+                  <span aria-hidden="true" className="transition group-hover:translate-x-0.5 rtl:rotate-180">→</span>
                 </span>
               </span>
             </Link>

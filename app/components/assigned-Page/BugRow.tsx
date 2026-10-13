@@ -3,6 +3,7 @@ import { AssignedBug, BugStatus } from './types';
 import { formatDate } from './utils';
 import PriorityBadge from './PriorityBadge';
 import StatusSelect from './StatusSelect';
+import { useLanguage } from '../../i18n/LanguageProvider';
 
 interface BugRowProps {
   bug: AssignedBug;
@@ -13,7 +14,8 @@ interface BugRowProps {
 }
 
 export default function BugRow({ bug, isUpdating, onStatusChange, onView, onResolve }: BugRowProps) {
-  const rowHighlight = bug.priority === 'High' ? 'border-l-4 border-l-red-500' : '';
+  const { t } = useLanguage();
+  const rowHighlight = bug.priority === 'High' ? 'border-s-4 border-s-red-500' : '';
 
   return (
     <li
@@ -32,21 +34,21 @@ export default function BugRow({ bug, isUpdating, onStatusChange, onView, onReso
 
       <div className="col-span-4 flex flex-col gap-1.5">
         <p className="truncate font-medium text-slate-900 text-sm sm:text-base">
-          {bug.description || 'No description provided'}
+          {bug.description || t('No description provided')}
         </p>
         {bug.status === 'notFixed' && bug.reviewComment && (
           <p className="rounded-md bg-red-50 px-2 py-1 text-[11px] text-red-700">
-            <span className="font-semibold">Fix rejected:</span> {bug.reviewComment}
+            <span className="font-semibold">{t("Fix rejected:")}</span> {bug.reviewComment}
           </p>
         )}
         {bug.status === 'pendingReview' && (
-          <p className="text-[11px] text-amber-700">Fix submitted. Waiting for the owner&apos;s approval.</p>
+          <p className="text-[11px] text-amber-700">{t("Fix submitted. Waiting for the owner's approval.")}</p>
         )}
 
         <div className="flex flex-col gap-0.5 text-[11px] text-slate-400">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span>
-              Assigned by <strong className="text-slate-600 font-medium">{bug.assignedByName}</strong>
+              {t("Assigned by")} <strong className="text-slate-600 font-medium">{bug.assignedByName}</strong>
             </span>
             {bug.assignedAt && (
               <span className="text-slate-500 bg-slate-100 border border-slate-200/60 px-1.5 py-0.5 rounded font-mono text-[10px]">
@@ -56,7 +58,7 @@ export default function BugRow({ bug, isUpdating, onStatusChange, onView, onReso
           </div>
           {bug.bugDate && (
             <div className="text-slate-400">
-              Bug Opened by <strong className="text-slate-600 font-medium">{bug.reporterName}</strong>:{' '}
+              {t("Opened by")} <strong className="text-slate-600 font-medium">{bug.reporterName}</strong>:{' '}
               <span className="font-mono">{formatDate(bug.bugDate)}</span>
             </div>
           )}
@@ -70,7 +72,7 @@ export default function BugRow({ bug, isUpdating, onStatusChange, onView, onReso
             onClick={() => onResolve(bug)}
             className="flex items-center justify-center rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-emerald-700"
           >
-            Mark resolved
+            {t("Mark resolved")}
           </button>
         )}
         <button
@@ -78,14 +80,14 @@ export default function BugRow({ bug, isUpdating, onStatusChange, onView, onReso
           onClick={() => onView(bug)}
           className="flex items-center justify-center rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 ring-1 ring-inset ring-slate-200 transition-all hover:bg-slate-50 hover:ring-slate-300 shadow-sm"
         >
-          View finding
+          {t("View finding")}
         </button>
 
         <Link
           href={`/dashboard/${bug.projectId}`}
           className="flex items-center justify-center rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 ring-1 ring-inset ring-slate-200 transition-all hover:bg-slate-50 hover:ring-slate-300 shadow-sm"
         >
-          View project
+          {t("View project")}
         </Link>
       </div>
     </li>

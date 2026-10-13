@@ -1,4 +1,7 @@
+'use client';
+
 import React from 'react';
+import { useLanguage } from '../../i18n/LanguageProvider';
 
 const steps = [
   {
@@ -25,17 +28,17 @@ const steps = [
 
 /** "How it works" section of the home page. */
 export default function CardsHeader() {
+  const { t } = useLanguage();
   return (
     <section id="how-it-works" className="scroll-mt-20 px-6 py-20">
       <div className="mx-auto max-w-6xl">
         <div className="text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">How it works</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">{t("How it works")}</p>
           <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
-            One finding, four steps, fully traceable
+            {t("One finding, four steps, fully traceable")}
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-slate-600">
-            Engineers spend time looking up the right code clause for every observation. Imtithal does the lookup, so
-            they can focus on the site.
+            {t("Engineers spend time looking up the right code clause for every observation. Imtithal does the lookup, so they can focus on the site.")}
           </p>
         </div>
 
@@ -50,8 +53,8 @@ export default function CardsHeader() {
                 </span>
                 <span className="text-sm font-semibold text-slate-300">0{i + 1}</span>
               </div>
-              <h3 className="mt-5 text-base font-semibold text-slate-900">{step.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">{step.text}</p>
+              <h3 className="mt-5 text-base font-semibold text-slate-900">{t(step.title)}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">{t(step.text)}</p>
             </li>
           ))}
         </ol>

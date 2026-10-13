@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { SBC_CODES, findSbcCode } from "../../../data/sbcCodes";
 import { libraryClauseTitle, type LibraryClause } from "../../../api/sbc-suggest/libraryClause";
+import { useLanguage } from '../../../i18n/LanguageProvider';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 const authToken = () =>
@@ -37,6 +38,7 @@ export default function CreateTestCase({
   /** titles already in the project, to warn about duplicates */
   existingTitles?: string[];
 }) {
+  const { t, lang } = useLanguage();
   const [mode, setMode] = useState<"library" | "manual">("library");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -86,7 +88,7 @@ export default function CreateTestCase({
     setError("");
     const expectedResult = mode === "library" ? picked?.requirementText ?? "" : standard.trim();
     if (!fullTitle || !expectedResult) {
-      setError(mode === "library" ? "Pick a clause from the library." : "Fill in the title and the required standard.");
+      setError(mode === "library" ? t("Pick a clause from the library.") : t("Fill in the title and the required standard."));
       return;
     }
 
@@ -104,7 +106,7 @@ export default function CreateTestCase({
       if (!res.ok) throw new Error(await errorMessage(res));
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save the clause.");
+      setError(err instanceof Error ? err.message : t("Could not save the clause."));
     } finally {
       setIsSubmitting(false);
     }
@@ -115,9 +117,9 @@ export default function CreateTestCase({
       {/* Header */}
       <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-5">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Add SBC clause</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t("Add SBC clause")}</h2>
           <p className="mt-0.5 text-xs text-gray-500">
-            Clauses this project is inspected against. Findings are linked to them.
+            {t("Clauses this project is inspected against. Findings are linked to them.")}
           </p>
         </div>
         {onCancel && (
@@ -139,8 +141,8 @@ export default function CreateTestCase({
         <div className="grid grid-cols-2 gap-1 rounded-lg bg-gray-100 p-1 text-sm font-semibold">
           {(
             [
-              ["library", `From SBC Library${library ? ` (${library.length})` : ""}`],
-              ["manual", "Write manually"],
+              ["library", `${t("From SBC Library")}${library ? ` (${library.length})` : ""}`],
+              ["manual", t("Write manually")],
             ] as const
           ).map(([value, label]) => (
             <button
@@ -162,18 +164,18 @@ export default function CreateTestCase({
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by code, section, title or text…"
+              placeholder={t("Search by code, section, title or text…")}
               className={inputCls}
             />
             {library === null ? (
-              <p className="py-6 text-center text-sm text-gray-400">Loading the library…</p>
+              <p className="py-6 text-center text-sm text-gray-400">{t("Loading the library…")}</p>
             ) : library.length === 0 ? (
               <div className="rounded-lg border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
-                The SBC Library is empty.{" "}
+                {t("The SBC Library is empty.")}{" "}
                 <a href="/sbc-library" target="_blank" className="font-semibold text-blue-600 hover:underline">
-                  Add verified clauses
+                  {t("Add verified clauses")}
                 </a>{" "}
-                or write this one manually.
+                {t("or write this one manually.")}
               </div>
             ) : (
               <ul className="max-h-72 divide-y divide-gray-100 overflow-y-auto rounded-lg border border-gray-200">
@@ -195,16 +197,16 @@ export default function CreateTestCase({
                             {c.codeType} §{c.sectionNumber}
                           </span>
                           <span className="text-sm font-medium text-gray-900">{c.title}</span>
-                          {selected && <span className="ml-auto text-xs font-semibold text-blue-700">Selected ✓</span>}
-                          {inProject && <span className="ml-auto text-[11px] text-gray-500">Already in project</span>}
+                          {selected && <span className="ml-auto text-xs font-semibold text-blue-700">{t("Selected ✓")}</span>}
+                          {inProject && <span className="ml-auto text-[11px] text-gray-500">{t("Already in project")}</span>}
                         </div>
                         <p className="mt-0.5 line-clamp-2 text-xs text-gray-600">{c.requirementText}</p>
-                        {c.verifiedBy && <p className="mt-0.5 text-[10px] text-blue-700">✓ Verified by {c.verifiedBy}</p>}
+                        {c.verifiedBy && <p className="mt-0.5 text-[10px] text-blue-700">✓ {t("Verified by")} {c.verifiedBy}</p>}
                       </button>
                     </li>
                   );
                 })}
-                {matches.length === 0 && <li className="p-4 text-center text-sm text-gray-400">No clause matches your search.</li>}
+                {matches.length === 0 && <li className="p-4 text-center text-sm text-gray-400">{t("No clause matches your search.")}</li>}
               </ul>
             )}
           </div>
@@ -212,40 +214,40 @@ export default function CreateTestCase({
           <div className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-3">
               <label className={`${labelCls} sm:col-span-2`}>
-                Code
+                {t("Code")}
                 <select value={code} onChange={(e) => setCode(e.target.value)} className={inputCls}>
                   {SBC_CODES.map((c) => (
                     <option key={c.code} value={c.code}>
-                      {c.code} · {c.nameEn}
+                      {c.code} · {lang === "ar" ? c.nameAr : c.nameEn}
                     </option>
                   ))}
                 </select>
-                <span className="mt-1 block text-[11px] text-gray-500" dir="rtl">{findSbcCode(code)?.nameAr}</span>
+                {lang !== "ar" && <span className="mt-1 block text-[11px] text-gray-500" dir="rtl">{findSbcCode(code)?.nameAr}</span>}
               </label>
               <label className={labelCls}>
-                Section
-                <input value={section} onChange={(e) => setSection(e.target.value)} placeholder="e.g. 1010.1.9" className={inputCls} />
+                {t("Section")}
+                <input value={section} onChange={(e) => setSection(e.target.value)} placeholder={t("e.g. 1010.1.9")} className={inputCls} />
               </label>
             </div>
 
             <label className={labelCls}>
-              Title <span className="text-red-500">*</span>
-              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Door operations" className={inputCls} />
+              {t("Title")} <span className="text-red-500">*</span>
+              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("e.g. Door operations")} className={inputCls} />
             </label>
 
             <label className={labelCls}>
-              Required standard <span className="text-red-500">*</span>
+              {t("Required standard")} <span className="text-red-500">*</span>
               <textarea
                 value={standard}
                 onChange={(e) => setStandard(e.target.value)}
                 rows={3}
-                placeholder="What the code requires, e.g. egress doors open from the inside without a key"
+                placeholder={t("What the code requires, e.g. egress doors open from the inside without a key")}
                 className={`${inputCls} resize-none`}
               />
             </label>
 
             <div>
-              <span className={labelCls}>Inspection checklist (optional)</span>
+              <span className={labelCls}>{t("Inspection checklist (optional)")}</span>
               <div className="mt-1.5 space-y-2">
                 {steps.map((step, index) => (
                   <div key={index} className="flex items-center gap-2">
@@ -253,7 +255,7 @@ export default function CreateTestCase({
                     <input
                       value={step}
                       onChange={(e) => setSteps(steps.map((s, i) => (i === index ? e.target.value : s)))}
-                      placeholder="What to check on site"
+                      placeholder={t("What to check on site")}
                       className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
                     />
                     <button
@@ -272,7 +274,7 @@ export default function CreateTestCase({
                 onClick={() => setSteps([...steps, ""])}
                 className="mt-2 text-xs font-semibold text-blue-600 hover:underline"
               >
-                + Add checklist item
+                {t("+ Add checklist item")}
               </button>
             </div>
           </div>
@@ -281,8 +283,8 @@ export default function CreateTestCase({
         {/* Preview of what will be saved */}
         {fullTitle && (
           <p className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600">
-            Will be saved as <span className="font-semibold text-gray-900">{fullTitle}</span>
-            {isDuplicate && <span className="ml-1 font-semibold text-amber-700">· already in this project</span>}
+            {t("Will be saved as")} <span className="font-semibold text-gray-900">{fullTitle}</span>
+            {isDuplicate && <span className="ms-1 font-semibold text-amber-700">· {t("already in this project")}</span>}
           </p>
         )}
 
@@ -296,7 +298,7 @@ export default function CreateTestCase({
               disabled={isSubmitting}
               className="flex-1 rounded-lg border border-gray-200 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
             >
-              Cancel
+              {t("Cancel")}
             </button>
           )}
           <button
@@ -304,7 +306,7 @@ export default function CreateTestCase({
             disabled={isSubmitting || isDuplicate}
             className="flex-1 rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isSubmitting ? "Saving…" : "Add clause"}
+            {isSubmitting ? t("Saving…") : t("Add clause")}
           </button>
         </div>
       </form>

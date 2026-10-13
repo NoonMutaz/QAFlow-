@@ -6,6 +6,7 @@ import { useAuthContext } from '@/app/context/AuthContext';
 import { useQueueContext, DuplicateMatch, Customer } from '@/app/context/QueueContext';
 import { libraryClauseTitle, type LibraryClause } from '@/app/api/sbc-suggest/libraryClause';
 import type { SbcCode } from '@/app/data/sbcCodes';
+import { useLanguage } from '@/app/i18n/LanguageProvider';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -101,7 +102,7 @@ function Section({ step, title, hint, children }: { step: number; title: string;
           {hint && <p className="text-xs text-gray-500">{hint}</p>}
         </div>
       </div>
-      <div className="space-y-4 pl-0 sm:pl-8">{children}</div>
+      <div className="space-y-4 sm:ps-8">{children}</div>
     </section>
   );
 }
@@ -137,6 +138,7 @@ export default function QueueForm({
   onTestCaseCreated,
 }: QueueFormProps) {
   const { user } = useAuthContext();
+  const { t, lang } = useLanguage();
   const { fetchBugs, findDuplicates } = useQueueContext();
 
   const currentUserName = user?.name ?? 'Current User';
@@ -267,6 +269,7 @@ export default function QueueForm({
             expectedResult: tc.expectedResult,
           }),
         ),
+        lang,
         ...extra,
       }),
     });
@@ -279,9 +282,9 @@ export default function QueueForm({
 
   const noticeFor = (suggestion: SbcSuggestion): string | null =>
     suggestion.aiUnavailable
-      ? 'AI is unavailable right now (check the AI API key), so these are keyword matches.'
+      ? t('AI is unavailable right now (check the AI API key), so these are keyword matches.')
       : suggestion.matches.length === 0 && !suggestion.relevantCode && !suggestion.newClause
-        ? 'No SBC clause matched with enough confidence. Pick one manually, or add it to the SBC Library.'
+        ? t('No SBC clause matched with enough confidence. Pick one manually, or add it to the SBC Library.')
         : null;
 
   // AI suggests which "SBC Clause" menu option fits what the engineer typed
@@ -316,7 +319,7 @@ export default function QueueForm({
           if (err instanceof DOMException && err.name === 'AbortError') return;
           setAiSuggestion(null);
           setAiNotice(
-            `AI suggestion request failed: ${err instanceof Error ? err.message : 'unknown error'}`,
+            `${t('AI suggestion request failed:')} ${err instanceof Error ? err.message : t('unknown error')}`,
           );
         } finally {
           if (suggestAbortRef.current === controller) setCheckingAi(false);
@@ -530,15 +533,15 @@ export default function QueueForm({
       setAiNotice(noticeFor(result));
       setPhotoNotice(
         result.aiUnavailable
-          ? 'AI could not analyze the photo right now. Describe the finding yourself.'
+          ? t('AI could not analyze the photo right now. Describe the finding yourself.')
           : result.finding && formData.actualResult.trim()
-            ? `AI sees: "${result.finding}" (your text was kept). The suggested SBC clause is above.`
+            ? t('AI sees: "{finding}" (your text was kept). The suggested SBC clause is above.', { finding: result.finding })
             : result.finding
-              ? 'AI filled in the Site Finding and Detailed finding from the photo. Check them, then pick the SBC clause above.'
-              : 'AI did not find a violation in this photo.',
+              ? t('AI filled in the Site Finding and Detailed finding from the photo. Check them, then pick the SBC clause above.')
+              : t('AI did not find a violation in this photo.'),
       );
     } catch (err) {
-      setPhotoNotice(`Photo analysis failed: ${err instanceof Error ? err.message : 'unknown error'}`);
+      setPhotoNotice(`${t('Photo analysis failed:')} ${err instanceof Error ? err.message : t('unknown error')}`);
     } finally {
       setAnalyzingPhoto(false);
     }
@@ -559,8 +562,8 @@ export default function QueueForm({
           </svg>
         </div>
         <div>
-          <p className="text-sm font-semibold text-gray-800">View-only access</p>
-          <p className="mt-1 text-xs text-gray-500">Only project owners and members can log non-conformities.</p>
+          <p className="text-sm font-semibold text-gray-800">{t("View-only access")}</p>
+          <p className="mt-1 text-xs text-gray-500">{t("Only project owners and members can log non-conformities.")}</p>
         </div>
       </div>
     );
@@ -575,27 +578,27 @@ export default function QueueForm({
       {/* ─── HEADER ─── */}
       <header className="flex items-start justify-between gap-3 border-b border-gray-100 pb-4">
         <div>
-          <h2 className="text-base font-semibold text-gray-900">Log SBC non-conformity</h2>
-          <p className="mt-0.5 text-xs text-gray-500">Photo → finding → SBC clause. AI helps at each step.</p>
+          <h2 className="text-base font-semibold text-gray-900">{t("Log SBC non-conformity")}</h2>
+          <p className="mt-0.5 text-xs text-gray-500">{t("Photo → finding → SBC clause. AI helps at each step.")}</p>
         </div>
         <span
           className="shrink-0 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-medium text-gray-600"
-          title="Reported by"
+          title={t("Reported by")}
         >
           {formData.name}
         </span>
       </header>
 
       {/* ─── 1. EVIDENCE ─── */}
-      <Section step={1} title="Evidence" hint="A site photo lets AI write the finding for you.">
+      <Section step={1} title={t("Evidence")} hint={t("A site photo lets AI write the finding for you.")}>
         {!formData.attachment ? (
           <label className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/60 px-4 py-6 text-center transition hover:border-blue-400 hover:bg-blue-50/40">
             <svg className="h-7 w-7 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
               <path d="M3 8a2 2 0 012-2h2l1.5-2h7L17 6h2a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
               <circle cx="12" cy="13" r="3.5" />
             </svg>
-            <span className="text-sm font-medium text-gray-700">Upload a site photo or video</span>
-            <span className="text-xs text-gray-400">JPG, PNG, WebP or MP4 · optional</span>
+            <span className="text-sm font-medium text-gray-700">{t("Upload a site photo or video")}</span>
+            <span className="text-xs text-gray-400">{t("JPG, PNG, WebP or MP4 · optional")}</span>
             <input type="file" accept="image/*,video/*" onChange={handleFileChange} disabled={uploading} className="sr-only" />
           </label>
         ) : (
@@ -613,7 +616,7 @@ export default function QueueForm({
               <span className="truncate text-xs text-gray-600">{formData.attachment.name}</span>
               <div className="flex shrink-0 gap-3 text-xs font-medium">
                 <label className="cursor-pointer text-blue-600 hover:text-blue-700">
-                  Replace
+                  {t("Replace")}
                   <input type="file" accept="image/*,video/*" onChange={handleFileChange} disabled={uploading} className="sr-only" />
                 </label>
                 <button
@@ -625,7 +628,7 @@ export default function QueueForm({
                   disabled={uploading}
                   className="text-gray-500 hover:text-red-600"
                 >
-                  Remove
+                  {t("Remove")}
                 </button>
               </div>
             </div>
@@ -640,7 +643,7 @@ export default function QueueForm({
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:from-indigo-700 hover:to-violet-700 disabled:opacity-60"
           >
             {analyzingPhoto ? <Spinner /> : <SparkleIcon />}
-            {analyzingPhoto ? 'Analyzing photo…' : 'Analyze photo with AI'}
+            {analyzingPhoto ? t('Analyzing photo…') : t('Analyze photo with AI')}
           </button>
         )}
         {photoNotice && (
@@ -649,43 +652,43 @@ export default function QueueForm({
       </Section>
 
       {/* ─── 2. FINDING ─── */}
-      <Section step={2} title="Finding" hint="What did you see on site?">
+      <Section step={2} title={t("Finding")} hint={t("What did you see on site?")}>
         <div>
-          <label className={labelCls}>Site location<Required /></label>
+          <label className={labelCls}>{t("Site location")}<Required /></label>
           <input
             name="url"
             value={formData.url}
             onChange={handleChange}
             required
-            placeholder="e.g. Block B, ground floor, east stairwell"
+            placeholder={t("e.g. Block B, ground floor, east stairwell")}
             className={inputCls}
             disabled={uploading}
           />
         </div>
 
         <div>
-          <label className={labelCls}>Site finding<Required /></label>
+          <label className={labelCls}>{t("Site finding")}<Required /></label>
           <textarea
             name="actualResult"
             required
             value={formData.actualResult}
             onChange={handleChange}
             rows={2}
-            placeholder="One line, e.g. Emergency exit door is padlocked"
+            placeholder={t("One line, e.g. Emergency exit door is padlocked")}
             className={inputCls}
             disabled={uploading}
           />
         </div>
 
         <div>
-          <label className={labelCls}>Detailed finding<Required /></label>
+          <label className={labelCls}>{t("Detailed finding")}<Required /></label>
           <textarea
             name="description"
             required
             value={formData.description}
             onChange={handleChange}
             rows={3}
-            placeholder="What is visible, where, and why it is non-compliant"
+            placeholder={t("What is visible, where, and why it is non-compliant")}
             className={inputCls}
             disabled={uploading}
           />
@@ -697,10 +700,10 @@ export default function QueueForm({
               <path d="M12 2L1 21h22L12 2zm0 6l7.5 13h-15L12 8zm-1 4v4h2v-4h-2zm0 5v2h2v-2h-2z" />
             </svg>
             <div className="text-xs text-amber-900">
-              <p className="font-semibold">Possible duplicate</p>
+              <p className="font-semibold">{t("Possible duplicate")}</p>
               <p className="mt-0.5">
-                A similar {duplicate.matchedKey} was already reported as{' '}
-                <span className="font-semibold">{duplicate.item.bugId}</span>. Check it before submitting.
+                {t("A similar finding was already reported as")}{' '}
+                <span className="font-semibold">{duplicate.item.bugId}</span>. {t("Check it before submitting.")}
               </p>
             </div>
           </div>
@@ -709,7 +712,7 @@ export default function QueueForm({
         {/* AI status + suggestions */}
         {checkingAi && (
           <p className="flex items-center gap-2 text-xs font-medium text-indigo-600">
-            <Spinner /> AI is matching this finding to an SBC clause…
+            <Spinner /> {t("AI is matching this finding to an SBC clause…")}
           </p>
         )}
         {!checkingAi && aiNotice && (
@@ -718,14 +721,14 @@ export default function QueueForm({
 
         {!checkingAi && aiSuggestion?.relevantCode && aiSuggestion.matches.length === 0 && !aiSuggestion.newClause && (
           <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3.5">
-            <p className="text-xs font-semibold text-amber-900">Governing code</p>
+            <p className="text-xs font-semibold text-amber-900">{t("Governing code")}</p>
             <p className="mt-1 text-sm font-semibold text-gray-900">
-              {aiSuggestion.relevantCode.code} · {aiSuggestion.relevantCode.nameEn}
+              {aiSuggestion.relevantCode.code} · {lang === 'ar' ? aiSuggestion.relevantCode.nameAr : aiSuggestion.relevantCode.nameEn}
             </p>
-            <p className="text-sm text-gray-700" dir="rtl">{aiSuggestion.relevantCode.nameAr}</p>
+            {lang !== 'ar' && <p className="text-sm text-gray-700" dir="rtl">{aiSuggestion.relevantCode.nameAr}</p>}
             <p className="mt-1.5 text-xs text-amber-900">
-              No verified clause from this code is in the SBC Library yet, so no section is suggested.{' '}
-              <a href="/sbc-library" target="_blank" className="font-semibold underline">Add one to the library</a>
+              {t("No verified clause from this code is in the SBC Library yet, so no section is suggested.")}{' '}
+              <a href="/sbc-library" target="_blank" className="font-semibold underline">{t("Add one to the library")}</a>
             </p>
           </div>
         )}
@@ -734,10 +737,10 @@ export default function QueueForm({
           <div className="rounded-xl border border-indigo-100 bg-gradient-to-b from-indigo-50/80 to-white p-3.5 space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5 text-xs font-semibold text-indigo-900">
-                <SparkleIcon className="h-3.5 w-3.5 text-indigo-500" /> Suggested SBC clause
+                <SparkleIcon className="h-3.5 w-3.5 text-indigo-500" /> {t("Suggested SBC clause")}
               </span>
               <button type="button" onClick={handleDismissSuggestion} className="text-[11px] font-medium text-gray-500 hover:text-gray-700">
-                Dismiss
+                {t("Dismiss")}
               </button>
             </div>
 
@@ -758,7 +761,7 @@ export default function QueueForm({
                       <>
                         <p className="text-[11px] font-semibold text-indigo-700">
                           {lib.codeType}
-                          {lib.codeVersion && ` · ${lib.codeVersion} edition`} · §{lib.sectionNumber}
+                          {lib.codeVersion && ` · ${t('{version} edition', { version: lib.codeVersion })}`} · §{lib.sectionNumber}
                         </p>
                         <p className="text-sm font-medium text-gray-900">{lib.title}</p>
                         <p className="line-clamp-3 text-xs leading-relaxed text-gray-700">{lib.requirementText}</p>
@@ -773,14 +776,14 @@ export default function QueueForm({
                           m.confidence === 'high' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
                         }`}
                       >
-                        {m.confidence} confidence
+                        {m.confidence === 'high' ? t('High confidence') : t('Medium confidence')}
                       </span>
                       <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-600">
-                        {lib ? 'SBC library' : 'Project clause'}
+                        {lib ? t('SBC library') : t('Project clause')}
                       </span>
                       {lib?.verifiedBy && (
                         <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
-                          ✓ Verified by {lib.verifiedBy}
+                          ✓ {t('Verified by')} {lib.verifiedBy}
                           {lib.lastVerifiedAt ? ` · ${formatDay(lib.lastVerifiedAt)}` : ''}
                         </span>
                       )}
@@ -791,7 +794,7 @@ export default function QueueForm({
                           rel="noopener noreferrer"
                           className="text-[10px] font-semibold text-indigo-600 hover:underline"
                         >
-                          Source ↗
+                          {t('Source')} ↗
                         </a>
                       )}
                     </div>
@@ -804,7 +807,7 @@ export default function QueueForm({
                       selected ? 'bg-emerald-50 text-emerald-700' : 'bg-indigo-600 text-white hover:bg-indigo-700'
                     }`}
                   >
-                    {selected ? 'Selected ✓' : 'Select'}
+                    {selected ? t('Selected ✓') : t('Select')}
                   </button>
                 </div>
               );
@@ -824,10 +827,10 @@ export default function QueueForm({
                   )}
                   <div className="flex flex-wrap gap-1.5 pt-0.5">
                     <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">
-                      AI suggestion
+                      {t('AI suggestion')}
                     </span>
                     <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
-                      Not verified · not in the library
+                      {t('Not verified · not in the library')}
                     </span>
                   </div>
                 </div>
@@ -841,7 +844,7 @@ export default function QueueForm({
                       : 'bg-indigo-600 text-white hover:bg-indigo-700'
                   }`}
                 >
-                  {formData.testCaseId === AI_NEW_CLAUSE ? 'Selected ✓' : 'Select'}
+                  {formData.testCaseId === AI_NEW_CLAUSE ? t('Selected ✓') : t('Select')}
                 </button>
               </div>
             )}
@@ -850,9 +853,9 @@ export default function QueueForm({
       </Section>
 
       {/* ─── 3. SBC COMPLIANCE ─── */}
-      <Section step={3} title="SBC compliance" hint="Pick the clause; the required standard fills in.">
+      <Section step={3} title={t("SBC compliance")} hint={t("Pick the clause; the required standard fills in.")}>
         <div>
-          <label className={labelCls}>SBC clause</label>
+          <label className={labelCls}>{t("SBC clause")}</label>
           <select
             name="testCaseId"
             value={formData.testCaseId}
@@ -860,56 +863,56 @@ export default function QueueForm({
             className={inputCls}
             disabled={uploading}
           >
-            <option value="">No clause linked</option>
+            <option value="">{t("No clause linked")}</option>
             {menuNewClause && (
-              <option value={AI_NEW_CLAUSE}>✨ {menuNewClause.title} (AI suggestion)</option>
+              <option value={AI_NEW_CLAUSE}>✨ {menuNewClause.title} ({t("AI suggestion")})</option>
             )}
             {menuLibraryClauses.map((c) => (
               <option key={`${LIB_PREFIX}${c.id}`} value={`${LIB_PREFIX}${c.id}`}>
-                ✨ {libraryClauseTitle(c)} (AI suggestion · SBC library)
+                ✨ {libraryClauseTitle(c)} ({t("AI suggestion")} · {t("SBC library")})
               </option>
             ))}
             {testCases.map((tc: any) => (
               <option key={tc.id} value={tc.id}>
-                {aiMatchedIds.has(tc.id) ? `✨ ${tc.title} (AI suggestion)` : tc.title}
+                {aiMatchedIds.has(tc.id) ? `✨ ${tc.title} (${t('AI suggestion')})` : tc.title}
               </option>
             ))}
           </select>
           {isLibraryValue(formData.testCaseId) && (
             <p className="mt-1.5 text-[11px] leading-relaxed text-indigo-700">
-              From the verified SBC library. It will be added to this project&apos;s clauses when you submit.
+              {t("From the verified SBC library. It will be added to this project's clauses when you submit.")}
             </p>
           )}
           {formData.testCaseId === AI_NEW_CLAUSE && (
             <p className="mt-1.5 text-[11px] leading-relaxed text-indigo-700">
-              AI-suggested clause, not verified. It will be added to this project&apos;s clauses when you submit. Check it against the SBC text.
+              {t("AI-suggested clause, not verified. It will be added to this project's clauses when you submit. Check it against the SBC text.")}
             </p>
           )}
         </div>
 
         <div>
-          <label className={labelCls}>SBC required standard<Required /></label>
+          <label className={labelCls}>{t("SBC required standard")}<Required /></label>
           <textarea
             name="expectedResult"
             required
             value={formData.expectedResult}
             onChange={handleChange}
             rows={2}
-            placeholder="Filled from the selected clause, or type it"
+            placeholder={t("Filled from the selected clause, or type it")}
             className={`${inputCls} ${formData.expectedResult && formData.expectedResult === autoStandard ? 'bg-blue-50/40' : ''}`}
             disabled={uploading}
           />
           {formData.expectedResult && formData.expectedResult === autoStandard && (
-            <p className="mt-1 text-[11px] text-gray-500">From the selected SBC clause. You can edit it.</p>
+            <p className="mt-1 text-[11px] text-gray-500">{t("From the selected SBC clause. You can edit it.")}</p>
           )}
         </div>
       </Section>
 
       {/* ─── 4. RISK & ACTION ─── */}
-      <Section step={4} title="Risk & action">
+      <Section step={4} title={t("Risk & action")}>
         <div>
-          <span className={labelCls}>Risk level</span>
-          <div className="mt-1.5 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Risk level">
+          <span className={labelCls}>{t("Risk level")}</span>
+          <div className="mt-1.5 grid grid-cols-3 gap-2" role="radiogroup" aria-label={t("Risk level")}>
             {(['High', 'Medium', 'Low'] as Priority[]).map((level) => {
               const active = formData.priority === level;
               return (
@@ -925,7 +928,7 @@ export default function QueueForm({
                   }`}
                 >
                   <span className={`h-2 w-2 rounded-full ${RISK_STYLES[level].dot}`} />
-                  {level}
+                  {t(level)}
                 </button>
               );
             })}
@@ -933,13 +936,13 @@ export default function QueueForm({
         </div>
 
         <div>
-          <label className={labelCls}>Corrective action plan</label>
+          <label className={labelCls}>{t("Corrective action plan")}</label>
           <textarea
             name="note"
             value={formData.note}
             onChange={handleChange}
             rows={2}
-            placeholder="Optional: what should be done to fix it"
+            placeholder={t("Optional: what should be done to fix it")}
             className={inputCls}
             disabled={uploading}
           />
@@ -957,7 +960,7 @@ export default function QueueForm({
           className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {uploading && <Spinner />}
-          {uploading ? 'Saving…' : 'Log non-conformity'}
+          {uploading ? t('Saving…') : t('Log non-conformity')}
         </button>
       </div>
     </form>

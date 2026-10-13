@@ -6,6 +6,7 @@ import { useAuth } from "../../hooks/useAuth"
 import { useAuthContext } from "../../context/AuthContext"
 import { useQueueContext } from "../../context/QueueContext"
 import { usePendingReviews } from "../../hooks/usePendingReviews"
+import { LanguageToggle, useLanguage } from "../../i18n/LanguageProvider"
 import Image from "next/image";
 
 interface HeaderProps {
@@ -66,6 +67,7 @@ export default function Header({ searchTerm, setSearchTerm }: HeaderProps) {
   const { signOut } = useAuth()
   const { myAssignedBugs, fetchMyAssignedBugs } = useQueueContext()
   const { reviews } = usePendingReviews()
+  const { t } = useLanguage()
 
   // Re-fetch assigned items on user change
   useEffect(() => {
@@ -113,7 +115,7 @@ export default function Header({ searchTerm, setSearchTerm }: HeaderProps) {
             <button
               type="button"
               className="btn btn-ghost btn-circle text-slate-200 hover:bg-slate-800"
-              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-label={isMobileMenuOpen ? t("Close menu") : t("Open menu")}
               aria-expanded={isMobileMenuOpen}
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
@@ -140,7 +142,7 @@ export default function Header({ searchTerm, setSearchTerm }: HeaderProps) {
                       if (link.isNotification) setHasSeenNotifications(true)
                     }}
                   >
-                    <span>{link.label}</span>
+                    <span>{t(link.label)}</span>
                     {badgeFor(link) && (
                       <span className={`badge badge-sm font-bold border-none ${link.isApprovals ? "bg-amber-400" : "bg-emerald-500"} text-slate-950`}>
                         {badgeFor(link)}
@@ -172,7 +174,7 @@ export default function Header({ searchTerm, setSearchTerm }: HeaderProps) {
                       active ? "text-emerald-400" : "text-slate-300"
                     }`}
                   >
-                    <span>{link.label}</span>
+                    <span>{t(link.label)}</span>
                     {badgeFor(link) && (
                       <span className={`${link.isApprovals ? "bg-amber-400" : "bg-emerald-500"} text-slate-950 text-[10px] font-black px-1.5 rounded-full min-w-[18px] h-4 flex items-center justify-center shadow-sm`}>
                         {badgeFor(link)}
@@ -190,12 +192,13 @@ export default function Header({ searchTerm, setSearchTerm }: HeaderProps) {
 
         {/* Right: search + authentication */}
         <div className="navbar-end flex items-center gap-3 w-auto">
+          <LanguageToggle />
           <div className="hidden sm:block md:hidden">
             <input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               type="text"
-              placeholder="Search compliance..."
+              placeholder={t("Search compliance...")}
               aria-label="Search"
               className="input input-sm bg-slate-800 border-slate-700 text-slate-100 placeholder-slate-400 focus:border-emerald-500 focus:outline-none w-32"
             />
@@ -218,13 +221,13 @@ export default function Header({ searchTerm, setSearchTerm }: HeaderProps) {
                 onClick={signOut}
                 className="px-4 py-2 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-rose-900/40 text-slate-300 hover:text-rose-300 border border-slate-700 hover:border-rose-700/50 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60"
               >
-                Sign Out
+                {t("Sign Out")}
               </button>
             </div>
           ) : (
             <Link href="/login">
               <button className="px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-950/40 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/60">
-                Sign In
+                {t("Sign In")}
               </button>
             </Link>
           )}

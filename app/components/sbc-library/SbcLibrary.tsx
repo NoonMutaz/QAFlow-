@@ -5,6 +5,7 @@ import * as XLSX from 'xlsx';
 import { useAuthContext } from '../../context/AuthContext';
 import type { LibraryClause } from '../../api/sbc-suggest/libraryClause';
 import { SBC_CODES, SBC_EDITION, findSbcCode } from '../../data/sbcCodes';
+import { useLanguage } from '../../i18n/LanguageProvider';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -68,6 +69,7 @@ const toDto = (c: ClauseInput) => ({
 
 /** Shared library of engineer-verified SBC clauses that the AI suggests from. */
 export default function SbcLibrary() {
+  const { t, lang } = useLanguage();
   const { token } = useAuthContext();
   const [clauses, setClauses] = useState<LibraryClause[]>([]);
   const [loading, setLoading] = useState(true);
@@ -119,7 +121,7 @@ export default function SbcLibrary() {
       });
       if (!res.ok) throw new Error((await res.text()) || `Save failed (${res.status})`);
       setEditing(null);
-      setMessage({ kind: 'ok', text: 'Clause saved.' });
+      setMessage({ kind: 'ok', text: t('Clause saved.') });
       await load();
     } catch (err) {
       setMessage({ kind: 'error', text: err instanceof Error ? err.message : 'Save failed' });
@@ -160,9 +162,8 @@ export default function SbcLibrary() {
       const result = (await res.json()) as { created: number; updated: number; errors: string[] };
       setMessage({
         kind: result.errors.length ? 'error' : 'ok',
-        text: `Imported ${result.created} new and updated ${result.updated} clauses${
-          result.errors.length ? `, ${result.errors.length} rows skipped` : ''
-        }.`,
+        text: t('Imported {created} new and updated {updated} clauses.', { created: result.created, updated: result.updated }) +
+          (result.errors.length ? ` ${t('{n} rows skipped.', { n: result.errors.length })}` : ''),
         details: result.errors.slice(0, 10),
       });
       await load();
@@ -199,10 +200,9 @@ export default function SbcLibrary() {
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">SBC Library</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t("SBC Library")}</h1>
             <p className="mt-1 max-w-2xl text-sm text-slate-500">
-              Verified Saudi Building Code clauses. The AI suggests clauses only from this library and each project&apos;s
-              own clauses; it never invents a code or section number.
+              {t("Verified Saudi Building Code clauses. The AI suggests clauses only from this library and each project's own clauses; it never invents a code or section number.")}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -211,10 +211,10 @@ export default function SbcLibrary() {
               onClick={downloadTemplate}
               className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
             >
-              Download template
+              {t("Download template")}
             </button>
             <label className={`cursor-pointer rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 ${busy ? 'pointer-events-none opacity-60' : ''}`}>
-              Import Excel / CSV
+              {t("Import Excel / CSV")}
               <input
                 type="file"
                 accept=".xlsx,.xls,.csv"
@@ -231,7 +231,7 @@ export default function SbcLibrary() {
               onClick={() => setEditing({ id: null, value: { ...EMPTY } })}
               className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
             >
-              + Add clause
+              {t("+ Add clause")}
             </button>
           </div>
         </div>
@@ -258,26 +258,26 @@ export default function SbcLibrary() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by code, section, title or text…"
+            placeholder={t("Search by code, section, title or text…")}
             className={`${inputCls} mt-0 sm:max-w-sm`}
           />
           <span className="text-xs text-slate-500">
-            {filtered.length} of {clauses.length} clauses
+            {t("{shown} of {total} clauses", { shown: filtered.length, total: clauses.length })}
           </span>
         </div>
 
         {/* List */}
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           {loading ? (
-            <p className="p-10 text-center text-sm text-slate-400">Loading…</p>
+            <p className="p-10 text-center text-sm text-slate-400">{t("Loading…")}</p>
           ) : filtered.length === 0 ? (
             <div className="p-12 text-center">
               <p className="text-sm font-semibold text-slate-800">
-                {clauses.length === 0 ? 'The library is empty' : 'No clause matches your search'}
+                {clauses.length === 0 ? t('The library is empty') : t('No clause matches your search')}
               </p>
               {clauses.length === 0 && (
                 <p className="mt-1 text-xs text-slate-500">
-                  Download the template, fill in the clauses your engineer verified, and import it.
+                  {t("Download the template, fill in the clauses your engineer verified, and import it.")}
                 </p>
               )}
             </div>
@@ -290,7 +290,7 @@ export default function SbcLibrary() {
                       <span className="rounded-md bg-slate-900 px-2 py-0.5 font-mono text-[11px] font-semibold text-emerald-300">
                         {c.codeType} §{c.sectionNumber}
                       </span>
-                      {c.codeVersion && <span className="text-[11px] text-slate-500">{c.codeVersion} edition</span>}
+                      {c.codeVersion && <span className="text-[11px] text-slate-500">{t("{version} edition", { version: c.codeVersion })}</span>}
                       {findSbcCode(c.codeType) && (
                         <span className="text-[11px] text-slate-500" dir="rtl">{findSbcCode(c.codeType)!.nameAr}</span>
                       )}
@@ -300,13 +300,13 @@ export default function SbcLibrary() {
                     <p className="flex flex-wrap gap-x-3 text-[11px] text-slate-400">
                       {c.verifiedBy && (
                         <span className="text-blue-700">
-                          ✓ Verified by {c.verifiedBy}
+                          ✓ {t("Verified by")} {c.verifiedBy}
                           {c.lastVerifiedAt ? ` · ${formatDay(c.lastVerifiedAt)}` : ''}
                         </span>
                       )}
                       {c.sourceUrl && (
                         <a href={c.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-700 hover:underline">
-                          Source ↗
+                          {t("Source ↗")}
                         </a>
                       )}
                     </p>
@@ -315,10 +315,10 @@ export default function SbcLibrary() {
                     {confirmDelete === c.id ? (
                       <>
                         <button type="button" onClick={() => void remove(c.id)} disabled={busy} className="rounded-md bg-red-600 px-2.5 py-1.5 text-white hover:bg-red-700">
-                          Delete
+                          {t("Delete")}
                         </button>
                         <button type="button" onClick={() => setConfirmDelete(null)} className="rounded-md border border-slate-200 px-2.5 py-1.5 text-slate-600">
-                          Cancel
+                          {t("Cancel")}
                         </button>
                       </>
                     ) : (
@@ -341,10 +341,10 @@ export default function SbcLibrary() {
                           }
                           className="rounded-md border border-slate-200 px-2.5 py-1.5 text-slate-700 hover:bg-slate-50"
                         >
-                          Edit
+                          {t("Edit")}
                         </button>
                         <button type="button" onClick={() => setConfirmDelete(c.id)} className="rounded-md border border-red-200 px-2.5 py-1.5 text-red-700 hover:bg-red-50">
-                          Delete
+                          {t("Delete")}
                         </button>
                       </>
                     )}
@@ -361,12 +361,12 @@ export default function SbcLibrary() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm" onClick={() => setEditing(null)}>
           <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="border-b border-slate-100 px-5 py-4">
-              <h2 className="text-base font-semibold text-slate-900">{editing.id ? 'Edit clause' : 'Add verified clause'}</h2>
-              <p className="mt-0.5 text-xs text-slate-500">Check the clause against the official SBC text before saving.</p>
+              <h2 className="text-base font-semibold text-slate-900">{editing.id ? t('Edit clause') : t('Add verified clause')}</h2>
+              <p className="mt-0.5 text-xs text-slate-500">{t("Check the clause against the official SBC text before saving.")}</p>
             </div>
             <div className="grid gap-3 p-5 sm:grid-cols-3">
               <label className="text-xs font-medium text-slate-700 sm:col-span-3">
-                Code
+                {t("Code")}
                 <select
                   value={editing.value.CodeType}
                   onChange={(e) => setEditing({ ...editing, value: { ...editing.value, CodeType: e.target.value } })}
@@ -377,7 +377,7 @@ export default function SbcLibrary() {
                   )}
                   {SBC_CODES.map((c) => (
                     <option key={c.code} value={c.code}>
-                      {c.code} · {c.nameEn} · {c.nameAr}
+                      {c.code} · {lang === 'ar' ? c.nameAr : `${c.nameEn} · ${c.nameAr}`}
                     </option>
                   ))}
                 </select>
@@ -390,7 +390,7 @@ export default function SbcLibrary() {
                 ] as const
               ).map(([key, label, placeholder, span]) => (
                 <label key={key} className={`text-xs font-medium text-slate-700 ${span === 1 ? '' : 'sm:col-span-3'}`}>
-                  {label}
+                  {t(label)}
                   <input
                     value={editing.value[key]}
                     placeholder={placeholder}
@@ -400,17 +400,17 @@ export default function SbcLibrary() {
                 </label>
               ))}
               <label className="text-xs font-medium text-slate-700 sm:col-span-3">
-                Requirement
+                {t("Requirement")}
                 <textarea
                   rows={4}
                   value={editing.value.RequirementText}
-                  placeholder="The verified requirement (official text, or your verified summary)"
+                  placeholder={t("The verified requirement (official text, or your verified summary)")}
                   onChange={(e) => setEditing({ ...editing, value: { ...editing.value, RequirementText: e.target.value } })}
                   className={inputCls}
                 />
               </label>
               <label className="text-xs font-medium text-slate-700 sm:col-span-2">
-                Source link
+                {t("Source link")}
                 <input
                   value={editing.value.SourceUrl}
                   placeholder="https://www.sbc.gov.sa/…"
@@ -419,10 +419,10 @@ export default function SbcLibrary() {
                 />
               </label>
               <label className="text-xs font-medium text-slate-700">
-                Verified by
+                {t("Verified by")}
                 <input
                   value={editing.value.VerifiedBy}
-                  placeholder="You, if empty"
+                  placeholder={t("You, if empty")}
                   onChange={(e) => setEditing({ ...editing, value: { ...editing.value, VerifiedBy: e.target.value } })}
                   className={inputCls}
                 />
@@ -430,7 +430,7 @@ export default function SbcLibrary() {
             </div>
             <div className="flex gap-2 border-t border-slate-100 bg-slate-50 px-5 py-3">
               <button type="button" onClick={() => setEditing(null)} className="flex-1 rounded-lg border border-slate-200 bg-white py-2 text-sm font-semibold text-slate-700">
-                Cancel
+                {t("Cancel")}
               </button>
               <button
                 type="button"
@@ -438,7 +438,7 @@ export default function SbcLibrary() {
                 disabled={busy}
                 className="flex-1 rounded-lg bg-emerald-600 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
               >
-                {busy ? 'Saving…' : 'Save clause'}
+                {busy ? t('Saving…') : t('Save clause')}
               </button>
             </div>
           </div>

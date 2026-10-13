@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, IBM_Plex_Sans_Arabic } from "next/font/google";
+import { cookies } from "next/headers";
+import { LanguageProvider } from "./i18n/LanguageProvider";
+import { LANG_COOKIE, type Lang } from "./i18n/config";
 // import Header from "./components/header/Header";
 import { Providers } from './Providers';
 import {SearchProvider} from "./context/SearchContext" 
@@ -23,23 +26,32 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Geist has no Arabic glyphs; the browser falls back to this font for Arabic text
+const plexArabic = IBM_Plex_Sans_Arabic({
+  variable: "--font-arabic",
+  subsets: ["arabic"],
+  weight: ["400", "500", "600", "700"],
+});
+
 export const metadata: Metadata = {
   title: "Imtithal · AI-assisted SBC inspection",
   description: "Log site non-conformities from a photo, link them to Saudi Building Code clauses with AI, and track them to a verified fix.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const lang: Lang = (await cookies()).get(LANG_COOKIE)?.value === "ar" ? "ar" : "en";
 
   return (
-    <html lang="en">
+    <html lang={lang} dir={lang === "ar" ? "rtl" : "ltr"}>
    
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${plexArabic.variable} antialiased`}
       > 
+      <LanguageProvider initialLang={lang}>
       <Providers>
         
         
@@ -58,7 +70,8 @@ export default function RootLayout({
          
         </SearchProvider>
  </AuthProvider>
-          </Providers>   </body>
+          </Providers>
+      </LanguageProvider>   </body>
     </html>
   );
 }

@@ -262,6 +262,8 @@ type SuggestBody = {
   clauses: SbcClause[];
   /** optional site photo as a data URL; the AI then also writes the finding from it */
   image?: string;
+  /** interface language; the AI writes its text in it */
+  lang: "en" | "ar";
 };
 
 /** Either a clause already in the project (testCaseId) or one from the library (libraryClause). */
@@ -358,6 +360,7 @@ function sanitizeBody(raw: unknown): SuggestBody {
     actualResult: text(b.actualResult, 1500),
     siteLocation: text(b.siteLocation, 200),
     clauses,
+    lang: (b as { lang?: unknown }).lang === "ar" ? "ar" : "en",
     image:
       typeof b.image === "string" &&
       b.image.length <= 6_000_000 &&
@@ -466,7 +469,7 @@ async function aiMatches(
     ? `The engineer attached a site photo. First inspect it for SBC violations (fire safety, means of egress, guards, electrical, structural, accessibility, site safety) and write:
 - "finding": one short sentence naming the violation you see, like an inspector's site finding.
 - "details": 2-3 sentences describing what is visible and why it is non-compliant. Describe only what is actually visible; do not invent measurements.
-If the engineer already wrote text, write in the same language; otherwise use English. If you see no violation, say so in "finding", leave "details" empty, and return no matches.
+Write "finding" and "details" in ${body.lang === "ar" ? "Arabic" : "English"}. If you see no violation, say so in "finding", leave "details" empty, and return no matches.
 Then use the photo together with any text to choose clauses from the list below.
 
 `
@@ -491,7 +494,7 @@ ${SBC_CODES.map((c) => `${c.code}: ${c.nameEn}`).join("\n")}
    - "title": the relevantCode, then a section number ONLY if you are sure of it, then a short name, e.g. "SBC 801 – Section 906.1 Portable fire extinguishers" or "SBC 801 – Portable fire extinguishers".
    - "standard": the requirement, concise and inspection-ready, without exact figures you are unsure of.
    - "reason": one short sentence.
-The finding may be in Arabic or English; write "reason" (one short sentence) in the same language as the finding.
+The finding may be in Arabic or English; write "reason" (one short sentence) in ${body.lang === "ar" ? "Arabic" : "English"}.
 
 Respond with JSON only:
 {${body.image ? `"finding": string, "details": string, ` : ""}"matches": [{"key": string, "reason": string, "confidence": "high"|"medium"}], "relevantCode": string | null, "newClause": {"title": string, "standard": string, "reason": string} | null}`,
