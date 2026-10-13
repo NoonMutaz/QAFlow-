@@ -1,85 +1,170 @@
 'use client';
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import dynamic from 'next/dynamic';
 
 // Disable SSR so the canvas doesn't glitch during Next.js hydration
 const Lightfall = dynamic(() => import('../Lightfall'), { ssr: false });
 
 export default function HomeHero() {
-  const router = useRouter();
-  
-  const handleCreateProject = () => {
-    router.push("/createProject");
-  };
-
   return (
-    <div>
-      {/* CRITICAL: 'isolate' forces the -z-10 canvas to stay inside this section */}
-      <section className="relative isolate overflow-hidden py-20 px-6 rounded-3xl bg-slate-900/40 border border-slate-800/80 backdrop-blur-md shadow-2xl">
-        
-        {/* Background Canvas */}
-        <div className="absolute inset-0 z-0 opacity-40">
-          <div style={{ width: '100%', height: 600, position: 'relative' }}>
-            <Lightfall
-              colors={[ '#10B981', '#059669', '#0284C7' ]}
-              mouseForce={28}
-              cursorSize={40}
-              isViscous
-              viscous={37}
-              iterationsViscous={34}
-              iterationsPoisson={20}
-              resolution={0.5}
-              isBounce={false}
-              autoDemo
-              autoSpeed={0.6}
-              autoIntensity={2.2}
-              takeoverDuration={0.25}
-              autoResumeDelay={3000}
-              autoRampDuration={0.6}
-            />
-          </div>
+    <section className="relative isolate overflow-hidden bg-slate-950 text-slate-100">
+      {/* Background canvas + glow */}
+      <div className="absolute inset-0 -z-10 opacity-30">
+        <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+          <Lightfall
+            colors={['#10B981', '#059669', '#0284C7']}
+            mouseForce={28}
+            cursorSize={40}
+            isViscous
+            viscous={37}
+            iterationsViscous={34}
+            iterationsPoisson={20}
+            resolution={0.5}
+            isBounce={false}
+            autoDemo
+            autoSpeed={0.6}
+            autoIntensity={2.2}
+            takeoverDuration={0.25}
+            autoResumeDelay={3000}
+            autoRampDuration={0.6}
+          />
         </div>
+      </div>
+      <div
+        className="pointer-events-none absolute inset-0 -z-10"
+        style={{
+          backgroundImage:
+            'radial-gradient(50rem 28rem at 80% 0%, rgba(16,185,129,0.18), transparent 60%), linear-gradient(to bottom, rgba(2,6,23,0) 60%, rgba(2,6,23,0.9))',
+        }}
+      />
 
-        <div className="relative max-w-6xl mx-auto text-center z-10">
-          {/* Status Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-slate-800/80 backdrop-blur-md rounded-full border border-emerald-500/30 shadow-sm mb-8">
-            <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
-            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-300">
-              Imtithal Governance Engine
-            </span>
+      <div className="mx-auto grid max-w-6xl items-center gap-14 px-6 py-20 md:py-28 lg:grid-cols-[1.1fr_1fr]">
+        {/* Copy */}
+        <div>
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+            AI-assisted inspection for the Saudi Building Code
           </div>
 
-          {/* Main Heading */}
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-100 mb-6 tracking-tight leading-tight">
-            Elevating Standards of{' '}
-            <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
-              Regulatory Compliance
-            </span>
+          <h1 className="text-4xl font-bold leading-[1.1] tracking-tight text-white md:text-5xl lg:text-6xl">
+            From site photo to{' '}
+            <span className="bg-gradient-to-r from-emerald-400 to-cyan-300 bg-clip-text text-transparent">
+              SBC clause
+            </span>{' '}
+            in seconds
           </h1>
 
-          {/* Subheading */}
-          <p className="text-lg md:text-xl text-slate-300 max-w-3xl mx-auto mb-10 leading-relaxed font-normal">
-            Streamline organizational governance, perform thorough quality audits, and maintain continuous compliance across all operational frameworks.
+          <p className="mt-6 max-w-xl text-lg leading-relaxed text-slate-300">
+            Imtithal helps site engineers log non-conformities faster. Snap a photo, let AI describe the finding and
+            suggest the matching Saudi Building Code clause, then track it to a verified fix.
           </p>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <button
-              onClick={handleCreateProject}
-              className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl font-semibold shadow-lg shadow-emerald-950/50 hover:shadow-emerald-900/60 transition-all duration-300 transform hover:-translate-y-0.5"
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+            <Link
+              href="/createProject"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-6 py-3.5 font-semibold text-slate-950 shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400"
             >
-              Initiate New Audit
-            </button>
+              Start an inspection project
+              <span aria-hidden="true">→</span>
+            </Link>
             <a
-              href="/aboutUs"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-slate-800/90 text-slate-200 border border-slate-700/80 rounded-xl font-semibold hover:bg-slate-800 hover:text-white hover:border-slate-600 hover:shadow-lg transition-all duration-300"
+              href="#how-it-works"
+              className="inline-flex items-center justify-center rounded-xl border border-slate-700 bg-slate-900/60 px-6 py-3.5 font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-800"
             >
-              Compliance Guidelines
+              See how it works
             </a>
           </div>
+
+          <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-400">
+            {['Arabic & English', 'Linked to SBC clauses', 'Evidence-backed closure'].map((item) => (
+              <li key={item} className="flex items-center gap-2">
+                <svg className="h-4 w-4 text-emerald-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 111.4-1.4L8 12.6l7.3-7.3a1 1 0 011.4 0z" clipRule="evenodd" />
+                </svg>
+                {item}
+              </li>
+            ))}
+          </ul>
         </div>
-      </section>
+
+        {/* Product preview */}
+        <AiPreview />
+      </div>
+    </section>
+  );
+}
+
+/** Illustrative preview of the AI suggestion, built in markup so it needs no image asset. */
+function AiPreview() {
+  return (
+    <div className="relative">
+      <div className="absolute -inset-4 -z-10 rounded-3xl bg-emerald-500/10 blur-2xl" />
+      <div className="overflow-hidden rounded-2xl border border-slate-700/80 bg-slate-900/90 shadow-2xl backdrop-blur">
+        {/* window bar */}
+        <div className="flex items-center gap-1.5 border-b border-slate-800 px-4 py-3">
+          <span className="h-2.5 w-2.5 rounded-full bg-slate-700" />
+          <span className="h-2.5 w-2.5 rounded-full bg-slate-700" />
+          <span className="h-2.5 w-2.5 rounded-full bg-slate-700" />
+          <span className="ml-3 text-xs text-slate-500">Log SBC non-conformity</span>
+        </div>
+
+        <div className="space-y-4 p-5">
+          {/* photo + AI finding */}
+          <div className="flex gap-3">
+            <div className="flex h-20 w-24 shrink-0 items-center justify-center rounded-lg border border-slate-700 bg-gradient-to-br from-slate-700 to-slate-800">
+              <svg className="h-8 w-8 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                <rect x="6" y="3" width="12" height="18" rx="1" />
+                <circle cx="15" cy="12" r="0.8" fill="currentColor" />
+                <path d="M3 21h18" />
+              </svg>
+            </div>
+            <div className="min-w-0 space-y-1.5">
+              <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-400">
+                <Sparkle /> AI finding
+              </p>
+              <p className="text-sm font-medium text-slate-100">Emergency exit door is padlocked</p>
+              <p className="text-xs leading-relaxed text-slate-400">
+                The exit door is chained shut and opens inward, blocking the escape route.
+              </p>
+            </div>
+          </div>
+
+          {/* suggested clause */}
+          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3.5">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Suggested SBC clause</p>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-white">SBC 201 · Exit doors</p>
+                <p className="mt-0.5 text-xs text-slate-400">Must open from inside without a key, in the direction of egress.</p>
+                <span className="mt-2 inline-block rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
+                  High confidence
+                </span>
+              </div>
+              <span className="shrink-0 rounded-md bg-emerald-500 px-2.5 py-1 text-[11px] font-semibold text-slate-950">
+                Selected ✓
+              </span>
+            </div>
+          </div>
+
+          {/* risk */}
+          <div className="flex items-center justify-between rounded-lg border border-slate-800 px-3 py-2.5">
+            <span className="text-xs text-slate-400">Risk level</span>
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-red-300">
+              <span className="h-2 w-2 rounded-full bg-red-500" /> High
+            </span>
+          </div>
+        </div>
+      </div>
+      <p className="mt-3 text-center text-[11px] text-slate-500">Illustrative preview</p>
     </div>
+  );
+}
+
+function Sparkle() {
+  return (
+    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9L12 2z" />
+    </svg>
   );
 }

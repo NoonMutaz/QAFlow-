@@ -1,13 +1,12 @@
 "use client";
 import Image from "next/image";
-import React, { useId } from "react";
+import React from "react";
 import Link from "next/link";
 
 /* -------------------------------------------------------------------------- */
 /*  Brand mark (shield + check). Same artwork as the header and /logo.svg.     */
 /* -------------------------------------------------------------------------- */
-function LogoMark({ className = "w-15 h-15  " }: { className?: string }) {
-  //const gid = `imt-${useId().replace(/:/g, "")}`;
+function LogoMark({ className = "h-12 w-12" }: { className?: string }) {
   return (
        <div
       className={`relative rounded-xl overflow-hidden    flex items-center justify-center     ${className}`}
@@ -55,7 +54,7 @@ function Hero() {
       <div className="relative mx-auto grid max-w-6xl items-center gap-14 px-6 py-16 md:py-24 lg:grid-cols-2">
         <div>
           <div className="mb-6 flex items-center gap-3">
-            <LogoMark className="h-72 w-72" />
+            <LogoMark className="h-16 w-16" />
             <div className="leading-none">
               <p className="text-2xl font-extrabold text-slate-900">امتثال</p>
               <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
@@ -70,12 +69,13 @@ function Hero() {
           </div>
 
           <h1 className="text-4xl font-bold leading-tight tracking-tight text-slate-900 md:text-5xl">
-            Close every stage on <span className="text-emerald-600">verified evidence</span>, not on a status change
+            Every finding linked to its <span className="text-emerald-600">SBC clause</span>, every fix backed by evidence
           </h1>
 
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-slate-600">
-            Imtithal turns Saudi Building Code requirements into stage checklists. Every non-conformity is tied to its
-            requirement, resolved with evidence, and verified by the inspector before a stage can close.
+            Imtithal is an inspection platform for the Saudi Building Code. Engineers log site findings from a photo or
+            a few words, AI suggests the matching SBC clause, and each non-conformity is tracked until it is fixed and
+            verified with evidence.
           </p>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
@@ -107,15 +107,15 @@ function Hero() {
 /** Illustrative product preview, built in markup so it needs no image asset. */
 function StagePreview() {
   const items = [
-    { name: "Door clear opening", state: "verified" },
-    { name: "Corridor clear height", state: "pending" },
-    { name: "Exit signage placement", state: "nonconformity" },
+    { name: "Exit door padlocked", clause: "SBC 201 · Exit doors", state: "notFixed" },
+    { name: "Missing stair handrail", clause: "SBC 201 · Guards", state: "inProgress" },
+    { name: "Extinguisher blocked", clause: "SBC 801 · Fire extinguishers", state: "fixed" },
   ] as const;
 
   const styles = {
-    verified: { label: "Verified", dot: "bg-emerald-500", chip: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-    pending: { label: "Pending verification", dot: "bg-amber-500", chip: "bg-amber-50 text-amber-700 border-amber-200" },
-    nonconformity: { label: "Non-conformity", dot: "bg-rose-500", chip: "bg-rose-50 text-rose-700 border-rose-200" },
+    fixed: { label: "Fixed", dot: "bg-emerald-500", chip: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+    inProgress: { label: "In progress", dot: "bg-violet-500", chip: "bg-violet-50 text-violet-700 border-violet-200" },
+    notFixed: { label: "Not fixed", dot: "bg-rose-500", chip: "bg-rose-50 text-rose-700 border-rose-200" },
   } as const;
 
   return (
@@ -124,10 +124,10 @@ function StagePreview() {
         <div className="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-5 py-3">
           <div className="flex items-center gap-2 text-slate-100">
             <LogoMark className="h-5 w-5" />
-            <span className="text-sm font-semibold">Architectural handover</span>
+            <span className="text-sm font-semibold">Block B · Site inspection</span>
           </div>
           <span className="rounded-full border border-slate-700 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-slate-300">
-            Stage 2
+            3 findings
           </span>
         </div>
 
@@ -137,8 +137,11 @@ function StagePreview() {
             return (
               <li key={item.name} className="flex items-center justify-between gap-3 px-5 py-4">
                 <div className="flex items-center gap-3">
-                  <span className={`h-2 w-2 rounded-full ${s.dot}`} />
-                  <span className="text-sm font-medium text-slate-800">{item.name}</span>
+                  <span className={`h-2 w-2 shrink-0 rounded-full ${s.dot}`} />
+                  <span>
+                    <span className="block text-sm font-medium text-slate-800">{item.name}</span>
+                    <span className="block text-xs text-slate-500">{item.clause}</span>
+                  </span>
                 </div>
                 <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${s.chip}`}>{s.label}</span>
               </li>
@@ -147,12 +150,11 @@ function StagePreview() {
         </ul>
 
         <div className="flex items-center gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4">
-          <svg className="h-5 w-5 shrink-0 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-            <rect x="5" y="11" width="14" height="9" rx="2" />
-            <path strokeLinecap="round" d="M8 11V8a4 4 0 118 0v3" />
+          <svg className="h-5 w-5 shrink-0 text-emerald-600" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9L12 2z" />
           </svg>
           <p className="text-sm text-slate-600">
-            <span className="font-semibold text-slate-800">Stage locked.</span> Mandatory items are still open.
+            <span className="font-semibold text-slate-800">Clauses suggested by AI,</span> confirmed by the engineer.
           </p>
         </div>
       </div>
@@ -165,27 +167,27 @@ function StagePreview() {
 function HowItWorks() {
   const steps = [
     {
-      title: "Define",
-      text: "Turn selected Saudi Building Code requirements into stage checklists, prepared and reviewed by engineers.",
+      title: "Set up",
+      text: "Create a project, add the SBC clauses that apply to it, and invite the team with the right roles.",
     },
     {
-      title: "Inspect",
-      text: "Record a non-conformity against the exact checklist item, with its location and supporting evidence.",
+      title: "Capture",
+      text: "On site, take a photo or describe the issue. AI writes the finding and flags similar ones already reported.",
+    },
+    {
+      title: "Link",
+      text: "AI suggests the matching SBC clause and its required standard. The engineer confirms or picks another.",
     },
     {
       title: "Resolve",
-      text: "The responsible party corrects the issue and uploads proof. Changing a status alone never closes it.",
-    },
-    {
-      title: "Verify",
-      text: "The inspector re-checks and closes. A stage locks only when its mandatory items are closed.",
+      text: "The responsible person fixes the issue and uploads evidence; progress shows on the project dashboard.",
     },
   ];
 
   return (
     <section className="px-6 py-20">
       <div className="mx-auto max-w-6xl">
-        <SectionHeading eyebrow="How it works" title="One traceable path, from requirement to closure" />
+        <SectionHeading eyebrow="How it works" title="One traceable path, from site to closure" />
         <ol className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {steps.map((step, i) => (
             <li key={step.title} className="relative rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -206,27 +208,27 @@ function HowItWorks() {
 function Capabilities() {
   const items = [
     {
-      title: "Code-linked checklists",
-      text: "Every inspection item points to the requirement it verifies, so findings stay tied to the code.",
+      title: "AI clause suggestions",
+      text: "As you write a finding, AI ranks the project's SBC clauses and proposes the right one, in Arabic or English.",
     },
     {
-      title: "Verified closure",
-      text: "Evidence and inspector approval are required before an observation closes. Roles control who can do what.",
+      title: "Photo analysis",
+      text: "Upload a site photo and AI describes the violation, ready for the engineer to review.",
     },
     {
-      title: "Similar-observation alerts",
-      text: "While you write a finding, Imtithal flags similar ones already recorded, so teams avoid duplicate reports.",
+      title: "Similar-finding alerts",
+      text: "Imtithal flags findings that were already recorded, so teams avoid duplicate reports.",
     },
     {
-      title: "Documented stage reports",
-      text: "Results, corrective actions and evidence are compiled into a stage report with dates and names.",
+      title: "Dashboards & export",
+      text: "Status and risk charts per project, role-based access, and export to Excel for reporting.",
     },
   ];
 
   return (
     <section className="border-y border-slate-200 bg-white px-6 py-20">
       <div className="mx-auto max-w-6xl">
-        <SectionHeading eyebrow="Capabilities" title="Built around closure you can defend" />
+        <SectionHeading eyebrow="Capabilities" title="Less lookup, more inspection" />
         <div className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200 md:grid-cols-2 lg:grid-cols-4">
           {items.map((item) => (
             <div key={item.title} className="flex flex-col gap-2 bg-white p-6">
@@ -251,7 +253,7 @@ function MissionVision() {
     },
     {
       title: "Our vision",
-      text: "A project workflow where a stage is closed because it was verified, and where the record can be reviewed by anyone who needs it.",
+      text: "A construction workflow where every non-conformity is closed because it was verified, and the record can be reviewed by anyone who needs it.",
       icon: "M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z M15 12a3 3 0 11-6 0 3 3 0 016 0z",
     },
   ];
@@ -345,9 +347,9 @@ function Team() {
 
   return (
     <section className="px-6 py-20">
-      <div className="mx-auto max-w-4xl">
-        <SectionHeading eyebrow="Team" title="Built by a focused engineering team" />
-        <div className="mt-12 grid gap-6 sm:grid-cols-2">
+      <div className="mx-auto max-w-5xl">
+        <SectionHeading eyebrow="Team" title="Software, QA and architecture, in one team" />
+        <div className="mt-12 grid gap-6 sm:grid-cols-3">
           {members.map((m) => (
             <div
               key={m.name}
@@ -361,14 +363,16 @@ function Team() {
               </div>
               <h3 className="mt-4 text-lg font-semibold text-slate-900">{m.name}</h3>
               <p className="text-sm text-slate-500">{m.role}</p>
-              <a
-                href={m.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-4 inline-flex h-9 items-center rounded-md bg-slate-100 px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-900 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-              >
-                LinkedIn
-              </a>
+              {m.link.includes("/in/") && (
+                <a
+                  href={m.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 inline-flex h-9 items-center rounded-md bg-slate-100 px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-900 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                >
+                  LinkedIn
+                </a>
+              )}
             </div>
           ))}
         </div>
@@ -382,10 +386,10 @@ function CallToAction() {
   return (
     <section className="bg-slate-900 px-6 py-16">
       <div className="mx-auto flex max-w-5xl flex-col items-center gap-6 text-center">
-        <LogoMark className="h-32 w-32" />
-        <h2 className="text-2xl font-bold text-white md:text-3xl">Run your next inspection stage on Imtithal</h2>
+        <LogoMark className="h-14 w-14" />
+        <h2 className="text-2xl font-bold text-white md:text-3xl">Run your next site inspection on Imtithal</h2>
         <p className="max-w-xl text-slate-400">
-          Start with one stage, one checklist and one team, and see every item through to verified closure.
+          Start with one project and one team, and see every finding through to a verified fix.
         </p>
         <div className="flex flex-col gap-3 sm:flex-row">
           <Link

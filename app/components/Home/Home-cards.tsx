@@ -1,76 +1,61 @@
 'use client';
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
+const actions = [
+  {
+    href: "/createProject",
+    title: "New inspection project",
+    text: "Set up a project, add its SBC clauses, and invite your team.",
+    cta: "Create project",
+    icon: "M12 5v14m7-7H5",
+    accent: "bg-emerald-600 group-hover:bg-emerald-500",
+    ring: "hover:border-emerald-400",
+  },
+  {
+    href: "/my-projects",
+    title: "My projects",
+    text: "Open active projects, log findings, and follow non-conformities to closure.",
+    cta: "Open projects",
+    icon: "M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z",
+    accent: "bg-slate-900 group-hover:bg-slate-800",
+    ring: "hover:border-slate-400",
+  },
+];
+
+/** Quick actions into the app, shown at the bottom of the home page. */
 export default function HomeCard() {
-    const router = useRouter();
-
   return (
-    <section className="px-6 pb-16">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+    <section className="border-t border-slate-200 bg-white px-6 py-20">
+      <div className="mx-auto max-w-5xl">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">Get to work</h2>
+          <p className="mt-3 text-slate-600">Jump straight into a project.</p>
+        </div>
 
-        {/* Initiate New Audit / Project */}
-        <button
-          onClick={() => router.push("/createProject")}
-          className="group text-left rounded-2xl bg-slate-800/60 backdrop-blur-md border border-slate-700/60 p-8 shadow-lg
-                     hover:shadow-emerald-950/40 hover:border-emerald-500/50 hover:-translate-y-1 transition-all duration-300
-                     focus:outline-none focus:ring-2 focus:ring-emerald-500"
-        >
-          <div className="flex gap-5 items-start">
-            <div className="w-14 h-14 rounded-xl bg-emerald-600/90 group-hover:bg-emerald-500 text-white flex items-center justify-center
-                            shadow-md shadow-emerald-900/30 group-hover:scale-105 transition-all">
-              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-            </div>
-
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-slate-100 group-hover:text-emerald-400 transition-colors">
-                New Compliance Audit
-              </h3>
-
-              <p className="mt-1 text-sm text-slate-300 leading-relaxed">
-                Initiate a new regulatory review, set compliance criteria, and track policy adherence.
-              </p>
-
-              <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-emerald-400 opacity-0 group-hover:opacity-100 transition-all">
-                Start audit process →
+        <div className="mt-10 grid gap-6 md:grid-cols-2">
+          {actions.map((a) => (
+            <Link
+              key={a.href}
+              href={a.href}
+              className={`group flex items-start gap-5 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${a.ring} focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500`}
+            >
+              <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-white transition ${a.accent}`}>
+                <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d={a.icon} />
+                </svg>
               </span>
-            </div>
-          </div>
-        </button>
-
-        {/* Access Active Compliance Dashboard / Projects */}
-        <button
-          onClick={() => router.push("/my-projects")}
-          className="group text-left rounded-2xl bg-slate-800/60 backdrop-blur-md border border-slate-700/60 p-8 shadow-lg
-                     hover:shadow-indigo-950/40 hover:border-indigo-500/50 hover:-translate-y-1 transition-all duration-300
-                     focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        >
-          <div className="flex gap-5 items-start">
-            <div className="w-14 h-14 rounded-xl bg-indigo-600/90 group-hover:bg-indigo-500 text-white flex items-center justify-center
-                            shadow-md shadow-indigo-900/30 group-hover:scale-105 transition-all">
-              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-slate-100 group-hover:text-indigo-400 transition-colors">
-                Audit & Compliance Records
-              </h3>
-
-              <p className="mt-1 text-sm text-slate-300 leading-relaxed">
-                Review active compliance files, past inspection logs, and non-conformity reports.
-              </p>
-
-              <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-indigo-400 opacity-0 group-hover:opacity-100 transition-all">
-                View records →
+              <span className="flex-1">
+                <span className="block text-lg font-semibold text-slate-900">{a.title}</span>
+                <span className="mt-1 block text-sm leading-relaxed text-slate-600">{a.text}</span>
+                <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-emerald-700">
+                  {a.cta}
+                  <span aria-hidden="true" className="transition group-hover:translate-x-0.5">→</span>
+                </span>
               </span>
-            </div>
-          </div>
-        </button>
-
+            </Link>
+          ))}
+        </div>
       </div>
     </section>
   );

@@ -24,8 +24,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "QA flow",
-  description: "Bug tracking app",
+  title: "Imtithal · AI-assisted SBC inspection",
+  description: "Log site non-conformities from a photo, link them to Saudi Building Code clauses with AI, and track them to a verified fix.",
 };
 
 export default function RootLayout({
