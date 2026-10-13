@@ -4,27 +4,22 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { useAuthContext } from '@/app/context/AuthContext';
 import { useQueueContext, DuplicateMatch, Customer } from '@/app/context/QueueContext';
+import { libraryClauseTitle, type LibraryClause } from '@/app/api/sbc-suggest/libraryClause';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Priority = 'High' | 'Medium' | 'Low';
 
+/** Either a clause already in the project (testCaseId) or one from the verified SBC library. */
 type ClauseMatch = {
-  testCaseId: number;
+  testCaseId?: number;
+  libraryClause?: LibraryClause;
   reason: string;
-  confidence: 'high' | 'medium' | 'low';
-};
-
-type NewClause = {
-  title: string;
-  standard: string;
-  reason: string;
+  confidence: 'high' | 'medium';
 };
 
 type SbcSuggestion = {
   matches: ClauseMatch[];
-  /** a clause the AI proposes that is not in the project's menu yet */
-  newClause?: NewClause | null;
   source: 'openai' | 'keywords' | 'none';
   aiUnavailable?: boolean;
   /** photo analysis only */
@@ -32,8 +27,12 @@ type SbcSuggestion = {
   details?: string;
 };
 
-/** menu value for the AI-proposed clause; it is saved to the project on submit */
-const AI_NEW_CLAUSE = 'ai-new';
+/** Menu values for SBC library clauses; such a clause is copied into the project on submit. */
+const LIB_PREFIX = 'lib:';
+const isLibraryValue = (value: string) => value.startsWith(LIB_PREFIX);
+
+const formatDay = (ms?: number | null) =>
+  ms ? new Date(ms).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
 
 /** Shrinks a photo to at most 1280px as JPEG so phone pictures upload quickly to the AI. */
 async function photoToDataUrl(file: File, maxSide = 1280): Promise<string> {
@@ -149,7 +148,7 @@ export default function QueueForm({
   const [checkingAi, setCheckingAi] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<SbcSuggestion | null>(null);
   const [aiNotice, setAiNotice] = useState<string | null>(null);
-  const [chosenNewClause, setChosenNewClause] = useState<NewClause | null>(null);
+  const [chosenLibraryClause, setChosenLibraryClause] = useState<LibraryClause | null>(null);
   const [dismissedSuggestionKey, setDismissedSuggestionKey] = useState<string | null>(null);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const suggestAbortRef = useRef<AbortController | null>(null);
@@ -213,7 +212,7 @@ export default function QueueForm({
     setDuplicate(null);
     setAiSuggestion(null);
     setAiNotice(null);
-    setChosenNewClause(null);
+    setChosenLibraryClause(null);
     setDismissedSuggestionKey(null);
     setPhotoNotice(null);
     photoFilledKeyRef.current = null;
@@ -266,8 +265,8 @@ export default function QueueForm({
   const noticeFor = (suggestion: SbcSuggestion): string | null =>
     suggestion.aiUnavailable
       ? 'AI is unavailable right now (check the AI API key), so these are keyword matches.'
-      : suggestion.matches.length === 0 && !suggestion.newClause
-        ? 'AI could not find an SBC clause for this finding. Pick one manually.'
+      : suggestion.matches.length === 0
+        ? 'No SBC clause matched with enough confidence. Pick one manually, or add it to the SBC Library.'
         : null;
 
   // AI suggests which "SBC Clause" menu option fits what the engineer typed
@@ -317,8 +316,9 @@ export default function QueueForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [suggestionKey, dismissedSuggestionKey, testCases]);
 
-  /** Saves an AI-proposed clause to the project (same endpoint as the test cases page) and returns its id. */
-  const createClause = async (API: string, clause: NewClause): Promise<number> => {
+  /** Copies an SBC library clause into the project (same endpoint as the test cases page) and returns its id. */
+  const createClause = async (API: string, libraryClause: LibraryClause): Promise<number> => {
+    const clause = { title: libraryClauseTitle(libraryClause), standard: libraryClause.requirementText };
     const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2] ?? localStorage.getItem('token');
     const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
     const url = `${API}/api/projects/${projectId}/testcases`;
@@ -328,7 +328,7 @@ export default function QueueForm({
       headers,
       body: JSON.stringify({ title: clause.title, steps: [], expectedResult: clause.standard }),
     });
-    if (!res.ok) throw new Error(`Could not save the AI SBC clause (${res.status})`);
+    if (!res.ok) throw new Error(`Could not add the SBC clause to the project (${res.status})`);
 
     const created = await res.json().catch(() => null);
     let id: number | undefined = created?.id ?? created?.Id;
@@ -340,7 +340,7 @@ export default function QueueForm({
         .sort((a, b) => b.id - a.id)[0];
       id = found?.id;
     }
-    if (typeof id !== 'number') throw new Error('Saved the AI SBC clause but could not link it');
+    if (typeof id !== 'number') throw new Error('Added the SBC clause but could not link it');
 
     onTestCaseCreated?.({ id, title: clause.title, expectedResult: clause.standard });
     return id;
@@ -361,9 +361,9 @@ export default function QueueForm({
       let parsedTestCaseId =
         payload.testCaseId === '' ? null : parseInt(payload.testCaseId, 10);
 
-      if (payload.testCaseId === AI_NEW_CLAUSE) {
-        if (!chosenNewClause) throw new Error('AI clause missing, pick the SBC clause again');
-        parsedTestCaseId = await createClause(API, chosenNewClause);
+      if (isLibraryValue(payload.testCaseId)) {
+        if (!chosenLibraryClause) throw new Error('SBC clause missing, pick it again');
+        parsedTestCaseId = await createClause(API, chosenLibraryClause);
       }
 
       const submissionPayload = {
@@ -434,15 +434,18 @@ export default function QueueForm({
     applyClause(String(testCaseId), standardOf(String(testCaseId)));
   };
 
-  const handleSelectNewClause = (clause: NewClause): void => {
-    setChosenNewClause(clause);
-    applyClause(AI_NEW_CLAUSE, clause.standard);
+  const handleSelectLibraryClause = (clause: LibraryClause): void => {
+    setChosenLibraryClause(clause);
+    applyClause(`${LIB_PREFIX}${clause.id}`, clause.requirementText);
   };
 
   // the AI clause shown in the menu: the one already picked wins over a newer proposal
-  const menuNewClause =
-    formData.testCaseId === AI_NEW_CLAUSE ? chosenNewClause : aiSuggestion?.newClause ?? null;
-  const aiMatchedIds = new Set(aiSuggestion?.matches.map((m) => m.testCaseId) ?? []);
+  // library clauses shown in the menu: the AI's library picks plus the one already chosen
+  const menuLibraryClauses = [
+    ...(chosenLibraryClause && isLibraryValue(formData.testCaseId) ? [chosenLibraryClause] : []),
+    ...(aiSuggestion?.matches.flatMap((m) => (m.libraryClause ? [m.libraryClause] : [])) ?? []),
+  ].filter((c, i, all) => all.findIndex((x) => x.id === c.id) === i);
+  const aiMatchedIds = new Set(aiSuggestion?.matches.flatMap((m) => (m.testCaseId != null ? [m.testCaseId] : [])) ?? []);
 
   const handleDismissSuggestion = (): void => {
     setDismissedSuggestionKey(suggestionKey);
@@ -452,8 +455,9 @@ export default function QueueForm({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ): void => {
     if (e.target.name === 'name') return;
-    if (e.target.name === 'testCaseId' && e.target.value === AI_NEW_CLAUSE && menuNewClause) {
-      handleSelectNewClause(menuNewClause);
+    if (e.target.name === 'testCaseId' && isLibraryValue(e.target.value)) {
+      const clause = menuLibraryClauses.find((c) => `${LIB_PREFIX}${c.id}` === e.target.value);
+      if (clause) handleSelectLibraryClause(clause);
       return;
     }
     if (e.target.name === 'testCaseId') {
@@ -530,7 +534,7 @@ export default function QueueForm({
 
   const isImage = formData.attachment?.type.startsWith('image/') ?? false;
   const showSuggestions =
-    !checkingAi && aiSuggestion && (aiSuggestion.matches.length > 0 || aiSuggestion.newClause);
+    !checkingAi && aiSuggestion && aiSuggestion.matches.length > 0;
 
   return (
     <form onSubmit={(e) => void handleSubmit(e)} className="space-y-7">
@@ -690,33 +694,63 @@ export default function QueueForm({
             </div>
 
             {aiSuggestion.matches.map((m) => {
-              const clause = testCases.find((tc: { id: number }) => tc.id === m.testCaseId);
-              const selected = formData.testCaseId === String(m.testCaseId);
+              const lib = m.libraryClause;
+              const value = lib ? `${LIB_PREFIX}${lib.id}` : String(m.testCaseId);
+              const projectClause = lib ? null : testCases.find((tc: { id: number }) => tc.id === m.testCaseId);
+              const selected = formData.testCaseId === value;
               return (
                 <div
-                  key={m.testCaseId}
+                  key={value}
                   className={`flex items-start justify-between gap-3 rounded-lg border bg-white p-3 transition ${
                     selected ? 'border-emerald-300 ring-1 ring-emerald-200' : 'border-gray-200'
                   }`}
                 >
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900">{clause?.title ?? `#${m.testCaseId}`}</p>
-                    {m.reason && <p className="mt-0.5 text-xs leading-relaxed text-gray-600">{m.reason}</p>}
-                    <span
-                      className={`mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${
-                        m.confidence === 'high'
-                          ? 'bg-emerald-50 text-emerald-700'
-                          : m.confidence === 'medium'
-                            ? 'bg-amber-50 text-amber-700'
-                            : 'bg-gray-100 text-gray-600'
-                      }`}
-                    >
-                      {m.confidence} confidence
-                    </span>
+                  <div className="min-w-0 space-y-1">
+                    {lib ? (
+                      <>
+                        <p className="text-[11px] font-semibold text-indigo-700">
+                          {lib.codeType}
+                          {lib.codeVersion && ` · ${lib.codeVersion} edition`} · §{lib.sectionNumber}
+                        </p>
+                        <p className="text-sm font-medium text-gray-900">{lib.title}</p>
+                        <p className="line-clamp-3 text-xs leading-relaxed text-gray-700">{lib.requirementText}</p>
+                      </>
+                    ) : (
+                      <p className="text-sm font-medium text-gray-900">{projectClause?.title ?? `#${m.testCaseId}`}</p>
+                    )}
+                    {m.reason && <p className="text-xs leading-relaxed text-gray-500">{m.reason}</p>}
+                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${
+                          m.confidence === 'high' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                        }`}
+                      >
+                        {m.confidence} confidence
+                      </span>
+                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-600">
+                        {lib ? 'SBC library' : 'Project clause'}
+                      </span>
+                      {lib?.verifiedBy && (
+                        <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
+                          ✓ Verified by {lib.verifiedBy}
+                          {lib.lastVerifiedAt ? ` · ${formatDay(lib.lastVerifiedAt)}` : ''}
+                        </span>
+                      )}
+                      {lib?.sourceUrl && (
+                        <a
+                          href={lib.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[10px] font-semibold text-indigo-600 hover:underline"
+                        >
+                          Source ↗
+                        </a>
+                      )}
+                    </div>
                   </div>
                   <button
                     type="button"
-                    onClick={() => handleSelectClause(m.testCaseId)}
+                    onClick={() => (lib ? handleSelectLibraryClause(lib) : m.testCaseId != null && handleSelectClause(m.testCaseId))}
                     disabled={uploading || selected}
                     className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
                       selected ? 'bg-emerald-50 text-emerald-700' : 'bg-indigo-600 text-white hover:bg-indigo-700'
@@ -727,37 +761,6 @@ export default function QueueForm({
                 </div>
               );
             })}
-
-            {aiSuggestion.newClause && (
-              <div
-                className={`flex items-start justify-between gap-3 rounded-lg border border-dashed bg-white p-3 ${
-                  formData.testCaseId === AI_NEW_CLAUSE ? 'border-emerald-300' : 'border-indigo-300'
-                }`}
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{aiSuggestion.newClause.title}</p>
-                  <span className="mt-1 inline-block rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">
-                    AI suggestion · not in this project
-                  </span>
-                  <p className="mt-1.5 text-xs leading-relaxed text-gray-700">{aiSuggestion.newClause.standard}</p>
-                  {aiSuggestion.newClause.reason && (
-                    <p className="mt-1 text-xs text-gray-500">{aiSuggestion.newClause.reason}</p>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => aiSuggestion.newClause && handleSelectNewClause(aiSuggestion.newClause)}
-                  disabled={uploading || formData.testCaseId === AI_NEW_CLAUSE}
-                  className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                    formData.testCaseId === AI_NEW_CLAUSE
-                      ? 'bg-emerald-50 text-emerald-700'
-                      : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                  }`}
-                >
-                  {formData.testCaseId === AI_NEW_CLAUSE ? 'Selected ✓' : 'Select'}
-                </button>
-              </div>
-            )}
           </div>
         )}
       </Section>
@@ -774,18 +777,20 @@ export default function QueueForm({
             disabled={uploading}
           >
             <option value="">No clause linked</option>
-            {menuNewClause && (
-              <option value={AI_NEW_CLAUSE}>✨ {menuNewClause.title} (AI suggestion)</option>
-            )}
+            {menuLibraryClauses.map((c) => (
+              <option key={`${LIB_PREFIX}${c.id}`} value={`${LIB_PREFIX}${c.id}`}>
+                ✨ {libraryClauseTitle(c)} (AI suggestion · SBC library)
+              </option>
+            ))}
             {testCases.map((tc: any) => (
               <option key={tc.id} value={tc.id}>
                 {aiMatchedIds.has(tc.id) ? `✨ ${tc.title} (AI suggestion)` : tc.title}
               </option>
             ))}
           </select>
-          {formData.testCaseId === AI_NEW_CLAUSE && (
+          {isLibraryValue(formData.testCaseId) && (
             <p className="mt-1.5 text-[11px] leading-relaxed text-indigo-700">
-              Not in this project yet. It will be added to the project&apos;s SBC clauses when you submit. Verify it against the SBC text.
+              From the verified SBC library. It will be added to this project&apos;s clauses when you submit.
             </p>
           )}
         </div>

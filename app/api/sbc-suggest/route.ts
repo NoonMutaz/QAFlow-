@@ -238,18 +238,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { buildClauseIndex, rankClauses } from "./clauseMatcher";
+import { libraryClauseTitle, type LibraryClause } from "./libraryClause";
 
 export const runtime = "nodejs";
 
 // Helps the engineer pick the right option from the form's "SBC Clause" menu.
-// `matches` only ever holds ids that are in the menu (the project's clauses);
-// when none of them fits, the AI may propose a `newClause` that is not in the menu yet.
+// Candidates are the project's own clauses plus the shared, engineer-verified SBC
+// library (/api/sbc-clauses). The AI only chooses among them; it never invents a
+// clause, and when nothing fits with enough confidence it returns no match.
 
 type SbcClause = {
   id: number;
   title: string;
   expectedResult?: string;
 };
+
 
 type SuggestBody = {
   description: string;
@@ -260,40 +263,38 @@ type SuggestBody = {
   image?: string;
 };
 
+/** Either a clause already in the project (testCaseId) or one from the library (libraryClause). */
 export type ClauseMatch = {
-  testCaseId: number;
+  testCaseId?: number;
+  libraryClause?: LibraryClause;
   reason: string;
-  confidence: "high" | "medium" | "low";
-};
-
-export type NewClause = {
-  /** e.g. "SBC 201 – Section 1010.1.2 Door swing" */
-  title: string;
-  /** required standard text, saved as the clause's expected result */
-  standard: string;
-  reason: string;
+  confidence: "high" | "medium";
 };
 
 export type SbcSuggestionResponse = {
   matches: ClauseMatch[];
-  newClause?: NewClause | null;
   source: "openai" | "keywords" | "none";
-  /** true when the OpenAI call failed (no credits, bad key, network) and keywords were used instead */
+  /** true when the AI call failed (no credits, bad key, network) and keywords were used instead */
   aiUnavailable?: boolean;
   /** photo analysis only: short site finding and detailed finding written from the photo */
   finding?: string;
   details?: string;
 };
 
+const apiBase = () => process.env.API_URL_INTERNAL ?? process.env.NEXT_PUBLIC_API_URL;
+
+function tokenFrom(req: NextRequest): string | undefined {
+  const header = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
+  return header && header !== "null" ? header : req.cookies.get("token")?.value;
+}
+
 /**
- * The endpoint spends your OpenAI key, so only signed-in users may call it.
+ * The endpoint spends your AI key, so only signed-in users may call it.
  * Returns null when the user is signed in, otherwise why not (shown in the form).
  */
-async function authProblem(req: NextRequest): Promise<string | null> {
-  const header = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
-  const token = header && header !== "null" ? header : req.cookies.get("token")?.value;
+async function authProblem(token: string | undefined): Promise<string | null> {
   // API_URL_INTERNAL lets the server skip the HTTPS dev cert locally (Node does not trust it)
-  const api = process.env.API_URL_INTERNAL ?? process.env.NEXT_PUBLIC_API_URL;
+  const api = apiBase();
   if (!api) return "NEXT_PUBLIC_API_URL is not set on the server";
   if (!token) return "no login token was sent (log in again)";
   try {
@@ -308,6 +309,22 @@ async function authProblem(req: NextRequest): Promise<string | null> {
     const cause = (err as { cause?: { code?: string; message?: string } })?.cause;
     console.error("sbc-suggest auth: could not reach the .NET API:", err);
     return `the Next.js server could not reach the .NET API at ${api} (${cause?.code ?? cause?.message ?? String(err)})`;
+  }
+}
+
+/** Verified clauses from the shared library; empty when the library is empty or unreachable. */
+async function fetchLibrary(token: string): Promise<LibraryClause[]> {
+  try {
+    const res = await fetch(`${apiBase()}/api/sbc-clauses`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+    const rows = (await res.json()) as LibraryClause[];
+    return Array.isArray(rows) ? rows.slice(0, 1000) : [];
+  } catch (err) {
+    console.error("sbc-suggest: could not load the SBC library:", err);
+    return [];
   }
 }
 
@@ -347,16 +364,47 @@ function buildFindingText(body: SuggestBody): string {
     .trim();
 }
 
-/** Fallback when OpenAI is off or fails: local keyword matcher over the menu's clauses. */
-function keywordMatches(body: SuggestBody): ClauseMatch[] {
-  const index = buildClauseIndex(
-    body.clauses.map((c) => ({ id: c.id, title: c.title, description: c.expectedResult })),
-  );
-  return rankClauses(index, buildFindingText(body), { max: 3, minScore: 0.5 }).map((r) => ({
-    testCaseId: Number(r.id),
-    reason: `Shares words with your finding: ${r.matched.slice(0, 5).join(", ")}`,
-    confidence: r.score >= 3.5 ? "high" : r.score >= 1.5 ? "medium" : "low",
-  }));
+/**
+ * One list the AI and the keyword matcher choose from. Keys are "p<id>" for project
+ * clauses and "l<id>" for library clauses. A library clause already copied into the
+ * project (same title) is offered only once, as the project clause.
+ */
+type Candidate = { key: string; title: string; text: string; match: Omit<ClauseMatch, "reason" | "confidence"> };
+
+function buildCandidates(body: SuggestBody, library: LibraryClause[]): Candidate[] {
+  const projectTitles = new Set(body.clauses.map((c) => c.title.trim().toLowerCase()));
+  return [
+    ...body.clauses.map((c) => ({
+      key: `p${c.id}`,
+      title: c.title,
+      text: c.expectedResult ?? "",
+      match: { testCaseId: c.id },
+    })),
+    ...library
+      .filter((c) => !projectTitles.has(libraryClauseTitle(c).toLowerCase()))
+      .map((c) => ({
+        key: `l${c.id}`,
+        title: libraryClauseTitle(c),
+        text: c.requirementText.slice(0, 400),
+        match: { libraryClause: c },
+      })),
+  ];
+}
+
+/** Fallback when the AI is off or fails: local keyword matcher over the same candidates. */
+function keywordMatches(body: SuggestBody, candidates: Candidate[]): ClauseMatch[] {
+  const index = buildClauseIndex(candidates.map((c) => ({ id: c.key, title: c.title, description: c.text })));
+  const byKey = new Map(candidates.map((c) => [c.key, c]));
+  return rankClauses(index, buildFindingText(body), { max: 3, minScore: 1.5 }).flatMap((r) => {
+    const candidate = byKey.get(r.id);
+    return candidate
+      ? [{
+          ...candidate.match,
+          reason: `Shares words with your finding: ${r.matched.slice(0, 5).join(", ")}`,
+          confidence: r.score >= 3.5 ? ("high" as const) : ("medium" as const),
+        }]
+      : [];
+  });
 }
 
 /**
@@ -390,59 +438,55 @@ function parseJsonReply(raw: string): Record<string, unknown> {
   return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
 }
 
-async function openAiMatches(
+async function aiMatches(
   body: SuggestBody,
-): Promise<{ matches: ClauseMatch[]; newClause: NewClause | null; finding: string; details: string }> {
+  candidates: Candidate[],
+): Promise<{ matches: ClauseMatch[]; finding: string; details: string }> {
   const provider = aiProvider();
   if (!provider) throw new Error("no AI key configured");
-  const menu =
-    body.clauses
-      .map((c) => `- id ${c.id}: ${c.title}${c.expectedResult ? ` | standard: ${c.expectedResult}` : ""}`)
-      .join("\n") || "(the project has no clauses yet)";
+  const list =
+    candidates.map((c) => `- ${c.key}: ${c.title}${c.text ? ` | requirement: ${c.text}` : ""}`).join("\n") ||
+    "(no clauses available)";
 
   const photoTask = body.image
     ? `The engineer attached a site photo. First inspect it for SBC violations (fire safety, means of egress, guards, electrical, structural, accessibility, site safety) and write:
 - "finding": one short sentence naming the violation you see, like an inspector's site finding.
 - "details": 2-3 sentences describing what is visible and why it is non-compliant. Describe only what is actually visible; do not invent measurements.
-If the engineer already wrote text, write in the same language; otherwise use English. If you see no violation, say so in "finding", leave "details" empty, and return no matches and no newClause.
-Then use the photo together with any text to choose the clauses below.
+If the engineer already wrote text, write in the same language; otherwise use English. If you see no violation, say so in "finding", leave "details" empty, and return no matches.
+Then use the photo together with any text to choose clauses from the list below.
 
 `
     : "";
-  const userText = `${buildFindingText(body) || "(no text yet, use the photo)"}\n\nSBC clause list:\n${menu}`;
+  const userText = `${buildFindingText(body) || "(no text yet, use the photo)"}\n\nVerified SBC clause list:\n${list}`;
 
   const request = (model: string) =>
     provider.client.chat.completions.create({
-    model,
-    temperature: 0,
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "system",
-        content: `You are a Saudi Building Code (SBC) inspection assistant. An engineer wrote a site finding and must link it to ONE clause from their project's SBC clause list.
+      model,
+      temperature: 0,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content: `You are a Saudi Building Code (SBC) inspection assistant. An engineer wrote a site finding and must link it to a clause from a list of engineer-verified SBC clauses.
 
-${photoTask}1) "matches": the clauses from the list that the finding violates, best first (at most 3). Only use ids from the list. Empty array if nothing in the list fits.
-2) "newClause": ONLY if no clause in the list fits well, propose the correct SBC clause from your SBC knowledge:
-   - "title": SBC code + section + short name, e.g. "SBC 201 – Section 1010.1.2 Door swing". Only include a section number you are sure of; otherwise give just the code and name, e.g. "SBC 801 – Fire extinguishers".
-   - "standard": the requirement, concise and inspection-ready, without exact figures you are unsure of.
-   - "reason": one short sentence.
-   Otherwise set "newClause" to null.
-The finding may be in Arabic or English; write "reason" in the same language as the finding.
+${photoTask}"matches": the clauses from the list that this finding actually violates, best first, at most 3. Use only keys from the list (like "p12" or "l5"). Never invent a clause, code or section number.
+Only include a clause when its requirement clearly applies to the finding: "high" when it directly covers it, "medium" when it very likely applies. If nothing in the list applies with that confidence, return an empty array.
+The finding may be in Arabic or English; write "reason" (one short sentence) in the same language as the finding.
 
 Respond with JSON only:
-{${body.image ? `"finding": string, "details": string, ` : ""}"matches": [{"id": number, "reason": string, "confidence": "high"|"medium"|"low"}], "newClause": {"title": string, "standard": string, "reason": string} | null}`,
-      },
-      {
-        role: "user",
-        content: body.image
-          ? [
-              { type: "text", text: userText },
-              { type: "image_url", image_url: { url: body.image } },
-            ]
-          : userText,
-      },
-    ],
-  });
+{${body.image ? `"finding": string, "details": string, ` : ""}"matches": [{"key": string, "reason": string, "confidence": "high"|"medium"}]}`,
+        },
+        {
+          role: "user",
+          content: body.image
+            ? [
+                { type: "text", text: userText },
+                { type: "image_url", image_url: { url: body.image } },
+              ]
+            : userText,
+        },
+      ],
+    });
 
   let completion: Awaited<ReturnType<typeof request>> | null = null;
   let lastError: unknown;
@@ -460,39 +504,32 @@ Respond with JSON only:
   if (!completion) throw lastError;
 
   const parsed = parseJsonReply(completion.choices[0]?.message?.content ?? "{}") as {
-    matches?: { id?: unknown; reason?: unknown; confidence?: unknown }[];
-    newClause?: { title?: unknown; standard?: unknown; reason?: unknown } | null;
+    matches?: { key?: unknown; reason?: unknown; confidence?: unknown }[];
     finding?: unknown;
     details?: unknown;
   };
-  const valid = new Set(body.clauses.map((c) => c.id));
+  const byKey = new Map(candidates.map((c) => [c.key, c]));
   const matches: ClauseMatch[] = (Array.isArray(parsed.matches) ? parsed.matches : [])
-    .filter((m) => typeof m.id === "number" && valid.has(m.id))
+    // low or unknown confidence is dropped: better "no match" than an unconfirmed clause
+    .filter((m) => typeof m.key === "string" && byKey.has(m.key) && (m.confidence === "high" || m.confidence === "medium"))
     .slice(0, 3)
     .map((m) => ({
-      testCaseId: m.id as number,
+      ...byKey.get(m.key as string)!.match,
       reason: typeof m.reason === "string" ? m.reason.trim() : "",
-      confidence: m.confidence === "high" || m.confidence === "low" ? m.confidence : "medium",
+      confidence: m.confidence as "high" | "medium",
     }));
-
-  const nc = parsed.newClause;
-  const title = typeof nc?.title === "string" ? nc.title.trim().slice(0, 200) : "";
-  const standard = typeof nc?.standard === "string" ? nc.standard.trim().slice(0, 800) : "";
-  const newClause =
-    title && standard
-      ? { title, standard, reason: typeof nc?.reason === "string" ? nc.reason.trim() : "" }
-      : null;
 
   const finding = typeof parsed.finding === "string" ? parsed.finding.trim().slice(0, 500) : "";
   const details = typeof parsed.details === "string" ? parsed.details.trim().slice(0, 1500) : "";
 
-  return { matches, newClause, finding, details };
+  return { matches, finding, details };
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const problem = await authProblem(req);
-    if (problem) {
+    const token = tokenFrom(req);
+    const problem = await authProblem(token);
+    if (problem || !token) {
       return NextResponse.json({ error: `Unauthorized: ${problem}` }, { status: 401 });
     }
 
@@ -501,23 +538,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ matches: [], source: "none" } satisfies SbcSuggestionResponse);
     }
 
+    const candidates = buildCandidates(body, await fetchLibrary(token));
+
     let aiUnavailable = !process.env.AI_API_KEY && !process.env.OPENAI_API_KEY;
     if (!aiUnavailable) {
       try {
-        const { matches, newClause, finding, details } = await openAiMatches(body);
+        const { matches, finding, details } = await aiMatches(body, candidates);
         return NextResponse.json({
           matches,
-          newClause,
           source: "openai",
           ...(body.image ? { finding, details } : {}),
         } satisfies SbcSuggestionResponse);
       } catch (err) {
         aiUnavailable = true;
-        console.error("OpenAI SBC suggest failed, using keyword matcher:", err);
+        console.error("AI SBC suggest failed, using keyword matcher:", err);
       }
     }
 
-    const matches = body.clauses.length && buildFindingText(body) ? keywordMatches(body) : [];
+    const matches = candidates.length && buildFindingText(body) ? keywordMatches(body, candidates) : [];
     return NextResponse.json({
       matches,
       source: matches.length ? "keywords" : "none",

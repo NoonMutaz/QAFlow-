@@ -16,7 +16,7 @@ interface HeaderProps {
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/my-projects", label: "Audits & Projects" },
-  { href: "/aboutUs", label: "Compliance Standards" },
+  { href: "/sbc-library", label: "SBC Library" },
   { href: "/contactus", label: "Support" },
   { href: "/account", label: "Profile" },
   { href: "/my-notifications", label: "Assigned Audits", isNotification: true },
