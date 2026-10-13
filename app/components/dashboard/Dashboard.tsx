@@ -5,6 +5,7 @@ import { useProjects } from "../../context/ProjectContext";
 import { useQueueContext } from "../../context/QueueContext";
 import QueueForm from "./QueueForm";
 import ProjectDrawings from "../drawings/ProjectDrawings";
+import ProjectTimeline, { type TimelineClause } from "../timeline/ProjectTimeline";
 import TableOfQueue from "./TableOfQueue";
 import Chart from "./Chart";
 import PieChart from "./PieChart";
@@ -21,7 +22,7 @@ type Priority = "High" | "Medium" | "Low";
 export default function Dashboard() {
   const params = useParams();
   const id = Array.isArray(params.id) ? params.id[0] : (params.id ?? "");
-  const [testCases, setTestCases] = useState<{ id: number; title: string; expectedResult?: string }[]>([]);
+  const [testCases, setTestCases] = useState<(TimelineClause & { expectedResult?: string })[]>([]);
   const { projects } = useProjects();
   const { addQueue, removeQueue, updateQueue, updatePriorityQueue } = useQueueContext();
   const queryClient = useQueryClient();
@@ -205,6 +206,11 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen px-4 md:px-8 lg:px-12 py-8 space-y-8">
       <DashboardHeader project={project} id={project.id} members={members} />
+      <ProjectTimeline
+        projectId={project.id}
+        clauses={testCases}
+        canEdit={project.role === 'owner' || project.role === 'member'}
+      />
       <KpiSection queue={projectQueue} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
