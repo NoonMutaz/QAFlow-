@@ -1,4 +1,4 @@
-export type BugStatus = 'notFixed' | 'in-progress' | 'fixed';
+export type BugStatus = 'notFixed' | 'in-progress' | 'pendingReview' | 'fixed';
 export type BugPriority = 'High' | 'Medium' | 'Low';
 
 export interface BugComment {
@@ -33,6 +33,10 @@ export interface AssignedBug {
   url?: string;
   note?: string;
   attachmentUrl?: string;
+  /** photo of the fix uploaded by the assignee */
+  resolutionEvidenceUrl?: string;
+  /** owner's reason when a fix was rejected */
+  reviewComment?: string;
   testCase?: TestCaseRef;
   comments: BugComment[];
 }
@@ -78,6 +82,10 @@ export interface RawAssignedBug {
   Note?: string;
   attachmentUrl?: string;
   AttachmentUrl?: string;
+  resolutionEvidenceUrl?: string;
+  ResolutionEvidenceUrl?: string;
+  reviewComment?: string;
+  ReviewComment?: string;
   testCaseId?: number;
   TestCaseId?: number;
   testCase?: { title?: string };

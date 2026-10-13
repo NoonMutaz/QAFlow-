@@ -11,6 +11,7 @@ interface BugDetailModalProps {
   onClose: () => void;
   onStatusChange: (bug: AssignedBug, status: BugStatus) => void;
   onAddComment: (bug: AssignedBug, text: string, imageUrl?: string) => Promise<void> | void;
+  onResolve: (bug: AssignedBug) => void;
 }
 
 function isVideoAttachment(url: string): boolean {
@@ -23,7 +24,7 @@ function resolveAttachmentUrl(url: string): string {
   return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
 }
 
-export default function BugDetailModal({ bug, isUpdating, onClose, onStatusChange, onAddComment }: BugDetailModalProps) {
+export default function BugDetailModal({ bug, isUpdating, onClose, onStatusChange, onAddComment, onResolve }: BugDetailModalProps) {
   const resolvedAttachmentUrl = bug.attachmentUrl ? resolveAttachmentUrl(bug.attachmentUrl) : null;
   const isVideo = bug.attachmentUrl ? isVideoAttachment(bug.attachmentUrl) : false;
 
@@ -50,6 +51,15 @@ export default function BugDetailModal({ bug, isUpdating, onClose, onStatusChang
               onChange={(status) => onStatusChange(bug, status)}
             />
             {isUpdating && <span className="text-[11px] text-emerald-400 animate-pulse ml-1">Saving...</span>}
+            {(bug.status === 'notFixed' || bug.status === 'in-progress') && (
+              <button
+                type="button"
+                onClick={() => onResolve(bug)}
+                className="rounded-md bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-emerald-500"
+              >
+                Mark resolved
+              </button>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -61,6 +71,24 @@ export default function BugDetailModal({ bug, isUpdating, onClose, onStatusChang
 
         {/* Scrollable Body */}
         <div className="overflow-y-auto p-6 space-y-6 text-sm">
+          {bug.status === 'notFixed' && bug.reviewComment && (
+            <div className="rounded-xl border border-red-900/50 bg-red-950/30 p-3 text-xs text-red-200">
+              <span className="font-bold">Fix rejected by the owner:</span> {bug.reviewComment}
+            </div>
+          )}
+          {bug.resolutionEvidenceUrl && bug.status === 'pendingReview' && (
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-amber-400 mb-1.5">
+                Fix evidence · waiting for approval
+              </p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={resolveAttachmentUrl(bug.resolutionEvidenceUrl)}
+                alt="Fix evidence"
+                className="w-full max-h-64 rounded-xl border border-slate-800 bg-slate-950 object-contain"
+              />
+            </div>
+          )}
           {/* Reporter & Dates Row */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {[

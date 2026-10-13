@@ -8,12 +8,14 @@ import SkeletonRow from './SkeletonRow';
 import BugRow from './BugRow';
 import BugDetailModal from './BugDetailModal';
 import { CheckCircleIcon } from './Icons';
+import ResolveDialog from './ResolveDialog';
 
 export default function Assigned() {
   const { myAssignedBugs, loadingMyBugs, fetchMyAssignedBugs, updateQueue } = useQueueContext();
 
   const [selectedBugId, setSelectedBugId] = useState<number | null>(null);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [resolvingBug, setResolvingBug] = useState<AssignedBug | null>(null);
 
   useEffect(() => {
     fetchMyAssignedBugs();
@@ -49,6 +51,19 @@ const allBugs = useMemo<AssignedBug[]>(
     } finally {
       setUpdatingId(null);
     }
+  };
+
+  /** Uploads the fix photo; the bug becomes "pendingReview" until the owner approves it. */
+  const handleResolve = async (bug: AssignedBug, photo: File) => {
+    const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2] ?? localStorage.getItem('token');
+    const body = new FormData();
+    body.append('file', photo);
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${bug.projectId}/bugs/${bug.id}/resolve`,
+      { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body },
+    );
+    if (!res.ok) throw new Error((await res.text().catch(() => '')) || `Upload failed (${res.status})`);
+    await fetchMyAssignedBugs();
   };
 
   const handleAddComment = async (bug: AssignedBug, text: string) => {
@@ -108,6 +123,7 @@ const allBugs = useMemo<AssignedBug[]>(
                   isUpdating={updatingId === bug.id}
                   onStatusChange={handleStatusChange}
                   onView={(viewedBug) => setSelectedBugId(viewedBug.id)}
+                  onResolve={setResolvingBug}
                 />
               ))}
             </ul>
@@ -123,7 +139,12 @@ const allBugs = useMemo<AssignedBug[]>(
           onClose={() => setSelectedBugId(null)}
           onStatusChange={handleStatusChange}
           onAddComment={handleAddComment}
+          onResolve={setResolvingBug}
         />
+      )}
+
+      {resolvingBug && (
+        <ResolveDialog bug={resolvingBug} onClose={() => setResolvingBug(null)} onSubmit={handleResolve} />
       )}
     </div>
   );

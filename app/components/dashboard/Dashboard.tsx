@@ -14,7 +14,7 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { useParams } from "next/navigation";
 
-type Status = "notFixed" | "in-progress" | "fixed";
+type Status = "notFixed" | "in-progress" | "pendingReview" | "fixed";
 type Priority = "High" | "Medium" | "Low";
 
 export default function Dashboard() {

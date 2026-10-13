@@ -5,6 +5,7 @@ import { useState, useEffect } from "react"
 import { useAuth } from "../../hooks/useAuth"
 import { useAuthContext } from "../../context/AuthContext"
 import { useQueueContext } from "../../context/QueueContext"
+import { usePendingReviews } from "../../hooks/usePendingReviews"
 import Image from "next/image";
 
 interface HeaderProps {
@@ -20,6 +21,9 @@ const navLinks = [
   { href: "/account", label: "Profile" },
   { href: "/my-notifications", label: "Assigned Audits", isNotification: true },
 ]
+
+/** Shown to owners only while fixes are waiting for their approval (or while on the page). */
+const approvalsLink = { href: "/approvals", label: "Approvals", isApprovals: true }
 
 /** Shield + check mark: compliance verified before closure. */
 function BrandMark() {
@@ -61,6 +65,7 @@ export default function Header({ searchTerm, setSearchTerm }: HeaderProps) {
   const { user, isReady } = useAuthContext()
   const { signOut } = useAuth()
   const { myAssignedBugs, fetchMyAssignedBugs } = useQueueContext()
+  const { reviews } = usePendingReviews()
 
   // Re-fetch assigned items on user change
   useEffect(() => {
@@ -81,9 +86,17 @@ export default function Header({ searchTerm, setSearchTerm }: HeaderProps) {
 
   // Count active non-compliance / assigned audit tasks
   const openBugsCount = !hasSeenNotifications
-    ? myAssignedBugs.filter((bug) => (bug.status ?? (bug as any).Status) !== 'fixed').length
+    ? myAssignedBugs.filter((bug) => !['fixed', 'pendingReview'].includes(bug.status ?? (bug as any).Status)).length
     : 0
   const badgeText = openBugsCount > 9 ? "9+" : String(openBugsCount)
+
+  const reviewsCount = reviews.length
+  const links: { href: string; label: string; isNotification?: boolean; isApprovals?: boolean }[] =
+    reviewsCount > 0 || pathname?.startsWith("/approvals") ? [...navLinks, approvalsLink] : navLinks
+  const badgeFor = (link: { isNotification?: boolean; isApprovals?: boolean }) =>
+    link.isApprovals
+      ? reviewsCount > 0 ? (reviewsCount > 9 ? "9+" : String(reviewsCount)) : null
+      : link.isNotification && openBugsCount > 0 ? badgeText : null
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname?.startsWith(href)
@@ -114,7 +127,7 @@ export default function Header({ searchTerm, setSearchTerm }: HeaderProps) {
               </svg>
             </button>
             <ul className="menu menu-sm dropdown-content mt-3 p-3 shadow-2xl bg-slate-900 border border-slate-800 rounded-xl w-64 gap-1 text-slate-200">
-              {navLinks.map((link) => (
+              {links.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
@@ -128,9 +141,9 @@ export default function Header({ searchTerm, setSearchTerm }: HeaderProps) {
                     }}
                   >
                     <span>{link.label}</span>
-                    {link.isNotification && openBugsCount > 0 && (
-                      <span className="badge badge-sm bg-emerald-500 text-slate-950 font-bold border-none">
-                        {badgeText}
+                    {badgeFor(link) && (
+                      <span className={`badge badge-sm font-bold border-none ${link.isApprovals ? "bg-amber-400" : "bg-emerald-500"} text-slate-950`}>
+                        {badgeFor(link)}
                       </span>
                     )}
                   </Link>
@@ -145,7 +158,7 @@ export default function Header({ searchTerm, setSearchTerm }: HeaderProps) {
         {/* Center: Desktop navigation */}
         <nav className="navbar-center hidden md:flex items-center" aria-label="Main">
           <ul className="menu menu-horizontal px-1 text-sm font-medium gap-1">
-            {navLinks.map((link) => {
+            {links.map((link) => {
               const active = isActive(link.href)
               return (
                 <li key={link.href}>
@@ -160,9 +173,9 @@ export default function Header({ searchTerm, setSearchTerm }: HeaderProps) {
                     }`}
                   >
                     <span>{link.label}</span>
-                    {link.isNotification && openBugsCount > 0 && (
-                      <span className="bg-emerald-500 text-slate-950 text-[10px] font-black px-1.5 rounded-full min-w-[18px] h-4 flex items-center justify-center shadow-sm">
-                        {badgeText}
+                    {badgeFor(link) && (
+                      <span className={`${link.isApprovals ? "bg-amber-400" : "bg-emerald-500"} text-slate-950 text-[10px] font-black px-1.5 rounded-full min-w-[18px] h-4 flex items-center justify-center shadow-sm`}>
+                        {badgeFor(link)}
                       </span>
                     )}
                     {active && (

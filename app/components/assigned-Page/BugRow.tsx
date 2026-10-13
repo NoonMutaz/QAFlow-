@@ -9,9 +9,10 @@ interface BugRowProps {
   isUpdating: boolean;
   onStatusChange: (bug: AssignedBug, status: BugStatus) => void;
   onView: (bug: AssignedBug) => void;
+  onResolve: (bug: AssignedBug) => void;
 }
 
-export default function BugRow({ bug, isUpdating, onStatusChange, onView }: BugRowProps) {
+export default function BugRow({ bug, isUpdating, onStatusChange, onView, onResolve }: BugRowProps) {
   const rowHighlight = bug.priority === 'High' ? 'border-l-4 border-l-red-500' : '';
 
   return (
@@ -33,6 +34,14 @@ export default function BugRow({ bug, isUpdating, onStatusChange, onView }: BugR
         <p className="truncate font-medium text-slate-900 text-sm sm:text-base">
           {bug.description || 'No description provided'}
         </p>
+        {bug.status === 'notFixed' && bug.reviewComment && (
+          <p className="rounded-md bg-red-50 px-2 py-1 text-[11px] text-red-700">
+            <span className="font-semibold">Fix rejected:</span> {bug.reviewComment}
+          </p>
+        )}
+        {bug.status === 'pendingReview' && (
+          <p className="text-[11px] text-amber-700">Fix submitted. Waiting for the owner&apos;s approval.</p>
+        )}
 
         <div className="flex flex-col gap-0.5 text-[11px] text-slate-400">
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -54,7 +63,16 @@ export default function BugRow({ bug, isUpdating, onStatusChange, onView }: BugR
         </div>
       </div>
 
-      <div className="col-span-3 flex items-center justify-end gap-2">
+      <div className="col-span-3 flex flex-wrap items-center justify-end gap-2">
+        {(bug.status === 'notFixed' || bug.status === 'in-progress') && (
+          <button
+            type="button"
+            onClick={() => onResolve(bug)}
+            className="flex items-center justify-center rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-emerald-700"
+          >
+            Mark resolved
+          </button>
+        )}
         <button
           type="button"
           onClick={() => onView(bug)}

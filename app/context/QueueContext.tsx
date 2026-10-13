@@ -3,7 +3,8 @@ import { createContext, useContext, useState, ReactNode, useCallback } from 'rea
 import Fuse from 'fuse.js';
 
 //  TYPES AND INTERFACES
-export type Status = 'notFixed' | 'in-progress' | 'fixed';
+/** pendingReview: the assignee uploaded proof of the fix and the owner has not approved it yet */
+export type Status = 'notFixed' | 'in-progress' | 'pendingReview' | 'fixed';
 export type Priority = 'High' | 'Medium' | 'Low';
 
 export interface Customer {
