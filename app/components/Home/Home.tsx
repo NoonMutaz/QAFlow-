@@ -3,7 +3,7 @@
 import React from "react";
 
 import HomeHero from "./Home-hero";
-import HomeCard from "./Home-cards";
+import { Audiences, Challenge, FactsStrip, FinalCta, Trust } from "./HomeStory";
 import CardsHeader from "./Cards-header";
 import AiCapabilities from "./AiCapabilities";
 
@@ -13,14 +13,26 @@ export default function Home() {
       {/* Hero: what Imtithal does, with a preview of the AI suggestion */}
       <HomeHero />
 
+      {/* Key facts about the product */}
+      <FactsStrip />
+
+      {/* Why Imtithal: the problems on site today */}
+      <Challenge />
+
       {/* Imtithal AI: what the AI does */}
       <AiCapabilities />
 
       {/* How it works: photo -> finding -> SBC clause -> verified closure */}
       <CardsHeader />
 
-      {/* Quick actions into the app */}
-      <HomeCard />
+      {/* Who it's for */}
+      <Audiences />
+
+      {/* Why the AI can be trusted */}
+      <Trust />
+
+      {/* Closing call to action */}
+      <FinalCta />
     </div>
   );
 }

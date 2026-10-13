@@ -202,7 +202,7 @@ export default function SbcLibrary() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t("SBC Library")}</h1>
             <p className="mt-1 max-w-2xl text-sm text-slate-500">
-              {t("Verified Saudi Building Code clauses. The AI suggests clauses only from this library and each project's own clauses; it never invents a code or section number.")}
+              {t("Verified Saudi Building Code clauses. The AI suggests from this library and each project's own clauses first; a clause it proposes itself is clearly marked as not verified.")}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">

@@ -217,8 +217,6 @@ export const ar: Record<string, string> = {
   'No photo': 'لا توجد صورة',
 
   // ── SBC library ──
-  'Verified Saudi Building Code clauses. The AI suggests clauses only from this library and each project\'s own clauses; it never invents a code or section number.':
-    'بنود موثّقة من كود البناء السعودي. يقترح الذكاء الاصطناعي البنود من هذه المكتبة ومن بنود كل مشروع فقط، ولا يخترع رقم كود أو مادة.',
   'Download template': 'تحميل القالب',
   'Import Excel / CSV': 'استيراد Excel / CSV',
   '+ Add clause': '+ إضافة بند',
@@ -302,15 +300,111 @@ export const ar: Record<string, string> = {
   // ── Imtithal AI identity ──
   'Imtithal AI': 'ذكاء امتثال',
   'An inspection assistant that understands the code': 'مساعد تفتيش يفهم الكود',
-  'The AI suggests, the engineer decides. Every suggestion is labelled, explained, and linked to a verified source.':
-    'الذكاء الاصطناعي يقترح، والمهندس يقرّر. كل اقتراح موسوم ومشروح ومرتبط بمصدر موثّق.',
   'Reads site photos': 'يقرأ صور الموقع',
   'Describes the violation it sees in a site photo and writes the finding, ready for the engineer to review.':
     'يصف المخالفة التي يراها في صورة الموقع ويكتب الملاحظة، جاهزة لمراجعة المهندس.',
   'Matches the right SBC clause': 'يربط ببند الكود الصحيح',
-  'Picks the clause from engineer-verified SBC clauses, and names the governing code from the official 28 codes.':
-    'يختار البند من بنود الكود الموثّقة هندسيًا، ويحدد الكود الحاكم من الأكواد الرسمية الـ 28.',
   'Spots duplicates': 'يكتشف التكرار',
   'Flags findings that were already reported, so the same issue is not logged twice.':
     'ينبّه للملاحظات المسجلة سابقًا، حتى لا تُسجَّل المخالفة نفسها مرتين.',
+
+  // ── home story ──
+  "Picks the matching clause from engineer-verified SBC clauses and the project's own clauses, and fills in the required standard.":
+    "يختار البند المطابق من بنود الكود الموثّقة هندسيًا ومن بنود المشروع، ويعبّئ المتطلب تلقائيًا.",
+  "The AI suggests, the engineer decides. Every suggestion is labelled, explained, and confirmed by an engineer.":
+    "الذكاء الاصطناعي يقترح، والمهندس يقرّر. كل اقتراح موسوم ومشروح ويؤكده مهندس.",
+  "Verified Saudi Building Code clauses. The AI suggests from this library and each project's own clauses first; a clause it proposes itself is clearly marked as not verified.":
+    "بنود موثّقة من كود البناء السعودي. يقترح الذكاء الاصطناعي من هذه المكتبة ومن بنود المشروع أولًا، وأي بند يقترحه بنفسه يُوسم بوضوح بأنه غير موثّق.",
+  "Names the governing code":
+    "يحدد الكود الحاكم",
+  "Even when no clause matches, it identifies the right code from the official list of the 28 SBC 2024 codes.":
+    "حتى عندما لا يوجد بند مطابق، يحدد الكود الصحيح من القائمة الرسمية لأكواد منظومة 2024 الـ 28.",
+  "Arabic and English":
+    "عربي وإنجليزي",
+  "Understands findings written in either language, and writes its descriptions in the language of the interface.":
+    "يفهم الملاحظات المكتوبة بأي من اللغتين، ويكتب أوصافه بلغة الواجهة.",
+  "Explains every suggestion":
+    "يشرح كل اقتراح",
+  "Each suggestion comes with a short reason and a confidence level, so the engineer can judge it in seconds.":
+    "كل اقتراح يأتي بسبب مختصر ومستوى ثقة، ليحكم عليه المهندس في ثوانٍ.",
+  "SBC 2024 codes recognised":
+    "كودًا من منظومة كود البناء 2024",
+  "Languages: Arabic and English":
+    "لغتان: العربية والإنجليزية",
+  "Steps from site photo to verified fix":
+    "خطوات من صورة الموقع إلى الإصلاح الموثّق",
+  "Of fixes closed with photo evidence and owner approval":
+    "من الإصلاحات تُغلق بدليل مصوّر وموافقة المالك",
+  "Why Imtithal?":
+    "لماذا امتثال؟",
+  "Site inspection still runs on paper notes and memory":
+    "التفتيش الميداني ما زال يعتمد على الورق والذاكرة",
+  "Building code compliance decides whether a building is safe to use, yet the inspection work behind it is still largely manual.":
+    "الامتثال لكود البناء هو ما يحدد سلامة المبنى، ومع ذلك ما زال العمل التفتيشي خلفه يدويًا في معظمه.",
+  "Manual code lookup":
+    "بحث يدوي في الكود",
+  "For every finding, the engineer searches long code volumes for the right clause. It is slow, and the result differs from one engineer to another.":
+    "مع كل ملاحظة يبحث المهندس في مجلدات الكود الطويلة عن البند المناسب، وهذا بطيء وتختلف نتيجته من مهندس لآخر.",
+  "Scattered evidence":
+    "أدلة مبعثرة",
+  "Site photos sit in phones and chat groups, separated from the finding and from the requirement it breaks.":
+    "صور الموقع موزعة بين الجوالات ومجموعات المحادثة، منفصلة عن الملاحظة وعن المتطلب الذي تخالفه.",
+  "Duplicated findings":
+    "ملاحظات مكررة",
+  "The same issue is reported more than once by different people, which inflates reports and wastes follow-up time.":
+    "تُسجَّل المخالفة نفسها أكثر من مرة من أشخاص مختلفين، فتتضخم التقارير ويضيع وقت المتابعة.",
+  "Closed without proof":
+    "إغلاق بلا دليل",
+  "A finding is marked as fixed by changing its status, with no evidence of the fix and no one verifying it.":
+    "تُغلق الملاحظة بمجرد تغيير حالتها، دون دليل على الإصلاح ودون أن يتحقق منه أحد.",
+  "Imtithal turns each finding into one record: the photo, the description, the exact SBC clause, the person responsible and the proof of the fix.":
+    "امتثال يحوّل كل ملاحظة إلى سجل واحد: الصورة، والوصف، وبند الكود بدقة، والمسؤول، ودليل الإصلاح.",
+  "Who it's for":
+    "لمن امتثال؟",
+  "One platform for everyone on site":
+    "منصة واحدة لكل من في الموقع",
+  "Site engineers and inspectors":
+    "مهندسو المواقع والمفتشون",
+  "Log a finding from a photo in seconds, already linked to the right clause, in Arabic or English.":
+    "سجّل الملاحظة من صورة في ثوانٍ، مرتبطة بالبند الصحيح، بالعربي أو الإنجليزي.",
+  "Engineering offices and consultants":
+    "المكاتب الهندسية والاستشاريون",
+  "One verified clause library for all projects, and consistent, traceable inspection records.":
+    "مكتبة بنود موثّقة واحدة لكل المشاريع، وسجلات تفتيش موحدة يمكن تتبعها.",
+  "Contractors":
+    "المقاولون",
+  "A clear requirement for every finding, and a simple way to submit a photo of the fix.":
+    "متطلب واضح لكل ملاحظة، وطريقة سهلة لإرسال صورة الإصلاح.",
+  "Project owners":
+    "ملاك المشاريع",
+  "Approve fixes by comparing before and after photos, and follow compliance progress on the dashboard.":
+    "اعتمد الإصلاحات بمقارنة صور قبل وبعد، وتابع تقدم الامتثال في لوحة المتابعة.",
+  "Trust":
+    "الثقة",
+  "AI you can trust on a construction site":
+    "ذكاء اصطناعي يمكن الوثوق به في موقع البناء",
+  "In building safety, a wrong reference is costly. Imtithal is designed so that people stay accountable and every decision has evidence.":
+    "في سلامة المباني، المرجع الخاطئ مكلف. لذلك صُمّم امتثال ليبقى الإنسان مسؤولًا ولكل قرار دليل.",
+  "The engineer decides":
+    "المهندس صاحب القرار",
+  "The AI only suggests. Every suggestion is labelled, explained with a reason and a confidence level, and confirmed by an engineer.":
+    "الذكاء الاصطناعي يقترح فقط. كل اقتراح موسوم ومشروح بسبب ومستوى ثقة، ويؤكده مهندس.",
+  "Verified sources":
+    "مصادر موثّقة",
+  "Clauses come from a library checked by engineers, with their name and the date. When the AI proposes a clause itself, it is clearly marked as not verified.":
+    "البنود من مكتبة راجعها مهندسون، باسم المراجع والتاريخ. وأي بند يقترحه الذكاء الاصطناعي بنفسه يُوسم بوضوح بأنه غير موثّق.",
+  "Proof before closure":
+    "دليل قبل الإغلاق",
+  "A finding is closed only after a photo of the fix is uploaded and the project owner approves it.":
+    "لا تُغلق الملاحظة إلا بعد رفع صورة الإصلاح وموافقة مالك المشروع.",
+  "Clear roles":
+    "صلاحيات واضحة",
+  "Owners, members and viewers each see and do only what their role allows.":
+    "المالك والعضو والمشاهد، كلٌّ يرى ويعمل حسب صلاحياته فقط.",
+  "Make your next inspection smarter":
+    "اجعل تفتيشك القادم أذكى",
+  "Start with one project and one team, and see how much faster findings move from the site to a verified fix.":
+    "ابدأ بمشروع واحد وفريق واحد، ولاحظ كم تصبح الملاحظات أسرع من الموقع إلى الإصلاح الموثّق.",
+  "Browse the SBC Library":
+    "تصفح مكتبة الكود",
 };
