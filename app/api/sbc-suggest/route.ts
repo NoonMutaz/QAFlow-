@@ -236,8 +236,8 @@
 //   }
 // }
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
 import { buildClauseIndex, rankClauses } from "./clauseMatcher";
+import { apiBase, authProblem, completeWithFallback, fetchProjectDocuments, parseJsonReply, tokenFrom } from "../_lib/server";
 import { libraryClauseTitle, type LibraryClause } from "./libraryClause";
 import { SBC_CODES, findSbcCode, type SbcCode } from "../../data/sbcCodes";
 
@@ -264,6 +264,8 @@ type SuggestBody = {
   image?: string;
   /** interface language; the AI writes its text in it */
   lang: "en" | "ar";
+  /** project whose drawings the AI compares the finding with */
+  projectId?: string;
 };
 
 /** Either a clause already in the project (testCaseId) or one from the library (libraryClause). */
@@ -286,6 +288,8 @@ export type SbcSuggestionResponse = {
   relevantCode?: SbcCode | null;
   /** only when no verified clause matched: a clause the AI proposes from its own knowledge (unverified) */
   newClause?: NewClause | null;
+  /** how the finding relates to the project drawings, when the drawings say something about it */
+  drawingNote?: string;
 };
 
 /** An AI-proposed clause. Its code is from the official list; the section and text are not verified. */
@@ -296,37 +300,6 @@ export type NewClause = {
   standard: string;
   reason: string;
 };
-
-const apiBase = () => process.env.API_URL_INTERNAL ?? process.env.NEXT_PUBLIC_API_URL;
-
-function tokenFrom(req: NextRequest): string | undefined {
-  const header = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
-  return header && header !== "null" ? header : req.cookies.get("token")?.value;
-}
-
-/**
- * The endpoint spends your AI key, so only signed-in users may call it.
- * Returns null when the user is signed in, otherwise why not (shown in the form).
- */
-async function authProblem(token: string | undefined): Promise<string | null> {
-  // API_URL_INTERNAL lets the server skip the HTTPS dev cert locally (Node does not trust it)
-  const api = apiBase();
-  if (!api) return "NEXT_PUBLIC_API_URL is not set on the server";
-  if (!token) return "no login token was sent (log in again)";
-  try {
-    const res = await fetch(`${api}/api/bugs/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
-    if (res.ok) return null;
-    console.error(`sbc-suggest auth: ${api}/api/bugs/me returned ${res.status}`);
-    return `the .NET API rejected the login token (${res.status}), log in again`;
-  } catch (err) {
-    const cause = (err as { cause?: { code?: string; message?: string } })?.cause;
-    console.error("sbc-suggest auth: could not reach the .NET API:", err);
-    return `the Next.js server could not reach the .NET API at ${api} (${cause?.code ?? cause?.message ?? String(err)})`;
-  }
-}
 
 /** Verified clauses from the shared library; empty when the library is empty or unreachable. */
 async function fetchLibrary(token: string): Promise<LibraryClause[]> {
@@ -361,6 +334,7 @@ function sanitizeBody(raw: unknown): SuggestBody {
     siteLocation: text(b.siteLocation, 200),
     clauses,
     lang: (b as { lang?: unknown }).lang === "ar" ? "ar" : "en",
+    projectId: /^\d+$/.test(String((b as { projectId?: unknown }).projectId ?? "")) ? String((b as { projectId?: unknown }).projectId) : undefined,
     image:
       typeof b.image === "string" &&
       b.image.length <= 6_000_000 &&
@@ -424,43 +398,11 @@ function keywordMatches(body: SuggestBody, candidates: Candidate[]): ClauseMatch
   });
 }
 
-/**
- * AI provider. Google Gemini (free tier) when AI_API_KEY is set, otherwise OpenAI.
- * Gemini speaks the OpenAI request format, so the same SDK works for both.
- * AI_MODEL can list several comma-separated models; the next one is tried when one is busy.
- */
-function aiProvider(): { client: OpenAI; models: string[] } | null {
-  const gemini = process.env.AI_API_KEY;
-  const openai = process.env.OPENAI_API_KEY;
-  if (!gemini && !openai) return null;
-  const custom = process.env.AI_MODEL?.split(",").map((m) => m.trim()).filter(Boolean);
-  return gemini
-    ? {
-        client: new OpenAI({
-          apiKey: gemini,
-          baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
-          maxRetries: 0,
-        }),
-        models: custom?.length ? custom : ["gemini-3.1-flash-lite", "gemini-flash-lite-latest"],
-      }
-    : {
-        client: new OpenAI({ apiKey: openai }),
-        models: custom?.length ? custom : [process.env.OPENAI_MODEL ?? "gpt-4o-mini"],
-      };
-}
-
-/** Models sometimes wrap JSON in ```json fences or return a bare array. */
-function parseJsonReply(raw: string): Record<string, unknown> {
-  const parsed = JSON.parse(raw.replace(/^\s*```(?:json)?\s*|\s*```\s*$/g, ""));
-  return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
-}
-
 async function aiMatches(
   body: SuggestBody,
   candidates: Candidate[],
-): Promise<{ matches: ClauseMatch[]; finding: string; details: string; relevantCode: SbcCode | null; newClause: NewClause | null }> {
-  const provider = aiProvider();
-  if (!provider) throw new Error("no AI key configured");
+  drawings: string,
+): Promise<{ matches: ClauseMatch[]; finding: string; details: string; relevantCode: SbcCode | null; newClause: NewClause | null; drawingNote: string }> {
   const list =
     candidates.map((c) => `- ${c.key}: ${c.title}${c.text ? ` | requirement: ${c.text}` : ""}`).join("\n") ||
     "(no clauses available)";
@@ -474,10 +416,13 @@ Then use the photo together with any text to choose clauses from the list below.
 
 `
     : "";
-  const userText = `${buildFindingText(body) || "(no text yet, use the photo)"}\n\nVerified SBC clause list:\n${list}`;
+  const userText = `${buildFindingText(body) || "(no text yet, use the photo)"}\n\nVerified SBC clause list:\n${list}${
+    drawings ? `\n\nProject drawings (design summary written when the drawings were uploaded):\n${drawings}` : ""
+  }`;
 
-  const request = (model: string) =>
-    provider.client.chat.completions.create({
+  const completion = await completeWithFallback(
+    (client, model) =>
+      client.chat.completions.create({
       model,
       temperature: 0,
       response_format: { type: "json_object" },
@@ -494,10 +439,11 @@ ${SBC_CODES.map((c) => `${c.code}: ${c.nameEn}`).join("\n")}
    - "title": the relevantCode, then a section number ONLY if you are sure of it, then a short name, e.g. "SBC 801 – Section 906.1 Portable fire extinguishers" or "SBC 801 – Portable fire extinguishers".
    - "standard": the requirement, concise and inspection-ready, without exact figures you are unsure of.
    - "reason": one short sentence.
-The finding may be in Arabic or English; write "reason" (one short sentence) in ${body.lang === "ar" ? "Arabic" : "English"}.
+"drawingNote": only if project drawings are given and they say something about this finding, one or two sentences comparing the site with the design (e.g. the drawing shows the exit door opening outward but on site it opens inward); otherwise "".
+The finding may be in Arabic or English; write "reason" and "drawingNote" in ${body.lang === "ar" ? "Arabic" : "English"}.
 
 Respond with JSON only:
-{${body.image ? `"finding": string, "details": string, ` : ""}"matches": [{"key": string, "reason": string, "confidence": "high"|"medium"}], "relevantCode": string | null, "newClause": {"title": string, "standard": string, "reason": string} | null}`,
+{${body.image ? `"finding": string, "details": string, ` : ""}"matches": [{"key": string, "reason": string, "confidence": "high"|"medium"}], "relevantCode": string | null, "newClause": {"title": string, "standard": string, "reason": string} | null, "drawingNote": string}`,
         },
         {
           role: "user",
@@ -509,22 +455,9 @@ Respond with JSON only:
             : userText,
         },
       ],
-    });
-
-  let completion: Awaited<ReturnType<typeof request>> | null = null;
-  let lastError: unknown;
-  for (const model of provider.models) {
-    try {
-      completion = await request(model);
-      break;
-    } catch (err) {
-      lastError = err;
-      const status = (err as { status?: number }).status;
-      console.error(`sbc-suggest: model ${model} failed (${status ?? "network"}), trying next`);
-      if (status !== 404 && status !== 429 && status !== 500 && status !== 503) break;
-    }
-  }
-  if (!completion) throw lastError;
+    }),
+    "sbc-suggest",
+  );
 
   const parsed = parseJsonReply(completion.choices[0]?.message?.content ?? "{}") as {
     matches?: { key?: unknown; reason?: unknown; confidence?: unknown }[];
@@ -532,6 +465,7 @@ Respond with JSON only:
     details?: unknown;
     relevantCode?: unknown;
     newClause?: { title?: unknown; standard?: unknown; reason?: unknown } | null;
+    drawingNote?: unknown;
   };
   const byKey = new Map(candidates.map((c) => [c.key, c]));
   const matches: ClauseMatch[] = (Array.isArray(parsed.matches) ? parsed.matches : [])
@@ -559,7 +493,9 @@ Respond with JSON only:
       ? { title, standard, reason: typeof nc?.reason === "string" ? nc.reason.trim() : "" }
       : null;
 
-  return { matches, finding, details, relevantCode, newClause };
+  const drawingNote = drawings && typeof parsed.drawingNote === "string" ? parsed.drawingNote.trim().slice(0, 600) : "";
+
+  return { matches, finding, details, relevantCode, newClause, drawingNote };
 }
 
 export async function POST(req: NextRequest) {
@@ -575,16 +511,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ matches: [], source: "none" } satisfies SbcSuggestionResponse);
     }
 
-    const candidates = buildCandidates(body, await fetchLibrary(token));
+    const [library, documents] = await Promise.all([
+      fetchLibrary(token),
+      body.projectId ? fetchProjectDocuments(token, body.projectId) : Promise.resolve([]),
+    ]);
+    const candidates = buildCandidates(body, library);
+    const drawings = documents
+      .filter((d) => d.aiSummary)
+      .map((d) => `[${d.fileName}]\n${d.aiSummary}`)
+      .join("\n\n")
+      .slice(0, 12000);
 
     let aiUnavailable = !process.env.AI_API_KEY && !process.env.OPENAI_API_KEY;
     if (!aiUnavailable) {
       try {
-        const { matches, finding, details, relevantCode, newClause } = await aiMatches(body, candidates);
+        const { matches, finding, details, relevantCode, newClause, drawingNote } = await aiMatches(body, candidates, drawings);
         return NextResponse.json({
           matches,
           relevantCode,
           newClause,
+          ...(drawingNote ? { drawingNote } : {}),
           source: "openai",
           ...(body.image ? { finding, details } : {}),
         } satisfies SbcSuggestionResponse);

@@ -3,6 +3,8 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useProjects } from "../../context/ProjectContext";
+import ProjectDrawings, { DRAWING_ACCEPT } from "../drawings/ProjectDrawings";
+import { AiMark } from "../ui/Ai";
 import { useLanguage } from '../../i18n/LanguageProvider';
 
 // Explicit Interface
@@ -22,6 +24,9 @@ export default function CreateProject() {
   const [projectType, setProjectType] = useState("QA Dashboard");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // drawings picked before the project exists; uploaded and read by the AI right after creation
+  const [drawingFiles, setDrawingFiles] = useState<File[]>([]);
+  const [createdProject, setCreatedProject] = useState<{ id: number; name?: string } | null>(null);
   // Now using the interface instead of 'any'
   const [errors, setErrors] = useState<FormErrors>({});
 
@@ -123,7 +128,11 @@ export default function CreateProject() {
       if (!res.ok) throw new Error(data?.message || "Failed to create project");
 
       addProject(data);
-      router.push("/my-projects");
+      if (drawingFiles.length > 0 && data?.id) {
+        setCreatedProject(data); // step 2: upload the drawings and let the AI read them
+      } else {
+        router.push("/my-projects");
+      }
     } catch (err: unknown) {
       // handle errors in TS
       const message = err instanceof Error ? err.message : "An unexpected error occurred";
@@ -266,6 +275,37 @@ export default function CreateProject() {
   const handleCancel = () => {
     router.push("/my-projects");
   };
+
+  if (createdProject) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-brand-50 to-gold-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-2xl rounded-3xl border border-gray-100 bg-white/90 p-8 shadow-2xl backdrop-blur-xl md:p-10">
+          <div className="mb-6 text-center">
+            <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-2xl text-emerald-600">✓</div>
+            <h1 className="text-2xl font-bold text-gray-900">{t("Project created")}</h1>
+            <p className="mt-1 text-sm text-gray-600">{t("Now the AI is reading your drawings. You can wait here or open the project.")}</p>
+          </div>
+          <ProjectDrawings projectId={createdProject.id} pendingFiles={drawingFiles} />
+          <div className="mt-8 flex gap-3">
+            <button
+              type="button"
+              onClick={() => router.push("/my-projects")}
+              className="flex-1 rounded-xl border border-gray-300 px-6 py-3 font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              {t("My projects")}
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push(`/dashboard/${createdProject.id}`)}
+              className="flex-1 rounded-xl bg-gradient-to-r from-brand-800 to-brand-600 px-6 py-3 font-semibold text-white hover:shadow-lg"
+            >
+              {t("Open project")}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-brand-50 to-gold-50 flex items-center justify-center p-4 relative overflow-hidden">
@@ -428,6 +468,49 @@ export default function CreateProject() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Drawings (optional): the AI reads them and compares findings with the design */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <span className="flex items-center gap-2">
+                  <AiMark className="w-4 h-4 text-brand-600" />
+                  {t("Project drawings")}
+                  <span className="font-normal text-gray-400">({t("optional")})</span>
+                </span>
+              </label>
+              <label className="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/60 px-4 py-5 text-center transition hover:border-brand-400 hover:bg-brand-50/40">
+                <span className="text-sm font-medium text-gray-700">{t("Upload plans and drawings")}</span>
+                <span className="text-xs text-gray-400">{t("PDF, JPG or PNG · up to 20 MB each · the AI reads them after the project is created")}</span>
+                <input
+                  type="file"
+                  multiple
+                  accept={DRAWING_ACCEPT}
+                  className="sr-only"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files ?? []);
+                    e.target.value = "";
+                    setDrawingFiles((prev) => [...prev, ...files]);
+                  }}
+                />
+              </label>
+              {drawingFiles.length > 0 && (
+                <ul className="mt-2 space-y-1">
+                  {drawingFiles.map((f, i) => (
+                    <li key={`${f.name}-${i}`} className="flex items-center justify-between rounded-lg bg-brand-50/60 px-3 py-1.5 text-xs text-gray-700">
+                      <span className="truncate">{f.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => setDrawingFiles((prev) => prev.filter((_, j) => j !== i))}
+                        className="ms-2 text-gray-400 hover:text-red-600"
+                        aria-label={t("Remove")}
+                      >
+                        ✕
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
             {/* Submit Error Block */}

@@ -32,6 +32,8 @@ type SbcSuggestion = {
   relevantCode?: SbcCode | null;
   /** only when no verified clause matched: a clause the AI proposes itself (unverified) */
   newClause?: NewClause | null;
+  /** how the finding compares with the project drawings */
+  drawingNote?: string;
 };
 
 type NewClause = {
@@ -263,6 +265,7 @@ export default function QueueForm({
           }),
         ),
         lang,
+        projectId,
         ...extra,
       }),
     });
@@ -706,6 +709,16 @@ export default function QueueForm({
         {checkingAi && (
           <AiThinking text={t("AI is matching this finding to an SBC clause…")} />
         )}
+        {!checkingAi && aiSuggestion?.drawingNote && (
+          <div className="flex gap-2.5 rounded-xl border border-gold-200 bg-gold-50 px-3.5 py-3">
+            <AiMark className="mt-0.5 h-4 w-4 shrink-0 text-gold-600" />
+            <div className="text-xs text-gray-800">
+              <p className="font-semibold text-gold-700">{t("Compared with the project drawings")}</p>
+              <p className="mt-0.5 leading-relaxed">{aiSuggestion.drawingNote}</p>
+            </div>
+          </div>
+        )}
+
         {!checkingAi && aiNotice && (
           <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">{aiNotice}</p>
         )}

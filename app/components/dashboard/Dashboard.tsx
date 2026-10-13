@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useProjects } from "../../context/ProjectContext";
 import { useQueueContext } from "../../context/QueueContext";
 import QueueForm from "./QueueForm";
+import ProjectDrawings from "../drawings/ProjectDrawings";
 import TableOfQueue from "./TableOfQueue";
 import Chart from "./Chart";
 import PieChart from "./PieChart";
@@ -214,6 +215,9 @@ export default function Dashboard() {
             </button>
             <Chart queue={projectQueue} />
             <PieChart queue={projectQueue} />
+          </div>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <ProjectDrawings projectId={project.id} canEdit={project.role === 'owner' || project.role === 'member'} />
           </div>
         </div>
 
