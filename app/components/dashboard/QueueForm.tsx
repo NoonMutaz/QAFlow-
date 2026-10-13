@@ -110,6 +110,8 @@ export default function QueueForm({
   const [analyzingPhoto, setAnalyzingPhoto] = useState(false);
   const [photoNotice, setPhotoNotice] = useState<string | null>(null);
   const photoFilledKeyRef = useRef<string | null>(null);
+  /** the "SBC Required Standard" text last filled from a clause, so a clause change can replace it */
+  const [autoStandard, setAutoStandard] = useState<string | null>(null);
 
   // ─── Smart Duplicate Check Logic ───────────────────────────────────────────
   useEffect(() => {
@@ -169,6 +171,7 @@ export default function QueueForm({
     setDismissedSuggestionKey(null);
     setPhotoNotice(null);
     photoFilledKeyRef.current = null;
+    setAutoStandard(null);
     setError('');
   }, [currentUserName]);
 
@@ -368,17 +371,26 @@ export default function QueueForm({
     }
   };
 
+  /**
+   * Links the clause and fills "SBC Required Standard" with its standard.
+   * Text the engineer typed is kept; text we filled earlier is replaced when the clause changes.
+   */
+  const applyClause = (testCaseId: string, standard: string): void => {
+    const untouched = !formData.expectedResult.trim() || formData.expectedResult === autoStandard;
+    if (untouched) setAutoStandard(standard);
+    setFormData((prev) => ({ ...prev, testCaseId, ...(untouched ? { expectedResult: standard } : {}) }));
+  };
+
+  const standardOf = (testCaseId: string): string =>
+    testCases.find((tc: { id: number }) => String(tc.id) === testCaseId)?.expectedResult ?? '';
+
   const handleSelectClause = (testCaseId: number): void => {
-    setFormData((prev) => ({ ...prev, testCaseId: String(testCaseId) }));
+    applyClause(String(testCaseId), standardOf(String(testCaseId)));
   };
 
   const handleSelectNewClause = (clause: NewClause): void => {
     setChosenNewClause(clause);
-    setFormData((prev) => ({
-      ...prev,
-      testCaseId: AI_NEW_CLAUSE,
-      expectedResult: prev.expectedResult.trim() ? prev.expectedResult : clause.standard,
-    }));
+    applyClause(AI_NEW_CLAUSE, clause.standard);
   };
 
   // the AI clause shown in the menu: the one already picked wins over a newer proposal
@@ -396,6 +408,10 @@ export default function QueueForm({
     if (e.target.name === 'name') return;
     if (e.target.name === 'testCaseId' && e.target.value === AI_NEW_CLAUSE && menuNewClause) {
       handleSelectNewClause(menuNewClause);
+      return;
+    }
+    if (e.target.name === 'testCaseId') {
+      applyClause(e.target.value, standardOf(e.target.value));
       return;
     }
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -531,9 +547,13 @@ export default function QueueForm({
             value={formData.expectedResult}
             onChange={handleChange}
             rows={2}
+            placeholder="Filled from the selected SBC clause, or type it"
             className="w-full mt-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
             disabled={uploading}
           />
+          {formData.expectedResult && formData.expectedResult === autoStandard && (
+            <p className="text-[11px] text-gray-500 mt-1">From the selected SBC clause. You can edit it.</p>
+          )}
         </div>
 
         <div>
