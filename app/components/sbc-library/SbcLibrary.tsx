@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { useAuthContext } from '../../context/AuthContext';
 import type { LibraryClause } from '../../api/sbc-suggest/libraryClause';
+import { SBC_CODES, SBC_EDITION, findSbcCode } from '../../data/sbcCodes';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -13,7 +14,7 @@ type ClauseInput = Record<(typeof COLUMNS)[number], string>;
 
 const EMPTY: ClauseInput = {
   CodeType: 'SBC 201',
-  CodeVersion: '2024',
+  CodeVersion: SBC_EDITION,
   SectionNumber: '',
   Title: '',
   RequirementText: '',
@@ -51,6 +52,7 @@ function rowToClause(row: Record<string, unknown>): ClauseInput {
       COLUMNS.find((c) => c.toLowerCase() === key.replace(/\s+/g, '').toLowerCase()) ?? HEADER_ALIASES[key];
     if (column) out[column] = String(value ?? '').trim();
   }
+  out.CodeType = findSbcCode(out.CodeType)?.code ?? out.CodeType;
   return out;
 }
 
@@ -289,6 +291,9 @@ export default function SbcLibrary() {
                         {c.codeType} §{c.sectionNumber}
                       </span>
                       {c.codeVersion && <span className="text-[11px] text-slate-500">{c.codeVersion} edition</span>}
+                      {findSbcCode(c.codeType) && (
+                        <span className="text-[11px] text-slate-500" dir="rtl">{findSbcCode(c.codeType)!.nameAr}</span>
+                      )}
                       <span className="text-sm font-semibold text-slate-900">{c.title}</span>
                     </div>
                     <p className="line-clamp-2 text-sm text-slate-600">{c.requirementText}</p>
@@ -360,15 +365,31 @@ export default function SbcLibrary() {
               <p className="mt-0.5 text-xs text-slate-500">Check the clause against the official SBC text before saving.</p>
             </div>
             <div className="grid gap-3 p-5 sm:grid-cols-3">
+              <label className="text-xs font-medium text-slate-700 sm:col-span-3">
+                Code
+                <select
+                  value={editing.value.CodeType}
+                  onChange={(e) => setEditing({ ...editing, value: { ...editing.value, CodeType: e.target.value } })}
+                  className={inputCls}
+                >
+                  {!findSbcCode(editing.value.CodeType) && editing.value.CodeType && (
+                    <option value={editing.value.CodeType}>{editing.value.CodeType}</option>
+                  )}
+                  {SBC_CODES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.code} · {c.nameEn} · {c.nameAr}
+                    </option>
+                  ))}
+                </select>
+              </label>
               {(
                 [
-                  ['CodeType', 'Code', 'SBC 201', 1],
-                  ['CodeVersion', 'Edition', '2024', 1],
+                  ['CodeVersion', 'Edition', SBC_EDITION, 1],
                   ['SectionNumber', 'Section', '1010.1.2', 1],
-                  ['Title', 'Title', 'Door swing', 3],
+                  ['Title', 'Title', 'Door swing', 1],
                 ] as const
               ).map(([key, label, placeholder, span]) => (
-                <label key={key} className={`text-xs font-medium text-slate-700 ${span === 3 ? 'sm:col-span-3' : ''}`}>
+                <label key={key} className={`text-xs font-medium text-slate-700 ${span === 1 ? '' : 'sm:col-span-3'}`}>
                   {label}
                   <input
                     value={editing.value[key]}

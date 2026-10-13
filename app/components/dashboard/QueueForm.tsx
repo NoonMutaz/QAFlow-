@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useAuthContext } from '@/app/context/AuthContext';
 import { useQueueContext, DuplicateMatch, Customer } from '@/app/context/QueueContext';
 import { libraryClauseTitle, type LibraryClause } from '@/app/api/sbc-suggest/libraryClause';
+import type { SbcCode } from '@/app/data/sbcCodes';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -25,6 +26,8 @@ type SbcSuggestion = {
   /** photo analysis only */
   finding?: string;
   details?: string;
+  /** governing code document from the official SBC list, even when no clause matched */
+  relevantCode?: SbcCode | null;
 };
 
 /** Menu values for SBC library clauses; such a clause is copied into the project on submit. */
@@ -265,7 +268,7 @@ export default function QueueForm({
   const noticeFor = (suggestion: SbcSuggestion): string | null =>
     suggestion.aiUnavailable
       ? 'AI is unavailable right now (check the AI API key), so these are keyword matches.'
-      : suggestion.matches.length === 0
+      : suggestion.matches.length === 0 && !suggestion.relevantCode
         ? 'No SBC clause matched with enough confidence. Pick one manually, or add it to the SBC Library.'
         : null;
 
@@ -680,6 +683,20 @@ export default function QueueForm({
         )}
         {!checkingAi && aiNotice && (
           <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">{aiNotice}</p>
+        )}
+
+        {!checkingAi && aiSuggestion?.relevantCode && aiSuggestion.matches.length === 0 && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3.5">
+            <p className="text-xs font-semibold text-amber-900">Governing code</p>
+            <p className="mt-1 text-sm font-semibold text-gray-900">
+              {aiSuggestion.relevantCode.code} · {aiSuggestion.relevantCode.nameEn}
+            </p>
+            <p className="text-sm text-gray-700" dir="rtl">{aiSuggestion.relevantCode.nameAr}</p>
+            <p className="mt-1.5 text-xs text-amber-900">
+              No verified clause from this code is in the SBC Library yet, so no section is suggested.{' '}
+              <a href="/sbc-library" target="_blank" className="font-semibold underline">Add one to the library</a>
+            </p>
+          </div>
         )}
 
         {showSuggestions && (

@@ -239,6 +239,7 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { buildClauseIndex, rankClauses } from "./clauseMatcher";
 import { libraryClauseTitle, type LibraryClause } from "./libraryClause";
+import { SBC_CODES, findSbcCode, type SbcCode } from "../../data/sbcCodes";
 
 export const runtime = "nodejs";
 
@@ -279,6 +280,8 @@ export type SbcSuggestionResponse = {
   /** photo analysis only: short site finding and detailed finding written from the photo */
   finding?: string;
   details?: string;
+  /** the SBC code document that governs the finding, chosen only from the official list (SBC_CODES) */
+  relevantCode?: SbcCode | null;
 };
 
 const apiBase = () => process.env.API_URL_INTERNAL ?? process.env.NEXT_PUBLIC_API_URL;
@@ -441,7 +444,7 @@ function parseJsonReply(raw: string): Record<string, unknown> {
 async function aiMatches(
   body: SuggestBody,
   candidates: Candidate[],
-): Promise<{ matches: ClauseMatch[]; finding: string; details: string }> {
+): Promise<{ matches: ClauseMatch[]; finding: string; details: string; relevantCode: SbcCode | null }> {
   const provider = aiProvider();
   if (!provider) throw new Error("no AI key configured");
   const list =
@@ -471,10 +474,12 @@ Then use the photo together with any text to choose clauses from the list below.
 
 ${photoTask}"matches": the clauses from the list that this finding actually violates, best first, at most 3. Use only keys from the list (like "p12" or "l5"). Never invent a clause, code or section number.
 Only include a clause when its requirement clearly applies to the finding: "high" when it directly covers it, "medium" when it very likely applies. If nothing in the list applies with that confidence, return an empty array.
+"relevantCode": the code document from the official SBC 2024 list below that governs this finding, even when no clause above matches; null if it is not a building-code matter. Use only a code from this list:
+${SBC_CODES.map((c) => `${c.code}: ${c.nameEn}`).join("\n")}
 The finding may be in Arabic or English; write "reason" (one short sentence) in the same language as the finding.
 
 Respond with JSON only:
-{${body.image ? `"finding": string, "details": string, ` : ""}"matches": [{"key": string, "reason": string, "confidence": "high"|"medium"}]}`,
+{${body.image ? `"finding": string, "details": string, ` : ""}"matches": [{"key": string, "reason": string, "confidence": "high"|"medium"}], "relevantCode": string | null}`,
         },
         {
           role: "user",
@@ -507,6 +512,7 @@ Respond with JSON only:
     matches?: { key?: unknown; reason?: unknown; confidence?: unknown }[];
     finding?: unknown;
     details?: unknown;
+    relevantCode?: unknown;
   };
   const byKey = new Map(candidates.map((c) => [c.key, c]));
   const matches: ClauseMatch[] = (Array.isArray(parsed.matches) ? parsed.matches : [])
@@ -522,7 +528,9 @@ Respond with JSON only:
   const finding = typeof parsed.finding === "string" ? parsed.finding.trim().slice(0, 500) : "";
   const details = typeof parsed.details === "string" ? parsed.details.trim().slice(0, 1500) : "";
 
-  return { matches, finding, details };
+  const relevantCode = typeof parsed.relevantCode === "string" ? findSbcCode(parsed.relevantCode) ?? null : null;
+
+  return { matches, finding, details, relevantCode };
 }
 
 export async function POST(req: NextRequest) {
@@ -543,9 +551,10 @@ export async function POST(req: NextRequest) {
     let aiUnavailable = !process.env.AI_API_KEY && !process.env.OPENAI_API_KEY;
     if (!aiUnavailable) {
       try {
-        const { matches, finding, details } = await aiMatches(body, candidates);
+        const { matches, finding, details, relevantCode } = await aiMatches(body, candidates);
         return NextResponse.json({
           matches,
+          relevantCode,
           source: "openai",
           ...(body.image ? { finding, details } : {}),
         } satisfies SbcSuggestionResponse);
