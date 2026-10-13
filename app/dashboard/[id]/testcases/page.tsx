@@ -2,6 +2,7 @@
 import React, { useState, useEffect, use } from "react";
 import CreateTestCase from "./CreateTestCase";
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 interface LinkedBug {
   id: number;
@@ -58,7 +59,7 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
     setExpandedCases((prev) => ({ ...prev, [tcId]: !prev[tcId] }));
   };
 
-  /** Pass / fail for a clause with no linked finding. Clicking the active result clears it. */
+  /** Marks a clause with no linked finding as compliant ("passed"); calling it again clears it. */
   const handleStatusChange = async (tc: TestCase, clicked: 'passed' | 'failed') => {
     const previous = tc.status ?? null;
     const next = previous === clicked ? null : clicked;
@@ -119,7 +120,7 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
 
         {/* Legend Row */}
         <div className="flex w-fit items-center gap-6 mt-6 px-4 py-2.5 bg-white rounded-lg border border-gray-200 shadow-sm">
-          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Findings:</span>
+          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Linked findings:</span>
           <div className="flex gap-4">
             <div className="flex items-center gap-2 text-xs text-gray-700 font-medium">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm"></span> Fixed
@@ -174,8 +175,9 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
             const openBugs = bugs.filter(b => b.status !== 'fixed').length;
             const isFullyFixed = bugs.length > 0 && openBugs === 0;
             
-            // Unified Completion Logic (Fully Fixed bugs OR marked explicitly as Passed)
-            const isCompleted = isFullyFixed || (bugs.length === 0 && tc.status === 'passed');
+            // done = all linked findings fixed, or no findings and the engineer marked it compliant
+            const isCompliant = bugs.length === 0 && tc.status === 'passed';
+            const isCompleted = isFullyFixed || isCompliant;
 
             return (
               <div key={tc.id} className="p-6 transition-colors hover:bg-gray-50/50">
@@ -187,12 +189,16 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                       </button>
-                      <h3 className={`font-bold text-lg transition-colors ${isCompleted ? 'text-gray-400 line-through decoration-gray-300' : 'text-gray-900 group-hover:text-blue-700'}`}>{tc.title}</h3>
+                      {isCompleted && (
+                        <svg className="h-5 w-5 shrink-0 text-emerald-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.7-9.3a1 1 0 00-1.4-1.4L9 10.6 7.7 9.3a1 1 0 00-1.4 1.4l2 2a1 1 0 001.4 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                      <h3 className="font-bold text-lg text-gray-900 transition-colors group-hover:text-blue-700">{tc.title}</h3>
                     </div>
                     
-                    {/* Conditionally crossed out Expected Result line if case is completed */}
-                    <p className={`pl-9 text-sm mt-1 transition-all ${isCompleted ? 'line-through text-gray-400/70 decoration-gray-300' : 'text-gray-600'}`}>
-                      <span className={`font-medium ${isCompleted ? 'text-gray-400' : 'text-gray-700'}`}>Required:</span> {tc.expectedResult}
+                    <p className="pl-9 text-sm mt-1 text-gray-600">
+                      <span className="font-medium text-gray-700">Required:</span> {tc.expectedResult}
                     </p>
                     
                     {bugs.length > 0 && (
@@ -202,7 +208,7 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
                             key={bug.id} 
                             className={`text-xs px-2.5 py-1 rounded-md border font-mono font-medium shadow-sm transition-all ${
                               bug.status === 'fixed' 
-                                ? 'bg-emerald-50/60 text-emerald-900/70 border-emerald-100 line-through decoration-emerald-700' 
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
                                 : bug.status === 'in-progress'
                                 ? 'bg-blue-50 text-blue-700 border-blue-200'
                                 : bug.status === 'pendingReview'
@@ -210,7 +216,7 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
                                 : 'bg-rose-50 text-rose-700 border-rose-200'
                             }`}
                           >
-                            {bug.bugId}
+                            {bug.status === 'fixed' && '✓ '}{bug.bugId}
                           </span>
                         ))}
                       </div>
@@ -221,36 +227,42 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
                   <div className="flex flex-shrink-0 items-center gap-2">
                     {bugs.length > 0 ? (
                       <span className={`px-3 py-1 text-xs font-bold rounded-full border ${
-                        isFullyFixed 
-                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
-                          : 'bg-amber-50 text-amber-800 border-amber-200'
+                        isFullyFixed
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                          : 'bg-rose-50 text-rose-700 border-rose-200'
                         }`}>
-                        {isFullyFixed ? "All fixed" : `${openBugs} open finding${openBugs === 1 ? '' : 's'}` }
+                        {isFullyFixed ? "✓ All fixed" : `${openBugs} open finding${openBugs === 1 ? '' : 's'}` }
+                      </span>
+                    ) : isCompliant ? (
+                      <span className="flex items-center gap-2">
+                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
+                          ✓ Compliant
+                        </span>
+                        <button
+                          onClick={() => void handleStatusChange(tc, 'passed')}
+                          className="text-xs font-medium text-gray-400 hover:text-gray-700 hover:underline"
+                        >
+                          Undo
+                        </button>
                       </span>
                     ) : (
-                      /* Interactive Pill Toggle for Pass/Fail */
-                      <div className="flex items-center gap-0.5 bg-gray-100 p-1 rounded-xl border border-gray-200 shadow-inner">
-                        <button 
-                          onClick={() => handleStatusChange(tc, 'passed')}
-                          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-150 tracking-wide select-none ${
-                            tc.status === 'passed' 
-                              ? 'bg-emerald-600 text-white shadow-sm' 
-                              : 'text-gray-500 hover:text-emerald-600 hover:bg-white/60'
-                          }`}
+                      <span className="flex flex-wrap items-center justify-end gap-2">
+                        <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-500">
+                          Not inspected
+                        </span>
+                        <button
+                          onClick={() => void handleStatusChange(tc, 'passed')}
+                          className="rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
                         >
-                          Pass
+                          Mark compliant
                         </button>
-                        <button 
-                          onClick={() => handleStatusChange(tc, 'failed')}
-                          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-150 tracking-wide select-none ${
-                            tc.status === 'failed' 
-                              ? 'bg-rose-600 text-white shadow-sm' 
-                              : 'text-gray-500 hover:text-rose-600 hover:bg-white/60'
-                          }`}
+                        <Link
+                          href={`/dashboard/${projectId}`}
+                          className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50"
                         >
-                          Fail
-                        </button>
-                      </div>
+                          Report finding
+                        </Link>
+                      </span>
                     )}
                     {confirmDelete === tc.id ? (
                       <span className="flex items-center gap-1">
