@@ -282,6 +282,17 @@ export type SbcSuggestionResponse = {
   details?: string;
   /** the SBC code document that governs the finding, chosen only from the official list (SBC_CODES) */
   relevantCode?: SbcCode | null;
+  /** only when no verified clause matched: a clause the AI proposes from its own knowledge (unverified) */
+  newClause?: NewClause | null;
+};
+
+/** An AI-proposed clause. Its code is from the official list; the section and text are not verified. */
+export type NewClause = {
+  /** e.g. "SBC 801 – Section 906.1 Portable fire extinguishers" */
+  title: string;
+  /** required standard, saved as the clause's expected result */
+  standard: string;
+  reason: string;
 };
 
 const apiBase = () => process.env.API_URL_INTERNAL ?? process.env.NEXT_PUBLIC_API_URL;
@@ -444,7 +455,7 @@ function parseJsonReply(raw: string): Record<string, unknown> {
 async function aiMatches(
   body: SuggestBody,
   candidates: Candidate[],
-): Promise<{ matches: ClauseMatch[]; finding: string; details: string; relevantCode: SbcCode | null }> {
+): Promise<{ matches: ClauseMatch[]; finding: string; details: string; relevantCode: SbcCode | null; newClause: NewClause | null }> {
   const provider = aiProvider();
   if (!provider) throw new Error("no AI key configured");
   const list =
@@ -476,10 +487,14 @@ ${photoTask}"matches": the clauses from the list that this finding actually viol
 Only include a clause when its requirement clearly applies to the finding: "high" when it directly covers it, "medium" when it very likely applies. If nothing in the list applies with that confidence, return an empty array.
 "relevantCode": the code document from the official SBC 2024 list below that governs this finding, even when no clause above matches; null if it is not a building-code matter. Use only a code from this list:
 ${SBC_CODES.map((c) => `${c.code}: ${c.nameEn}`).join("\n")}
+"newClause": ONLY when "matches" is empty, propose the clause from your own SBC knowledge, otherwise null:
+   - "title": the relevantCode, then a section number ONLY if you are sure of it, then a short name, e.g. "SBC 801 – Section 906.1 Portable fire extinguishers" or "SBC 801 – Portable fire extinguishers".
+   - "standard": the requirement, concise and inspection-ready, without exact figures you are unsure of.
+   - "reason": one short sentence.
 The finding may be in Arabic or English; write "reason" (one short sentence) in the same language as the finding.
 
 Respond with JSON only:
-{${body.image ? `"finding": string, "details": string, ` : ""}"matches": [{"key": string, "reason": string, "confidence": "high"|"medium"}], "relevantCode": string | null}`,
+{${body.image ? `"finding": string, "details": string, ` : ""}"matches": [{"key": string, "reason": string, "confidence": "high"|"medium"}], "relevantCode": string | null, "newClause": {"title": string, "standard": string, "reason": string} | null}`,
         },
         {
           role: "user",
@@ -513,6 +528,7 @@ Respond with JSON only:
     finding?: unknown;
     details?: unknown;
     relevantCode?: unknown;
+    newClause?: { title?: unknown; standard?: unknown; reason?: unknown } | null;
   };
   const byKey = new Map(candidates.map((c) => [c.key, c]));
   const matches: ClauseMatch[] = (Array.isArray(parsed.matches) ? parsed.matches : [])
@@ -530,7 +546,17 @@ Respond with JSON only:
 
   const relevantCode = typeof parsed.relevantCode === "string" ? findSbcCode(parsed.relevantCode) ?? null : null;
 
-  return { matches, finding, details, relevantCode };
+  // AI-proposed clause: only when nothing verified matched, and its code must be on the official list
+  const nc = parsed.newClause;
+  const title = typeof nc?.title === "string" ? nc.title.trim().slice(0, 200) : "";
+  const standard = typeof nc?.standard === "string" ? nc.standard.trim().slice(0, 800) : "";
+  const codeInTitle = findSbcCode(title.match(/SBC\s*\d{3,4}/i)?.[0]);
+  const newClause: NewClause | null =
+    matches.length === 0 && title && standard && codeInTitle
+      ? { title, standard, reason: typeof nc?.reason === "string" ? nc.reason.trim() : "" }
+      : null;
+
+  return { matches, finding, details, relevantCode, newClause };
 }
 
 export async function POST(req: NextRequest) {
@@ -551,10 +577,11 @@ export async function POST(req: NextRequest) {
     let aiUnavailable = !process.env.AI_API_KEY && !process.env.OPENAI_API_KEY;
     if (!aiUnavailable) {
       try {
-        const { matches, finding, details, relevantCode } = await aiMatches(body, candidates);
+        const { matches, finding, details, relevantCode, newClause } = await aiMatches(body, candidates);
         return NextResponse.json({
           matches,
           relevantCode,
+          newClause,
           source: "openai",
           ...(body.image ? { finding, details } : {}),
         } satisfies SbcSuggestionResponse);
