@@ -18,12 +18,12 @@ export default function KpiSection({ queue }:KpiSectionProps) {
     <div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <p className="text-sm text-gray-500">Total Bugs</p>
+          <p className="text-sm text-gray-500">Total Non-Conformities</p>
           <h2 className="text-2xl font-semibold mt-2">{queue.length}</h2>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <p className="text-sm text-gray-500"> not fixed</p>
+          <p className="text-sm text-gray-500"> open Violation</p>
           <h2 className="text-2xl font-semibold mt-2 text-yellow-600">
             {/* {queue.filter((q) => q.status === "notFixed").length} */}
             {queue.filter((q) => q.status === "notFixed").length}
@@ -31,7 +31,7 @@ export default function KpiSection({ queue }:KpiSectionProps) {
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <p className="text-sm text-gray-500">Fixed</p>
+          <p className="text-sm text-gray-500">Verified and Compliant</p>
           <h2 className="text-2xl font-semibold mt-2 text-green-600">
             {queue.filter((q) => q.status === "fixed").length}
           </h2>

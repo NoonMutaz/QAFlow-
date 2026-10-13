@@ -1,20 +1,40 @@
-import React from 'react'
+import React from 'react';
+import Link from 'next/link';
 
 export default function Footer() {
   return (
-    <div>
-     <footer className="relative py-8 px-6 border-t border-gray-200 bg-white/50 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto text-center">
-          <p className="text-sm text-gray-600">
-            &copy; 2026 QAFlow Project Hub. All rights reserved.
+    <footer className="relative py-8 px-6 border-t border-slate-800 bg-slate-900/80 backdrop-blur-md mt-auto z-10">
+      <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+        <div>
+          <p className="text-sm font-semibold text-slate-200">
+            Imtithal Compliance & Governance
           </p>
-          <div className="flex justify-center gap-6 mt-4">
-            <a href="/privacy" className="text-sm text-gray-500 hover:text-gray-700 transition-colors">Privacy Policy</a>
-            <a href="/privacy" className="text-sm text-gray-500 hover:text-gray-700 transition-colors">Terms of Service</a>
-            <a href="/contactus" className="text-sm text-gray-500 hover:text-gray-700 transition-colors">Contact</a>
-          </div>
+          <p className="text-xs text-slate-400 mt-1">
+            &copy; {new Date().getFullYear()} Imtithal Platform. All rights reserved.
+          </p>
         </div>
-      </footer>
-    </div>
-  )
+
+        <div className="flex items-center gap-6">
+          <Link 
+            href="/privacy" 
+            className="text-xs font-medium text-slate-400 hover:text-emerald-400 transition-colors"
+          >
+            Privacy Policy
+          </Link>
+          <Link 
+            href="/terms" 
+            className="text-xs font-medium text-slate-400 hover:text-emerald-400 transition-colors"
+          >
+            Terms of Service
+          </Link>
+          <Link 
+            href="/contactus" 
+            className="text-xs font-medium text-slate-400 hover:text-emerald-400 transition-colors"
+          >
+            Contact Support
+          </Link>
+        </div>
+      </div>
+    </footer>
+  );
 }

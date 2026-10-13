@@ -195,7 +195,10 @@ export default function ProjectCard({
               <div className="mt-6 rounded-xl border border-slate-100 bg-slate-50/50 p-4">
                 <div className="flex items-center divide-x divide-slate-200/60">
                   <div className="flex flex-1 flex-col pr-4">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      Total Non-Conformities
+                      {/* Total */}
+                      </span>
                     <span className="mt-0.5 text-lg font-bold text-slate-900">{bugCount}</span>
                   </div>
                   <div className="flex flex-1 flex-col px-4">
@@ -205,7 +208,7 @@ export default function ProjectCard({
                     </span>
                   </div>
                   <div className="flex flex-1 flex-col pl-4">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Fixed</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Verified </span>
                     <span className={`mt-0.5 text-lg font-bold ${fixedCount > 0 ? 'text-emerald-600' : 'text-slate-900'}`}>
                       {fixedCount}
                     </span>
@@ -238,7 +241,7 @@ export default function ProjectCard({
                   onClick={() => handleOpenProject(project.id)}
                   className="flex flex-1 items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-slate-800 hover:shadow focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 active:scale-[0.98]"
                 >
-                  View Board
+                  View Project
                 </button>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <ActionBtn

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import ApexCharts from "apexcharts";
+import { Status } from '../../context/QueueContext';
 
 type Status = "notFixed" | "in-progress" | "fixed";
 
@@ -29,10 +30,10 @@ export default function PieChart({ queue }: { queue: Customer[] }) {
       return;
     }
 
-    // First time: create chart
+    //  create chart
     chartRef.current = new ApexCharts(elRef.current, {
       series: [notFixed, inProgress, fixed],
-      labels: ["Not Fixed", "In Progress", "Fixed"],
+      labels: ["Open", "Under Review", "Compliant"],
       colors: ["#F59E0B", "#3B82F6", "#10B981"],
       chart: { type: "pie", height: 380 },
       dataLabels: {
@@ -53,7 +54,8 @@ export default function PieChart({ queue }: { queue: Customer[] }) {
   return (
     <div className="max-w-sm w-full bg-white rounded-xl shadow p-6">
       <h2 className="text-lg font-semibold text-gray-800 mb-4">
-        Status Distribution
+    {/* //    Status Distribution */}
+SBC Compliance Status
       </h2>
       <div ref={elRef} />
     </div>

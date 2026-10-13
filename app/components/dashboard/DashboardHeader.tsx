@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
+import { useAuthContext } from '../../context/AuthContext';
 
 export interface Project {
   id: number;
@@ -18,114 +20,57 @@ interface Member {
   role: 'owner' | 'member' | 'viewer';
 }
 
-interface QueueItem {
-  status: string;
-  priority?: string;
-  assignedByName?: string; 
-  AssignedByName?: string; 
-  createdByName?: string;
-  CreatedByName?: string;
-  createdById?: string | number;
-  CreatedById?: string | number;
+interface ProjectAnalytics {
+  openBugs: number;
+  fixedBugs: number;
+  criticalBugs: number;
+  topContributor: string;
+  mostActiveTester: string;
 }
-
-type Queue = Record<string | number, QueueItem[]>;
 
 interface DashboardHeaderProps {
   project: Project;
   id: string | number;
-  queue: Queue;
   members?: Member[];
 }
 
-export default function DashboardHeader({ project, id, queue, members = [] }: DashboardHeaderProps) {
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
+
+async function fetchProjectAnalytics(id: string | number, token: string): Promise<ProjectAnalytics> {
+  const res = await fetch(`${API_BASE}/api/projects/${id}/analytics`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch analytics: ${res.status}`);
+  }
+
+  return res.json();
+}
+
+export default function DashboardHeader({ project, id, members = [] }: DashboardHeaderProps) {
+  const { token, isReady } = useAuthContext();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Client-side analytics parsing computed instantly from context memory
-  const { activeCount, topDev, activeTester } = useMemo(() => {
-    const projectQueue = queue[id] ?? [];
-    
-    // 1. Calculate Active Bugs Counter
-    const activeBugs = projectQueue.filter(
-      (item) =>  item.status === 'in-progress' || item.status === 'active'
-    ).length;
+  const {
+    data: analytics,
+    isLoading: isLoadingAnalytics,
+  } = useQuery({
+    queryKey: ['project-analytics', id],
+    queryFn: () => fetchProjectAnalytics(id, token as string),
+    // Don't fire until AuthContext has rehydrated the token from localStorage
+    // and we actually have one — otherwise this 401s on first render.
+    enabled: isReady && !!token,
+    refetchInterval: 15_000, // keep "most active contributor" fresh without a manual refresh
+    refetchOnWindowFocus: true,
+    staleTime: 10_000,
+  });
 
-    if (projectQueue.length === 0) {
-      return { activeCount: 0, topDev: 'None', activeTester: 'None' };
-    }
-
-    // Frequency counters and identity maps
-    const contributorCounts: Record<string, number> = {};
-    
-    // Tracks counts purely by unique User ID keys
-    const testerIdCounts: Record<string | number, number> = {};
-    // Maps unique User IDs directly to their corresponding string Names
-    const userIdToNameMap: Record<string | number, string> = {};
-
-    projectQueue.forEach((item) => {
-      const assignedUser = item.AssignedByName || item.assignedByName || '';
-      
-      // Extract both the unique ID and the Name from the entity model
-      const creatorId = item.CreatedById ?? item.createdById;
-      const creatorName = item.CreatedByName || item.createdByName || '';
-
-      // Top Developer logic
-      if (assignedUser && assignedUser !== 'Unassigned' && assignedUser !== 'None') {
-        if (item.status === 'Fixed' || item.status === 'fixed') {
-          contributorCounts[assignedUser] = (contributorCounts[assignedUser] || 0) + 1;
-        }
-      }
-
-      // Top Tester logic: Check the unique User ID first
-      if (creatorId !== undefined && creatorId !== null && creatorId !== '') {
-        testerIdCounts[creatorId] = (testerIdCounts[creatorId] || 0) + 1;
-        
-        // If the backend didn't supply a name string, match it up against the project members array
-        if (creatorName) {
-          userIdToNameMap[creatorId] = creatorName;
-        } else {
-          const matchedMember = members.find((m) => String(m.userId) === String(creatorId));
-          userIdToNameMap[creatorId] = matchedMember ? matchedMember.name : `loading..`;
-        }
-      } else {
-        // If past bugs completely lack a creatorId, skip them so statistics aren't falsely skewed
-        return;
-      }
-    });
-
-    // Helper to extract top developer name from string record keys
-    const getTopUser = (counts: Record<string, number>) => {
-      let topUser = 'None';
-      let maxCount = 0;
-      Object.entries(counts).forEach(([user, count]) => {
-        if (count > maxCount) {
-          maxCount = count;
-          topUser = user;
-        }
-      });
-      return topUser;
-    };
-
-    // Evaluate the top tester using the secure identity ID map keys
-    let topTesterId: string | number = '';
-    let maxTesterCount = 0;
-
-    Object.entries(testerIdCounts).forEach(([id, count]) => {
-      if (count > maxTesterCount) {
-        maxTesterCount = count;
-        topTesterId = id;
-      }
-    });
-
-    // Resolve the top tester ID back to its readable string name for the UI layout
-    const finalTesterName = topTesterId ? (userIdToNameMap[topTesterId] || 'None') : 'None';
-
-    return {
-      activeCount: activeBugs,
-      topDev: getTopUser(contributorCounts),
-      activeTester: finalTesterName,
-    };
-  }, [queue, id, members]); 
+  const activeCount = analytics?.openBugs ?? 0;
+  const mostActiveTester = analytics?.mostActiveTester ?? 'None';
 
   const getRoleColor = (role: Member['role']) => {
     return role === 'owner'
@@ -234,10 +179,11 @@ export default function DashboardHeader({ project, id, queue, members = [] }: Da
           <svg className="h-4 w-4 text-gray-500 dark:text-zinc-400" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
           </svg>
-          Test Cases
+          {/* Test Cases */}
+          SBC Clauses
         </Link>
 
-        {/* NEW: Bug Comments / Discussions Button */}
+        {/* Bug Comments / Discussions Button */}
         <Link
           href={`/dashboard/${id}/comments`}
           className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:text-gray-900 transition dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-zinc-50"
@@ -250,7 +196,7 @@ export default function DashboardHeader({ project, id, queue, members = [] }: Da
 
         <div className="hidden sm:block h-8 w-px bg-gray-200 dark:bg-zinc-800" />
 
-        {/* Top Active Tester Metric */}
+        {/* Top Contributor Metric */}
         <div className="text-right min-w-[120px]">
           <p className="text-xs font-medium text-gray-400 uppercase tracking-wider dark:text-zinc-500 flex items-center justify-end gap-1">
             <svg className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" fill="currentColor" viewBox="0 0 24 24">
@@ -258,19 +204,24 @@ export default function DashboardHeader({ project, id, queue, members = [] }: Da
             </svg>
             Top Contributor:
           </p>
-          <p className="text-sm font-semibold text-zinc-800 truncate max-w-[130px] mt-0.5 dark:text-zinc-200" title={activeTester}>
-            {activeTester}
+          <p
+            className="text-sm font-semibold text-zinc-800 truncate max-w-[130px] mt-0.5 dark:text-zinc-200"
+            title={mostActiveTester}
+          >
+            {isLoadingAnalytics ? '...' : mostActiveTester}
           </p>
         </div>
-
         <div className="hidden sm:block h-8 w-px bg-gray-200 dark:bg-zinc-800" />
 
         {/* Active Bugs Counter */}
         <div className="text-right min-w-[70px]">
           <p className="text-xs text-gray-500 dark:text-zinc-400">Active Bugs</p>
-          <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{activeCount}</p>
+          <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+            {isLoadingAnalytics ? '...' : activeCount}
+          </p>
         </div>
       </div>
     </div>
+
   );
 }

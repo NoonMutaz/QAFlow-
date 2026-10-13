@@ -60,7 +60,7 @@ export default function BugRow({ bug, isUpdating, onStatusChange, onView }: BugR
           onClick={() => onView(bug)}
           className="flex items-center justify-center rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 ring-1 ring-inset ring-slate-200 transition-all hover:bg-slate-50 hover:ring-slate-300 shadow-sm"
         >
-          View bug
+          View finding
         </button>
 
         <Link

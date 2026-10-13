@@ -23,9 +23,9 @@ export default function StatusSelect({ status, onChange, disabled, size = 'md' }
       onChange={(e) => onChange(e.target.value as BugStatus)}
       className={`text-[11px] font-bold border rounded-lg ${padding} focus:ring-2 focus:ring-blue-400 outline-none cursor-pointer transition-colors max-w-[125px] sm:w-auto ${STATUS_STYLES[status]}`}
     >
-      <option value="notFixed">Not Fixed</option>
+      <option value="notFixed">Non-conformities</option>
       <option value="in-progress">In Progress</option>
-      <option value="fixed">Fixed</option>
+      <option value="fixed">Resolved</option>
     </select>
   );
 }

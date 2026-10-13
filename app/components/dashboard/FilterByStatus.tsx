@@ -18,9 +18,10 @@ export default function FilterByStatus({select,setSelect}:FilterByStatusPrpos) {
                       Filter by status{" "}
                     </option>
                     <option value="">All</option>
-                    <option value="notFixed"> not fixed</option>
+                    <option value="notFixed"> 
+Non-Conformities</option>
                     <option value="in-progress">In-progress</option>
-                    <option value="fixed">fixed</option>
+                    <option value="fixed">Verified</option>
                   </select>
                 </form>
     </div>

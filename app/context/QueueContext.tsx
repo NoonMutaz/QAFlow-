@@ -214,7 +214,7 @@ const fetchBugs = useCallback(async (projectId: string) => {
     if (res.ok) {
       const newBug = await res.json();
       
-      //    State فوراً بالـ newBug الذي يحتوي على الـ AssignedByName الجديد القادم من الباكيند
+      //     AssignedByName الجديد القادم من الباكيند
       setQueue((prev) => ({ 
         ...prev, 
         [projectId]: [...(prev[projectId] ?? []), newBug] 

@@ -286,7 +286,7 @@ export default function CreateProject() {
               Create New Project
             </h1>
             <p className="text-gray-600">
-              Set up your QA project with all the details
+              Set up your project with all the details
             </p>
           </div>
 
@@ -408,14 +408,14 @@ export default function CreateProject() {
               </label>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {["QA Dashboard", "Bug Tracking", "Test Management", "Performance Testing"].map((type) => (
+                {[" Site Inspection", "Engineering Inspection",  "SBC Compliance"].map((type) => (
                   <button
                     key={type}
-                    disabled={type === "Performance Testing" || type === "Test Management"}
+                    disabled={type === "Engineering Inspection" || type === "SBC Compliance"}
                     type="button"
                     onClick={() => setProjectType(type)}
                     className={`px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
-                      type === "Performance Testing" || type === "Test Management"
+                      type === "Engineering Inspection" || type === "SBC Compliance"
                         ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-60 shadow-none"
                         : projectType === type
                         ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md"

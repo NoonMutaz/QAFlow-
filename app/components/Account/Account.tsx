@@ -37,30 +37,30 @@ export default function Account() {
     }
   }, [projects, fetchBugs]);
 
-  // Memoized stats calculation
+  // Memoized compliance findings calculation
   const stats = useMemo(() => {
     const allBugs = Object.values(queue).flat() as Bug[];
     const total = allBugs.length;
     const fixed = allBugs.filter((b) => b.status === 'fixed').length;
+    const inProgress = allBugs.filter((b) => b.status === 'inProgress').length;
     return {
       totalBugs: total,
       fixedBugs: fixed,
       activeBugs: total - fixed,
+      inProgress: inProgress
     };
   }, [queue]);
 
   const handleSave = async () => {
-    //   Proper structured error evaluation block
     const newErrors: { name?: string; email?: string } = {};
-    if (!form.name.trim()) newErrors.name = 'Name is required';
-    if (!form.email.trim()) newErrors.email = 'Email is required';
+    if (!form.name.trim()) newErrors.name = 'Full Name is required';
+    if (!form.email.trim()) newErrors.email = 'Corporate Email is required';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
-    // Clear runtime errors if validations pass
     setErrors({});
     setIsSaving(true);
     
@@ -77,7 +77,7 @@ export default function Account() {
       if (res.ok) {
         const updatedUser = await res.json();
         updateUser(updatedUser);
-        alert('✅ Profile updated!');
+        alert('✅ Profile updated successfully!');
         setIsEditing(false);
       } else {
         alert('❌ Failed to update profile');
@@ -96,59 +96,63 @@ export default function Account() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/50 to-indigo-50/80 p-4 md:p-8">
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8">
       <div className="max-w-4xl mx-auto space-y-6">
         
         {/* Profile Card Header */}
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm border border-indigo-100 p-6 md:p-8">
+        <div className="bg-slate-900/80 backdrop-blur-md rounded-2xl shadow-xl border border-slate-800 p-6 md:p-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center text-white font-black text-3xl shadow-lg flex-shrink-0">
+            <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-center text-emerald-400 font-bold text-3xl shadow-md flex-shrink-0">
               {user?.name?.[0]?.toUpperCase() || '?'}
             </div>
 
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold text-gray-900 truncate">{user?.name}</h1>
-              <p className="text-gray-500 mt-0.5 truncate">{user?.email}</p>
+              <h1 className="text-2xl font-bold text-slate-100 truncate">{user?.name}</h1>
+              <p className="text-slate-400 text-sm mt-0.5 truncate">{user?.email}</p>
               <div className="flex flex-wrap gap-2 mt-3">
-                <span className="px-3 py-1 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 text-xs font-semibold rounded-full">Free Plan</span>
-                <span className="px-3 py-1 bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 text-xs font-semibold rounded-full">● Active</span>
+                <span className="px-3 py-1 bg-slate-800 text-slate-300 border border-slate-700 text-xs font-semibold rounded-full">
+                  Standard Tier
+                </span>
+                <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold rounded-full flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" /> Compliance Active
+                </span>
               </div>
             </div>
-<div>
+
             <button
               onClick={handleSignOut}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-xl hover:bg-red-50 transition-all self-start sm:self-center"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-rose-400 border border-rose-900/40 bg-rose-950/20 rounded-xl hover:bg-rose-900/30 transition-all self-start sm:self-center"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
               Sign Out
-            </button></div>
+            </button>
           </div>
         </div>
 
-        {/* Aggregate Stats Section */}
+        {/* Aggregate Audit Stats Section */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <StatCard label="Projects" value={projects.length} />
-          <StatCard label="Total Bugs" value={stats.totalBugs} />
-          <StatCard label="Active Bugs" value={stats.activeBugs} />
-          <StatCard label="Fixed" value={stats.fixedBugs} />
+          <StatCard label="Active Audits" value={projects.length} />
+          <StatCard label="Total Findings" value={stats.totalBugs} />
+          <StatCard label="Pending Action" value={stats.activeBugs} />
+          <StatCard label="Compliant / Resolved" value={stats.fixedBugs} />
         </div>
 
         {/* Tab Shell Switcher Container */}
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
-          <div className="flex border-b border-gray-100">
+        <div className="bg-slate-900/80 backdrop-blur-md rounded-2xl shadow-xl border border-slate-800 overflow-hidden">
+          <div className="flex border-b border-slate-800">
             {(['profile', 'subscription'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`flex-1 py-4 text-sm font-semibold capitalize transition-all ${
                   activeTab === tab
-                    ? 'text-blue-600 border-b-2 border-blue-500 bg-blue-50/50'
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                    ? 'text-emerald-400 border-b-2 border-emerald-500 bg-slate-800/50'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/30'
                 }`}
               >
-                {tab}
+                {tab === 'profile' ? 'Profile Info' : 'Enterprise Plans'}
               </button>
             ))}
           </div>

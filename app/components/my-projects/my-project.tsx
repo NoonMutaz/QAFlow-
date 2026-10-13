@@ -14,7 +14,7 @@ import ProjectCard from './ProjectCard';
 import CreateProjectForm from './EditProjectForm';
 import { useQueries } from '@tanstack/react-query';
 
-const projectTypes = ['QA Dashboard', 'Bug Tracking'];
+const projectTypes = ['Site Inspection',];
 const ITEMS_PER_PAGE = 6;
 
 const isOwner = (role?: string) => role === 'owner';
