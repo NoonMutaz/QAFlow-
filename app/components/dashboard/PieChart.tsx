@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef } from "react";
 import ApexCharts from "apexcharts";
-import { Status } from '../../context/QueueContext';
 
 type Status = "notFixed" | "in-progress" | "fixed";
 

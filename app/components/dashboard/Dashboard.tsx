@@ -203,7 +203,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen px-4 md:px-8 lg:px-12 py-8 space-y-8">
-      <DashboardHeader project={project} queue={{ [id]: projectQueue }} id={project.id} members={members} />
+      <DashboardHeader project={project} id={project.id} members={members} />
       <KpiSection queue={projectQueue} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -241,13 +241,13 @@ export default function Dashboard() {
         <TableOfQueue
           projectId={id}
           filteredQueue={filteredQueue}
-          projectQueue={projectQueue}
+
           select={select} setSelect={setSelect}
           selectP={selectP} setSelectP={setSelectP}
           updateQueue={handleUpdateQueue}
           removeQueue={handleRemoveQueue}
           updatePriorityQueue={handleUpdatePriority}
-          currentUserRole={project.role}
+          currentUserRole={project.role ?? 'viewer'}
         />
       </div>
     </div>

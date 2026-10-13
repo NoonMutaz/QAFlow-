@@ -12,7 +12,7 @@ import { FileIcon } from "./icons";
 import { patchBugField } from "./api";
 import { nextPriority } from "./helpers";
 import { useAttachmentUpload } from "./useAttachmentUpload";
-import type { Bug } from "./types";
+import type { Bug, UpdateBugInState } from "./types";
 
 const PAGE_SIZE = 10;
 const COLUMNS = ["ID", "Reporter", "Risk level", "Detailed finding", "Status", "Assigned To"];
@@ -44,7 +44,9 @@ export default function TableOfQueue({
   selectP,
   setSelectP,
 }: Props) {
-  const { updateBugInState, projectMembers, fetchProjectMembers, assignBug } = useQueueContext();
+  const { updateBugInState: updateBugInContext, projectMembers, fetchProjectMembers, assignBug } = useQueueContext();
+  // the context types bugs as Customer; the table's Bug has extra fields (deadline, ...)
+  const updateBugInState = updateBugInContext as unknown as UpdateBugInState;
 
   const [removeId, setRemoveId] = useState<number | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -117,7 +119,7 @@ export default function TableOfQueue({
                     onToggle={() => toggleRow(bug.id)}
                     onCyclePriority={() => updatePriorityQueue(projectId, bug.id, nextPriority(bug.priority))}
                     onStatusChange={(status) => updateQueue(projectId, bug.id, status)}
-                    onAssign={(userId) => assignBug(projectId, bug.id, userId)}
+                    onAssign={(userId) => assignBug(String(projectId), bug.id, userId)}
                     onDeadlineChange={(value) => setDeadline(bug.id, value)}
                   />
                   {expanded[bug.id] && (
@@ -149,9 +151,9 @@ export default function TableOfQueue({
 
       <Pagination page={page} totalPages={totalPages} onChange={setPage} />
 
-      {removeId !== null && (
+      {removeId !== null && filteredQueue.some((b) => b.id === removeId) && (
         <RemoveModal
-          customer={filteredQueue.find((b) => b.id === removeId)}
+          customer={filteredQueue.find((b) => b.id === removeId)!}
           onClose={() => setRemoveId(null)}
           removeQueue={() => removeQueue(projectId, removeId)}
         />

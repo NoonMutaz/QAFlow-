@@ -28,6 +28,7 @@ function normalizeComment(raw: RawComment): BugComment {
     authorName: raw.authorName ?? raw.AuthorName ?? 'Unknown User',
     createdAt: raw.createdAt ?? raw.CreatedAt ?? '',
     text: raw.text ?? raw.Text ?? '',
+    imageUrl: raw.imageUrl ?? raw.ImageUrl,
   };
 }
 

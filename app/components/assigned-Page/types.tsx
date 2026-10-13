@@ -5,6 +5,7 @@ export interface BugComment {
   authorName: string;
   createdAt: string;
   text: string;
+  imageUrl?: string;
 }
 
 export interface TestCaseRef {
@@ -101,4 +102,6 @@ export interface RawComment {
   CreatedAt?: string;
   text?: string;
   Text?: string;
+  imageUrl?: string;
+  ImageUrl?: string;
 }

@@ -116,3 +116,10 @@
 //     </div>
 //   );
 // }
+
+// The demo page above is disabled; a route file must still export a page.
+import { notFound } from 'next/navigation';
+
+export default function BugPage() {
+  notFound();
+}
