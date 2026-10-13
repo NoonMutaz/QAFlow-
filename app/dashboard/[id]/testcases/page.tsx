@@ -114,7 +114,7 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
             <button onClick={() => router.back()} className="px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-gray-700 font-semibold text-sm hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-sm">
               {t("Back")}
             </button>
-            <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-blue-700 transition-colors shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+            <button onClick={() => setIsModalOpen(true)} className="bg-brand-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-brand-700 transition-colors shadow-sm focus:ring-2 focus:ring-brand-500 focus:ring-offset-2">
               {t("+ Add SBC clause")}
             </button>
           </div>
@@ -128,7 +128,7 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm"></span> {t("Fixed")}
             </div>
             <div className="flex items-center gap-2 text-xs text-gray-700 font-medium">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm"></span> {t("In Progress")}
+              <span className="w-2.5 h-2.5 rounded-full bg-brand-500 shadow-sm"></span> {t("In Progress")}
             </div>
             <div className="flex items-center gap-2 text-xs text-gray-700 font-medium">
               <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm"></span> {t("Awaiting approval")}
@@ -165,7 +165,7 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
           </div>
           <h3 className="text-lg font-bold text-gray-900 mb-1">{t("No SBC clauses yet")}</h3>
           <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">{t("Add the code requirements this project must meet, from the SBC Library or manually. Findings will be linked to them.")}</p>
-          <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-blue-700 shadow-sm transition-colors">
+          <button onClick={() => setIsModalOpen(true)} className="bg-brand-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-brand-700 shadow-sm transition-colors">
             {t("Add first clause")}
           </button>
         </div>
@@ -186,7 +186,7 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
                 <div className="flex justify-between items-center gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 group cursor-pointer w-fit" onClick={() => toggleExpand(tc.id)}>
-                      <button className="p-1 text-gray-400 group-hover:text-blue-600 group-hover:bg-blue-50 rounded-md transition-colors">
+                      <button className="p-1 text-gray-400 group-hover:text-brand-600 group-hover:bg-brand-50 rounded-md transition-colors">
                         <svg className={`w-5 h-5 transition-transform duration-200 ${expandedCases[tc.id] ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
@@ -196,7 +196,7 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.7-9.3a1 1 0 00-1.4-1.4L9 10.6 7.7 9.3a1 1 0 00-1.4 1.4l2 2a1 1 0 001.4 0l4-4z" clipRule="evenodd" />
                         </svg>
                       )}
-                      <h3 className="font-bold text-lg text-gray-900 transition-colors group-hover:text-blue-700">{tc.title}</h3>
+                      <h3 className="font-bold text-lg text-gray-900 transition-colors group-hover:text-brand-700">{tc.title}</h3>
                     </div>
                     
                     <p className="pl-9 text-sm mt-1 text-gray-600">
@@ -212,7 +212,7 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
                               bug.status === 'fixed' 
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
                                 : bug.status === 'in-progress'
-                                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                ? 'bg-brand-50 text-brand-700 border-brand-200'
                                 : bug.status === 'pendingReview'
                                 ? 'bg-amber-50 text-amber-700 border-amber-200'
                                 : 'bg-rose-50 text-rose-700 border-rose-200'

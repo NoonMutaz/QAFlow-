@@ -33,7 +33,7 @@ export default function CardsHeader() {
     <section id="how-it-works" className="scroll-mt-20 px-6 py-20">
       <div className="mx-auto max-w-6xl">
         <div className="text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">{t("How it works")}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-600">{t("How it works")}</p>
           <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
             {t("One finding, four steps, fully traceable")}
           </h2>
@@ -46,7 +46,7 @@ export default function CardsHeader() {
           {steps.map((step, i) => (
             <li key={step.title} className="relative rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="flex items-center justify-between">
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
                   <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d={step.icon} />
                   </svg>

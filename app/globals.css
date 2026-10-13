@@ -12,6 +12,33 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Imtithal brand, taken from the logo: deep teal hexagon + gold compliance check */
+  --color-brand-50: #effafa;
+  --color-brand-100: #d6f1f1;
+  --color-brand-200: #ade2e3;
+  --color-brand-300: #7ccbcd;
+  --color-brand-400: #47aeb2;
+  --color-brand-500: #2a9297;
+  --color-brand-600: #1f777c;
+  --color-brand-700: #1b6166;
+  --color-brand-800: #194f53;
+  --color-brand-900: #173f42;
+  --color-brand-950: #0a2629;
+
+  --color-gold-50: #fbf7ec;
+  --color-gold-100: #f5ead0;
+  --color-gold-200: #ead39f;
+  --color-gold-300: #ddb86a;
+  --color-gold-400: #d2a045;
+  --color-gold-500: #c08a32;
+  --color-gold-600: #a46d29;
+  --color-gold-700: #835224;
+}
+
+/* Hexagon pattern from the logo, for brand backgrounds */
+.bg-hex-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='98' viewBox='0 0 56 98'%3E%3Cpath d='M28 66L0 50V16L28 0l28 16v34L28 66zm0 32L0 82V66l28 16 28-16v16L28 98z' fill='none' stroke='%2347aeb2' stroke-opacity='0.12' stroke-width='1'/%3E%3C/svg%3E");
 }
 
 @media (prefers-color-scheme: dark) {

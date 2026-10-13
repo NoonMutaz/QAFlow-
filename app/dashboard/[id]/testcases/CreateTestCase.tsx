@@ -10,7 +10,7 @@ const authToken = () =>
   document.cookie.match(/(^| )token=([^;]+)/)?.[2] ?? localStorage.getItem("token") ?? "";
 
 const inputCls =
-  "w-full mt-1.5 px-3 py-2.5 text-sm bg-white border border-gray-200 rounded-lg placeholder-gray-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition";
+  "w-full mt-1.5 px-3 py-2.5 text-sm bg-white border border-gray-200 rounded-lg placeholder-gray-400 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition";
 const labelCls = "block text-[13px] font-medium text-gray-700";
 
 /** Reads a useful message from an error response (JSON validation errors or plain text). */
@@ -172,7 +172,7 @@ export default function CreateTestCase({
             ) : library.length === 0 ? (
               <div className="rounded-lg border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
                 {t("The SBC Library is empty.")}{" "}
-                <a href="/sbc-library" target="_blank" className="font-semibold text-blue-600 hover:underline">
+                <a href="/sbc-library" target="_blank" className="font-semibold text-brand-600 hover:underline">
                   {t("Add verified clauses")}
                 </a>{" "}
                 {t("or write this one manually.")}
@@ -189,7 +189,7 @@ export default function CreateTestCase({
                         onClick={() => setPicked(c)}
                         disabled={inProject}
                         className={`w-full px-3 py-2.5 text-left transition ${
-                          selected ? "bg-blue-50" : inProject ? "cursor-not-allowed opacity-50" : "hover:bg-gray-50"
+                          selected ? "bg-brand-50" : inProject ? "cursor-not-allowed opacity-50" : "hover:bg-gray-50"
                         }`}
                       >
                         <div className="flex items-center gap-2">
@@ -197,11 +197,11 @@ export default function CreateTestCase({
                             {c.codeType} §{c.sectionNumber}
                           </span>
                           <span className="text-sm font-medium text-gray-900">{c.title}</span>
-                          {selected && <span className="ml-auto text-xs font-semibold text-blue-700">{t("Selected ✓")}</span>}
+                          {selected && <span className="ml-auto text-xs font-semibold text-brand-700">{t("Selected ✓")}</span>}
                           {inProject && <span className="ml-auto text-[11px] text-gray-500">{t("Already in project")}</span>}
                         </div>
                         <p className="mt-0.5 line-clamp-2 text-xs text-gray-600">{c.requirementText}</p>
-                        {c.verifiedBy && <p className="mt-0.5 text-[10px] text-blue-700">✓ {t("Verified by")} {c.verifiedBy}</p>}
+                        {c.verifiedBy && <p className="mt-0.5 text-[10px] text-brand-700">✓ {t("Verified by")} {c.verifiedBy}</p>}
                       </button>
                     </li>
                   );
@@ -256,7 +256,7 @@ export default function CreateTestCase({
                       value={step}
                       onChange={(e) => setSteps(steps.map((s, i) => (i === index ? e.target.value : s)))}
                       placeholder={t("What to check on site")}
-                      className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                      className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
                     />
                     <button
                       type="button"
@@ -272,7 +272,7 @@ export default function CreateTestCase({
               <button
                 type="button"
                 onClick={() => setSteps([...steps, ""])}
-                className="mt-2 text-xs font-semibold text-blue-600 hover:underline"
+                className="mt-2 text-xs font-semibold text-brand-600 hover:underline"
               >
                 {t("+ Add checklist item")}
               </button>
@@ -304,7 +304,7 @@ export default function CreateTestCase({
           <button
             type="submit"
             disabled={isSubmitting || isDuplicate}
-            className="flex-1 rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex-1 rounded-lg bg-brand-600 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSubmitting ? t("Saving…") : t("Add clause")}
           </button>

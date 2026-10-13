@@ -39,7 +39,7 @@ const HEADER_ALIASES: Record<string, (typeof COLUMNS)[number]> = {
 };
 
 const inputCls =
-  'w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500';
+  'w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500';
 
 const formatDay = (ms?: number | null) =>
   ms ? new Date(ms).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
@@ -229,7 +229,7 @@ export default function SbcLibrary() {
             <button
               type="button"
               onClick={() => setEditing({ id: null, value: { ...EMPTY } })}
-              className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+              className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-700"
             >
               {t("+ Add clause")}
             </button>
@@ -239,7 +239,7 @@ export default function SbcLibrary() {
         {message && (
           <div
             className={`rounded-lg border px-4 py-3 text-sm ${
-              message.kind === 'ok' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-900'
+              message.kind === 'ok' ? 'border-brand-200 bg-brand-50 text-brand-800' : 'border-amber-200 bg-amber-50 text-amber-900'
             }`}
           >
             <p className="font-medium">{message.text}</p>
@@ -287,7 +287,7 @@ export default function SbcLibrary() {
                 <li key={c.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-md bg-slate-900 px-2 py-0.5 font-mono text-[11px] font-semibold text-emerald-300">
+                      <span className="rounded-md bg-slate-900 px-2 py-0.5 font-mono text-[11px] font-semibold text-brand-300">
                         {c.codeType} §{c.sectionNumber}
                       </span>
                       {c.codeVersion && <span className="text-[11px] text-slate-500">{t("{version} edition", { version: c.codeVersion })}</span>}
@@ -305,7 +305,7 @@ export default function SbcLibrary() {
                         </span>
                       )}
                       {c.sourceUrl && (
-                        <a href={c.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-700 hover:underline">
+                        <a href={c.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-brand-700 hover:underline">
                           {t("Source ↗")}
                         </a>
                       )}
@@ -436,7 +436,7 @@ export default function SbcLibrary() {
                 type="button"
                 onClick={() => void save()}
                 disabled={busy}
-                className="flex-1 rounded-lg bg-emerald-600 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                className="flex-1 rounded-lg bg-brand-600 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
               >
                 {busy ? t('Saving…') : t('Save clause')}
               </button>

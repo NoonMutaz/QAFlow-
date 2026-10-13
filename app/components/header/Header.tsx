@@ -29,7 +29,7 @@ const approvalsLink = { href: "/approvals", label: "Approvals", isApprovals: tru
 /** Shield + check mark: compliance verified before closure. */
 function BrandMark() {
   return (
-<div className="absolute   w-21 h-21 rounded-xl overflow-hidden       flex items-center justify-center shrink-0   group-hover:border-emerald-500/60 transition-all duration-300">
+<div className="absolute   w-21 h-21 rounded-xl overflow-hidden       flex items-center justify-center shrink-0   group-hover:border-brand-500/60 transition-all duration-300">
       <Image
         src="/logo.png"
         alt="Imtithal Logo"
@@ -47,7 +47,7 @@ function Brand() {
     <Link href="/" className="flex items-center gap-3 group" aria-label="امتثال - Imtithal">
       <BrandMark />
       <div className="leading-none">
-        {/* <span className="block text-xl font-extrabold text-slate-100 transition-colors group-hover:text-emerald-400">
+        {/* <span className="block text-xl font-extrabold text-slate-100 transition-colors group-hover:text-brand-400">
           امتثال
         </span>
         <span className="mt-1 block text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
@@ -106,12 +106,12 @@ export default function Header({ searchTerm, setSearchTerm }: HeaderProps) {
   const initial = user?.name?.trim()?.charAt(0)?.toUpperCase() ?? "?"
 
   return (
-    <header className="sticky top-0 z-50 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 shadow-lg shadow-black/20 text-slate-100">
+    <header className="sticky top-0 z-50 bg-brand-950/90 backdrop-blur-md border-b border-brand-800/70 shadow-lg shadow-black/20 text-slate-100">
       <div className="navbar px-4 md:px-8 py-3 max-w-7xl mx-auto flex items-center justify-between">
 
         {/* Mobile menu + brand */}
         <div className="navbar-start flex items-center gap-2 w-auto">
-          <div className={`dropdown md:hidden ${isMobileMenuOpen ? "dropdown-open" : ""}`}>
+          <div className={`dropdown lg:hidden ${isMobileMenuOpen ? "dropdown-open" : ""}`}>
             <button
               type="button"
               className="btn btn-ghost btn-circle text-slate-200 hover:bg-slate-800"
@@ -134,8 +134,8 @@ export default function Header({ searchTerm, setSearchTerm }: HeaderProps) {
                   <Link
                     href={link.href}
                     aria-current={isActive(link.href) ? "page" : undefined}
-                    className={`flex justify-between items-center py-2.5 px-3 rounded-lg transition-colors hover:bg-slate-800 hover:text-emerald-400 ${
-                      isActive(link.href) ? "bg-slate-800 text-emerald-400" : ""
+                    className={`flex justify-between items-center py-2.5 px-3 rounded-lg transition-colors hover:bg-slate-800 hover:text-brand-400 ${
+                      isActive(link.href) ? "bg-slate-800 text-brand-400" : ""
                     }`}
                     onClick={() => {
                       setIsMobileMenuOpen(false)
@@ -144,7 +144,7 @@ export default function Header({ searchTerm, setSearchTerm }: HeaderProps) {
                   >
                     <span>{t(link.label)}</span>
                     {badgeFor(link) && (
-                      <span className={`badge badge-sm font-bold border-none ${link.isApprovals ? "bg-amber-400" : "bg-emerald-500"} text-slate-950`}>
+                      <span className={`badge badge-sm font-bold border-none ${link.isApprovals ? "bg-amber-400" : "bg-brand-500"} text-slate-950`}>
                         {badgeFor(link)}
                       </span>
                     )}
@@ -158,7 +158,7 @@ export default function Header({ searchTerm, setSearchTerm }: HeaderProps) {
         </div>
 
         {/* Center: Desktop navigation */}
-        <nav className="navbar-center hidden md:flex items-center" aria-label="Main">
+        <nav className="navbar-center hidden lg:flex items-center" aria-label="Main">
           <ul className="menu menu-horizontal px-1 text-sm font-medium gap-1">
             {links.map((link) => {
               const active = isActive(link.href)
@@ -170,18 +170,18 @@ export default function Header({ searchTerm, setSearchTerm }: HeaderProps) {
                     onClick={() => {
                       if (link.isNotification) setHasSeenNotifications(true)
                     }}
-                    className={`relative flex items-center gap-2 py-2 px-3 rounded-lg transition-all hover:text-emerald-400 hover:bg-slate-800/60 ${
-                      active ? "text-emerald-400" : "text-slate-300"
+                    className={`relative flex items-center gap-2 py-2 px-3 rounded-lg transition-all hover:text-brand-400 hover:bg-slate-800/60 ${
+                      active ? "text-brand-400" : "text-slate-300"
                     }`}
                   >
                     <span>{t(link.label)}</span>
                     {badgeFor(link) && (
-                      <span className={`${link.isApprovals ? "bg-amber-400" : "bg-emerald-500"} text-slate-950 text-[10px] font-black px-1.5 rounded-full min-w-[18px] h-4 flex items-center justify-center shadow-sm`}>
+                      <span className={`${link.isApprovals ? "bg-amber-400" : "bg-brand-500"} text-slate-950 text-[10px] font-black px-1.5 rounded-full min-w-[18px] h-4 flex items-center justify-center shadow-sm`}>
                         {badgeFor(link)}
                       </span>
                     )}
                     {active && (
-                      <span className="absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-emerald-400" />
+                      <span className="absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-brand-400" />
                     )}
                   </Link>
                 </li>
@@ -193,14 +193,14 @@ export default function Header({ searchTerm, setSearchTerm }: HeaderProps) {
         {/* Right: search + authentication */}
         <div className="navbar-end flex items-center gap-3 w-auto">
           <LanguageToggle />
-          <div className="hidden sm:block md:hidden">
+          <div className="hidden sm:block lg:hidden">
             <input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               type="text"
               placeholder={t("Search compliance...")}
               aria-label="Search"
-              className="input input-sm bg-slate-800 border-slate-700 text-slate-100 placeholder-slate-400 focus:border-emerald-500 focus:outline-none w-32"
+              className="input input-sm bg-slate-800 border-slate-700 text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none w-32"
             />
           </div>
 
@@ -208,9 +208,9 @@ export default function Header({ searchTerm, setSearchTerm }: HeaderProps) {
             <div className="w-20 h-8 bg-slate-800 rounded-lg animate-pulse" />
           ) : user ? (
             <div className="flex items-center gap-3">
-              <div className="hidden lg:flex items-center gap-2">
+              <div className="hidden xl:flex items-center gap-2">
                 <span
-                  className="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-sm font-bold flex items-center justify-center"
+                  className="w-8 h-8 rounded-full bg-brand-500/15 border border-brand-500/40 text-brand-300 text-sm font-bold flex items-center justify-center"
                   aria-hidden="true"
                 >
                   {initial}
@@ -219,14 +219,14 @@ export default function Header({ searchTerm, setSearchTerm }: HeaderProps) {
               </div>
               <button
                 onClick={signOut}
-                className="px-4 py-2 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-rose-900/40 text-slate-300 hover:text-rose-300 border border-slate-700 hover:border-rose-700/50 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60"
+                className="px-4 py-2 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-rose-900/40 text-slate-300 hover:text-rose-300 border border-slate-700 hover:border-rose-700/50 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/60"
               >
                 {t("Sign Out")}
               </button>
             </div>
           ) : (
             <Link href="/login">
-              <button className="px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-950/40 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/60">
+              <button className="px-4 py-2 text-xs font-semibold rounded-lg bg-brand-600 hover:bg-brand-500 text-white shadow-md shadow-brand-950/40 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300/60">
                 {t("Sign In")}
               </button>
             </Link>

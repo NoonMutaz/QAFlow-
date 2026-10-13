@@ -298,4 +298,19 @@ export const ar: Record<string, string> = {
   'Pick a clause from the library.': 'اختر بندًا من المكتبة.',
   'Fill in the title and the required standard.': 'اكتب العنوان والمتطلب.',
   'Could not save the clause.': 'تعذّر حفظ البند.',
+
+  // ── Imtithal AI identity ──
+  'Imtithal AI': 'ذكاء امتثال',
+  'An inspection assistant that understands the code': 'مساعد تفتيش يفهم الكود',
+  'The AI suggests, the engineer decides. Every suggestion is labelled, explained, and linked to a verified source.':
+    'الذكاء الاصطناعي يقترح، والمهندس يقرّر. كل اقتراح موسوم ومشروح ومرتبط بمصدر موثّق.',
+  'Reads site photos': 'يقرأ صور الموقع',
+  'Describes the violation it sees in a site photo and writes the finding, ready for the engineer to review.':
+    'يصف المخالفة التي يراها في صورة الموقع ويكتب الملاحظة، جاهزة لمراجعة المهندس.',
+  'Matches the right SBC clause': 'يربط ببند الكود الصحيح',
+  'Picks the clause from engineer-verified SBC clauses, and names the governing code from the official 28 codes.':
+    'يختار البند من بنود الكود الموثّقة هندسيًا، ويحدد الكود الحاكم من الأكواد الرسمية الـ 28.',
+  'Spots duplicates': 'يكتشف التكرار',
+  'Flags findings that were already reported, so the same issue is not logged twice.':
+    'ينبّه للملاحظات المسجلة سابقًا، حتى لا تُسجَّل المخالفة نفسها مرتين.',
 };

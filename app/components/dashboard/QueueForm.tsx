@@ -7,6 +7,7 @@ import { useQueueContext, DuplicateMatch, Customer } from '@/app/context/QueueCo
 import { libraryClauseTitle, type LibraryClause } from '@/app/api/sbc-suggest/libraryClause';
 import type { SbcCode } from '@/app/data/sbcCodes';
 import { useLanguage } from '@/app/i18n/LanguageProvider';
+import { AiBadge, AiMark, AiThinking } from '@/app/components/ui/Ai';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -87,14 +88,14 @@ interface QueueFormProps {
 
 const inputCls =
   'w-full mt-1.5 px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 bg-white placeholder:text-gray-400 ' +
-  'focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition disabled:bg-gray-50';
+  'focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition disabled:bg-gray-50';
 const labelCls = 'text-[13px] font-medium text-gray-700';
 
 function Section({ step, title, hint, children }: { step: number; title: string; hint?: string; children: React.ReactNode }) {
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-2.5">
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[11px] font-bold text-white">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-600 text-[11px] font-bold text-white">
           {step}
         </span>
         <div>
@@ -109,14 +110,6 @@ function Section({ step, title, hint, children }: { step: number; title: string;
 
 function Required() {
   return <span className="text-red-500"> *</span>;
-}
-
-function SparkleIcon({ className = 'h-4 w-4' }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9L12 2zm7 11l.9 2.6 2.6.9-2.6.9L19 20l-.9-2.6-2.6-.9 2.6-.9L19 13z" />
-    </svg>
-  );
 }
 
 function Spinner() {
@@ -592,7 +585,7 @@ export default function QueueForm({
       {/* ─── 1. EVIDENCE ─── */}
       <Section step={1} title={t("Evidence")} hint={t("A site photo lets AI write the finding for you.")}>
         {!formData.attachment ? (
-          <label className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/60 px-4 py-6 text-center transition hover:border-blue-400 hover:bg-blue-50/40">
+          <label className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/60 px-4 py-6 text-center transition hover:border-brand-400 hover:bg-brand-50/40">
             <svg className="h-7 w-7 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
               <path d="M3 8a2 2 0 012-2h2l1.5-2h7L17 6h2a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
               <circle cx="12" cy="13" r="3.5" />
@@ -615,7 +608,7 @@ export default function QueueForm({
             <div className="flex items-center justify-between gap-2 border-t border-gray-100 bg-white px-3 py-2">
               <span className="truncate text-xs text-gray-600">{formData.attachment.name}</span>
               <div className="flex shrink-0 gap-3 text-xs font-medium">
-                <label className="cursor-pointer text-blue-600 hover:text-blue-700">
+                <label className="cursor-pointer text-brand-600 hover:text-brand-700">
                   {t("Replace")}
                   <input type="file" accept="image/*,video/*" onChange={handleFileChange} disabled={uploading} className="sr-only" />
                 </label>
@@ -640,14 +633,14 @@ export default function QueueForm({
             type="button"
             onClick={() => void handleAnalyzePhoto()}
             disabled={uploading || analyzingPhoto}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:from-indigo-700 hover:to-violet-700 disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-brand-800 to-brand-600 py-2.5 text-sm font-semibold text-white shadow-sm ring-1 ring-gold-400/40 transition hover:from-brand-900 hover:to-brand-700 disabled:opacity-60"
           >
-            {analyzingPhoto ? <Spinner /> : <SparkleIcon />}
+            <AiMark className="h-5 w-5 text-brand-200" spin={analyzingPhoto} />
             {analyzingPhoto ? t('Analyzing photo…') : t('Analyze photo with AI')}
           </button>
         )}
         {photoNotice && (
-          <p className="rounded-lg bg-indigo-50 px-3 py-2 text-xs text-indigo-800">{photoNotice}</p>
+          <p className="rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-800">{photoNotice}</p>
         )}
       </Section>
 
@@ -711,9 +704,7 @@ export default function QueueForm({
 
         {/* AI status + suggestions */}
         {checkingAi && (
-          <p className="flex items-center gap-2 text-xs font-medium text-indigo-600">
-            <Spinner /> {t("AI is matching this finding to an SBC clause…")}
-          </p>
+          <AiThinking text={t("AI is matching this finding to an SBC clause…")} />
         )}
         {!checkingAi && aiNotice && (
           <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">{aiNotice}</p>
@@ -734,10 +725,10 @@ export default function QueueForm({
         )}
 
         {showSuggestions && (
-          <div className="rounded-xl border border-indigo-100 bg-gradient-to-b from-indigo-50/80 to-white p-3.5 space-y-2.5">
+          <div className="rounded-xl border border-brand-100 bg-gradient-to-b from-brand-50/80 to-white p-3.5 space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-xs font-semibold text-indigo-900">
-                <SparkleIcon className="h-3.5 w-3.5 text-indigo-500" /> {t("Suggested SBC clause")}
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-brand-900">
+                <AiBadge /> {t("Suggested SBC clause")}
               </span>
               <button type="button" onClick={handleDismissSuggestion} className="text-[11px] font-medium text-gray-500 hover:text-gray-700">
                 {t("Dismiss")}
@@ -759,7 +750,7 @@ export default function QueueForm({
                   <div className="min-w-0 space-y-1">
                     {lib ? (
                       <>
-                        <p className="text-[11px] font-semibold text-indigo-700">
+                        <p className="text-[11px] font-semibold text-brand-700">
                           {lib.codeType}
                           {lib.codeVersion && ` · ${t('{version} edition', { version: lib.codeVersion })}`} · §{lib.sectionNumber}
                         </p>
@@ -782,7 +773,7 @@ export default function QueueForm({
                         {lib ? t('SBC library') : t('Project clause')}
                       </span>
                       {lib?.verifiedBy && (
-                        <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
+                        <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-700">
                           ✓ {t('Verified by')} {lib.verifiedBy}
                           {lib.lastVerifiedAt ? ` · ${formatDay(lib.lastVerifiedAt)}` : ''}
                         </span>
@@ -792,7 +783,7 @@ export default function QueueForm({
                           href={lib.sourceUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[10px] font-semibold text-indigo-600 hover:underline"
+                          className="text-[10px] font-semibold text-brand-600 hover:underline"
                         >
                           {t('Source')} ↗
                         </a>
@@ -804,7 +795,7 @@ export default function QueueForm({
                     onClick={() => (lib ? handleSelectLibraryClause(lib) : m.testCaseId != null && handleSelectClause(m.testCaseId))}
                     disabled={uploading || selected}
                     className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                      selected ? 'bg-emerald-50 text-emerald-700' : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                      selected ? 'bg-emerald-50 text-emerald-700' : 'bg-brand-600 text-white hover:bg-brand-700'
                     }`}
                   >
                     {selected ? t('Selected ✓') : t('Select')}
@@ -816,7 +807,7 @@ export default function QueueForm({
             {aiSuggestion.newClause && (
               <div
                 className={`flex items-start justify-between gap-3 rounded-lg border border-dashed bg-white p-3 ${
-                  formData.testCaseId === AI_NEW_CLAUSE ? 'border-emerald-300' : 'border-indigo-300'
+                  formData.testCaseId === AI_NEW_CLAUSE ? 'border-emerald-300' : 'border-gold-300'
                 }`}
               >
                 <div className="min-w-0 space-y-1">
@@ -826,9 +817,7 @@ export default function QueueForm({
                     <p className="text-xs text-gray-500">{aiSuggestion.newClause.reason}</p>
                   )}
                   <div className="flex flex-wrap gap-1.5 pt-0.5">
-                    <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">
-                      {t('AI suggestion')}
-                    </span>
+                    <AiBadge label={t('AI suggestion')} />
                     <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
                       {t('Not verified · not in the library')}
                     </span>
@@ -841,7 +830,7 @@ export default function QueueForm({
                   className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
                     formData.testCaseId === AI_NEW_CLAUSE
                       ? 'bg-emerald-50 text-emerald-700'
-                      : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                      : 'bg-brand-600 text-white hover:bg-brand-700'
                   }`}
                 >
                   {formData.testCaseId === AI_NEW_CLAUSE ? t('Selected ✓') : t('Select')}
@@ -879,12 +868,12 @@ export default function QueueForm({
             ))}
           </select>
           {isLibraryValue(formData.testCaseId) && (
-            <p className="mt-1.5 text-[11px] leading-relaxed text-indigo-700">
+            <p className="mt-1.5 text-[11px] leading-relaxed text-brand-700">
               {t("From the verified SBC library. It will be added to this project's clauses when you submit.")}
             </p>
           )}
           {formData.testCaseId === AI_NEW_CLAUSE && (
-            <p className="mt-1.5 text-[11px] leading-relaxed text-indigo-700">
+            <p className="mt-1.5 text-[11px] leading-relaxed text-brand-700">
               {t("AI-suggested clause, not verified. It will be added to this project's clauses when you submit. Check it against the SBC text.")}
             </p>
           )}
@@ -899,7 +888,7 @@ export default function QueueForm({
             onChange={handleChange}
             rows={2}
             placeholder={t("Filled from the selected clause, or type it")}
-            className={`${inputCls} ${formData.expectedResult && formData.expectedResult === autoStandard ? 'bg-blue-50/40' : ''}`}
+            className={`${inputCls} ${formData.expectedResult && formData.expectedResult === autoStandard ? 'bg-brand-50/40' : ''}`}
             disabled={uploading}
           />
           {formData.expectedResult && formData.expectedResult === autoStandard && (
@@ -957,7 +946,7 @@ export default function QueueForm({
         <button
           type="submit"
           disabled={uploading}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {uploading && <Spinner />}
           {uploading ? t('Saving…') : t('Log non-conformity')}
