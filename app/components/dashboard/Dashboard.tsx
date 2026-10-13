@@ -20,7 +20,7 @@ type Priority = "High" | "Medium" | "Low";
 export default function Dashboard() {
   const params = useParams();
   const id = Array.isArray(params.id) ? params.id[0] : (params.id ?? "");
-  const [testCases, setTestCases] = useState([]);
+  const [testCases, setTestCases] = useState<{ id: number; title: string; expectedResult?: string }[]>([]);
   const { projects } = useProjects();
   const { addQueue, removeQueue, updateQueue, updatePriorityQueue } = useQueueContext();
   const queryClient = useQueryClient();
@@ -210,7 +210,7 @@ export default function Dashboard() {
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-2xl shadow-sm border flex flex-col gap-6 border-gray-100 p-6">
             <button onClick={exportToExcel} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">
-              Export to Excel
+              Export Audit Data to Excel
             </button>
             <Chart queue={projectQueue} />
             <PieChart queue={projectQueue} />
@@ -224,6 +224,7 @@ export default function Dashboard() {
               projectId={String(project.id)}
               currentUserRole={project.role}
               existingBugs={projectQueue}
+              onTestCaseCreated={(tc) => setTestCases((prev) => [...prev, tc])}
               onAdd={async (customer) => {
                 const newBugId = await addQueue(String(project.id), customer);
                 await queryClient.invalidateQueries({ queryKey: ['bugs', id] });

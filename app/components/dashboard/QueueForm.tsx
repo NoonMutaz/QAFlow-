@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { useAuthContext } from '@/app/context/AuthContext';
 import { useQueueContext, DuplicateMatch, Customer } from '@/app/context/QueueContext';
@@ -8,6 +8,44 @@ import { useQueueContext, DuplicateMatch, Customer } from '@/app/context/QueueCo
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Priority = 'High' | 'Medium' | 'Low';
+
+type ClauseMatch = {
+  testCaseId: number;
+  reason: string;
+  confidence: 'high' | 'medium' | 'low';
+};
+
+type NewClause = {
+  title: string;
+  standard: string;
+  reason: string;
+};
+
+type SbcSuggestion = {
+  matches: ClauseMatch[];
+  /** a clause the AI proposes that is not in the project's menu yet */
+  newClause?: NewClause | null;
+  source: 'openai' | 'keywords' | 'none';
+  aiUnavailable?: boolean;
+  /** photo analysis only */
+  finding?: string;
+  details?: string;
+};
+
+/** menu value for the AI-proposed clause; it is saved to the project on submit */
+const AI_NEW_CLAUSE = 'ai-new';
+
+/** Shrinks a photo to at most 1280px as JPEG so phone pictures upload quickly to the AI. */
+async function photoToDataUrl(file: File, maxSide = 1280): Promise<string> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  canvas.getContext('2d')?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  return canvas.toDataURL('image/jpeg', 0.8);
+}
 
 interface NewCustomer {
   name: string;
@@ -28,6 +66,8 @@ interface QueueFormProps {
   testCases?: any[]; 
   currentUserRole?: 'owner' | 'member' | 'viewer' | string;
   existingBugs?: Customer[];
+  /** called after an AI-proposed clause is saved, so the menu can include it */
+  onTestCaseCreated?: (testCase: { id: number; title: string; expectedResult: string }) => void;
 }
 
 export default function QueueForm({
@@ -36,6 +76,7 @@ export default function QueueForm({
   testCases = [], 
   currentUserRole = 'viewer',
   existingBugs = [],  
+  onTestCaseCreated,
 }: QueueFormProps) {
   const { user } = useAuthContext();
   const { fetchBugs, findDuplicates } = useQueueContext();
@@ -59,7 +100,16 @@ export default function QueueForm({
   const [duplicate, setDuplicate] = useState<DuplicateMatch | null>(null);
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [checkingAi, setCheckingAi] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState<SbcSuggestion | null>(null);
+  const [aiNotice, setAiNotice] = useState<string | null>(null);
+  const [chosenNewClause, setChosenNewClause] = useState<NewClause | null>(null);
+  const [dismissedSuggestionKey, setDismissedSuggestionKey] = useState<string | null>(null);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+  const suggestAbortRef = useRef<AbortController | null>(null);
+  const [analyzingPhoto, setAnalyzingPhoto] = useState(false);
+  const [photoNotice, setPhotoNotice] = useState<string | null>(null);
+  const photoFilledKeyRef = useRef<string | null>(null);
 
   // ─── Smart Duplicate Check Logic ───────────────────────────────────────────
   useEffect(() => {
@@ -113,57 +163,184 @@ export default function QueueForm({
       attachment: null,
     });
     setDuplicate(null);
+    setAiSuggestion(null);
+    setAiNotice(null);
+    setChosenNewClause(null);
+    setDismissedSuggestionKey(null);
+    setPhotoNotice(null);
+    photoFilledKeyRef.current = null;
     setError('');
   }, [currentUserName]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
-  ): void => {
-    if (e.target.name === 'name') return;
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  // Only the finding text drives the suggestion; picking a clause must not re-trigger it.
+  const suggestionKey = [
+    formData.url.trim(),
+    formData.actualResult.trim(),
+    formData.description.trim(),
+  ].join('|');
+
+  /** POSTs the finding (and optionally a photo) to the SBC suggestion route. */
+  const requestSuggestion = async (
+    extra: { image?: string },
+    signal?: AbortSignal,
+  ): Promise<SbcSuggestion> => {
+    const token =
+      document.cookie.match(/(^| )token=([^;]+)/)?.[2] ?? localStorage.getItem('token');
+    const res = await fetch('/api/sbc-suggest', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      signal,
+      body: JSON.stringify({
+        description: formData.description,
+        actualResult: formData.actualResult,
+        siteLocation: formData.url,
+        clauses: testCases.map(
+          (tc: { id: number; title: string; expectedResult?: string }) => ({
+            id: tc.id,
+            title: tc.title,
+            expectedResult: tc.expectedResult,
+          }),
+        ),
+        ...extra,
+      }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data?.error ?? `${res.status} ${res.statusText}`);
+    }
+    return (await res.json()) as SbcSuggestion;
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    setFormData((prev) => ({
-      ...prev,
-      attachment: e.target.files?.[0] ?? null,
-    }));
+  const noticeFor = (suggestion: SbcSuggestion): string | null =>
+    suggestion.aiUnavailable
+      ? 'AI is unavailable right now (check the AI API key), so these are keyword matches.'
+      : suggestion.matches.length === 0 && !suggestion.newClause
+        ? 'AI could not find an SBC clause for this finding. Pick one manually.'
+        : null;
+
+  // AI suggests which "SBC Clause" menu option fits what the engineer typed
+  useEffect(() => {
+    // text the photo analysis just wrote already has its suggestion, don't ask again
+    if (photoFilledKeyRef.current === suggestionKey) return;
+
+    const findingLen =
+      formData.actualResult.trim().length + formData.description.trim().length;
+
+    if (findingLen < 20 || dismissedSuggestionKey === suggestionKey) {
+      suggestAbortRef.current?.abort();
+      setCheckingAi(false);
+      setAiSuggestion(null);
+      setAiNotice(null);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      suggestAbortRef.current?.abort();
+      const controller = new AbortController();
+      suggestAbortRef.current = controller;
+
+      void (async () => {
+        setCheckingAi(true);
+        try {
+          const suggestion = await requestSuggestion({}, controller.signal);
+          if (controller.signal.aborted) return;
+          setAiSuggestion(suggestion);
+          setAiNotice(noticeFor(suggestion));
+        } catch (err) {
+          if (err instanceof DOMException && err.name === 'AbortError') return;
+          setAiSuggestion(null);
+          setAiNotice(
+            `AI suggestion request failed: ${err instanceof Error ? err.message : 'unknown error'}`,
+          );
+        } finally {
+          if (suggestAbortRef.current === controller) setCheckingAi(false);
+        }
+      })();
+    }, 900);
+
+    return () => {
+      window.clearTimeout(timer);
+      suggestAbortRef.current?.abort(); // drop a stale in-flight answer when the text changes
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suggestionKey, dismissedSuggestionKey, testCases]);
+
+  /** Saves an AI-proposed clause to the project (same endpoint as the test cases page) and returns its id. */
+  const createClause = async (API: string, clause: NewClause): Promise<number> => {
+    const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2] ?? localStorage.getItem('token');
+    const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+    const url = `${API}/api/projects/${projectId}/testcases`;
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ title: clause.title, steps: [], expectedResult: clause.standard }),
+    });
+    if (!res.ok) throw new Error(`Could not save the AI SBC clause (${res.status})`);
+
+    const created = await res.json().catch(() => null);
+    let id: number | undefined = created?.id ?? created?.Id;
+    if (typeof id !== 'number') {
+      // the API did not return the new row, so look it up by title
+      const list = await fetch(url, { headers }).then((r) => (r.ok ? r.json() : []));
+      const found = (list as { id: number; title: string }[])
+        .filter((tc) => tc.title === clause.title)
+        .sort((a, b) => b.id - a.id)[0];
+      id = found?.id;
+    }
+    if (typeof id !== 'number') throw new Error('Saved the AI SBC clause but could not link it');
+
+    onTestCaseCreated?.({ id, title: clause.title, expectedResult: clause.standard });
+    return id;
   };
 
-  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
-    e.preventDefault();
+  const performSubmit = async (
+    overrides?: Partial<typeof formData>,
+  ): Promise<void> => {
     setUploading(true);
-    setError("");
+    setError('');
+
+    const payload = { ...formData, ...overrides };
 
     try {
       const API = process.env.NEXT_PUBLIC_API_URL;
-      if (!API) throw new Error("API URL missing");
+      if (!API) throw new Error('API URL missing');
 
-      const parsedTestCaseId = formData.testCaseId === '' ? null : parseInt(formData.testCaseId, 10);
+      let parsedTestCaseId =
+        payload.testCaseId === '' ? null : parseInt(payload.testCaseId, 10);
 
-      const submissionPayload = {
-        name: formData.name,
-        priority: formData.priority,
-        url: formData.url,
-        expectedResult: formData.expectedResult,
-        actualResult: formData.actualResult,
-        description: formData.description,
-        note: formData.note,
-        testCaseId: parsedTestCaseId
-      };
-
-      // Safely resolves whether backend returned an ID or a nested object payload
-      const createdBug = await onAdd(submissionPayload);
-      const newBugId = createdBug && typeof createdBug === 'object' ? createdBug.id : createdBug;
-      
-      if (!newBugId) {
-        throw new Error("Failed to create bug");
+      if (payload.testCaseId === AI_NEW_CLAUSE) {
+        if (!chosenNewClause) throw new Error('AI clause missing, pick the SBC clause again');
+        parsedTestCaseId = await createClause(API, chosenNewClause);
       }
 
-      if (formData.attachment) {
-        const token = localStorage.getItem("token");
+      const submissionPayload = {
+        name: payload.name,
+        priority: payload.priority,
+        url: payload.url,
+        expectedResult: payload.expectedResult,
+        actualResult: payload.actualResult,
+        description: payload.description,
+        note: payload.note,
+        testCaseId: parsedTestCaseId,
+      };
+
+      const createdBug = await onAdd(submissionPayload);
+      const newBugId =
+        createdBug && typeof createdBug === 'object' ? createdBug.id : createdBug;
+
+      if (!newBugId) {
+        throw new Error('Failed to create bug');
+      }
+
+      if (payload.attachment) {
+        const cookieToken = document.cookie.match(/(^| )token=([^;]+)/)?.[2] ?? null;
+        const token = cookieToken ?? localStorage.getItem('token');
         const fd = new FormData();
-        fd.append('file', formData.attachment);
+        fd.append('file', payload.attachment);
 
         const res = await fetch(
           `${API}/api/projects/${projectId}/bugs/${newBugId}/upload`,
@@ -171,7 +348,7 @@ export default function QueueForm({
             method: 'POST',
             headers: token ? { Authorization: `Bearer ${token}` } : {},
             body: fd,
-          }
+          },
         );
 
         if (!res.ok) {
@@ -191,6 +368,87 @@ export default function QueueForm({
     }
   };
 
+  const handleSelectClause = (testCaseId: number): void => {
+    setFormData((prev) => ({ ...prev, testCaseId: String(testCaseId) }));
+  };
+
+  const handleSelectNewClause = (clause: NewClause): void => {
+    setChosenNewClause(clause);
+    setFormData((prev) => ({
+      ...prev,
+      testCaseId: AI_NEW_CLAUSE,
+      expectedResult: prev.expectedResult.trim() ? prev.expectedResult : clause.standard,
+    }));
+  };
+
+  // the AI clause shown in the menu: the one already picked wins over a newer proposal
+  const menuNewClause =
+    formData.testCaseId === AI_NEW_CLAUSE ? chosenNewClause : aiSuggestion?.newClause ?? null;
+  const aiMatchedIds = new Set(aiSuggestion?.matches.map((m) => m.testCaseId) ?? []);
+
+  const handleDismissSuggestion = (): void => {
+    setDismissedSuggestionKey(suggestionKey);
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ): void => {
+    if (e.target.name === 'name') return;
+    if (e.target.name === 'testCaseId' && e.target.value === AI_NEW_CLAUSE && menuNewClause) {
+      handleSelectNewClause(menuNewClause);
+      return;
+    }
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    setFormData((prev) => ({
+      ...prev,
+      attachment: e.target.files?.[0] ?? null,
+    }));
+    setPhotoNotice(null);
+  };
+
+  /** AI looks at the attached photo, writes the finding, and suggests the SBC clause. */
+  const handleAnalyzePhoto = async (): Promise<void> => {
+    const file = formData.attachment;
+    if (!file || !file.type.startsWith('image/')) return;
+    setAnalyzingPhoto(true);
+    setPhotoNotice(null);
+    suggestAbortRef.current?.abort(); // the photo answer replaces any typing suggestion in flight
+    try {
+      const result = await requestSuggestion({ image: await photoToDataUrl(file) });
+
+      const actualResult = formData.actualResult.trim() || result.finding || '';
+      const description = formData.description.trim() || result.details || '';
+      photoFilledKeyRef.current = [formData.url.trim(), actualResult.trim(), description.trim()].join('|');
+      setFormData((prev) => ({ ...prev, actualResult, description }));
+
+      setDismissedSuggestionKey(null);
+      setAiSuggestion(result);
+      setAiNotice(noticeFor(result));
+      setPhotoNotice(
+        result.aiUnavailable
+          ? 'AI could not analyze the photo right now. Describe the finding yourself.'
+          : result.finding && formData.actualResult.trim()
+            ? `AI sees: "${result.finding}" (your text was kept). The suggested SBC clause is above.`
+            : result.finding
+              ? 'AI filled in the Site Finding and Detailed finding from the photo. Check them, then pick the SBC clause above.'
+              : 'AI did not find a violation in this photo.',
+      );
+    } catch (err) {
+      setPhotoNotice(`Photo analysis failed: ${err instanceof Error ? err.message : 'unknown error'}`);
+    } finally {
+      setAnalyzingPhoto(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+    e.preventDefault();
+    setError('');
+    await performSubmit();
+  };
+
   if (!canAddBug) {
     return (
       <div className="bg-white p-6 rounded-xl shadow border border-gray-100 flex flex-col items-center justify-center gap-3 min-h-[200px] text-center">
@@ -206,7 +464,7 @@ export default function QueueForm({
   return (
     <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5">
-        <h2 className="text-lg font-semibold text-gray-800">Add New Bug</h2>
+        <h2 className="text-lg font-semibold text-gray-800">Log SBC Non-Conformity</h2>
 
         {/* ─── SIMILARITY ALERT BOX ─── */}
         {duplicate && (
@@ -225,24 +483,7 @@ export default function QueueForm({
           </div>
         )}
 
-        {/* ─── LINK TO TEST CASE DROPDOWN ─── */}
-        <div>
-          <label className="text-sm font-medium text-gray-700">Link to Test Case</label>
-          <select
-            name="testCaseId"
-            value={formData.testCaseId}
-            onChange={handleChange}
-            className="w-full mt-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white border-gray-300"
-            disabled={uploading}
-          >
-            <option value="">-- No Test Case Linked --</option>
-            {testCases.map((tc: any) => (
-              <option key={tc.id} value={tc.id}>
-                {tc.title}
-              </option>
-            ))}
-          </select>
-        </div>
+      
 
         <div>
           <label className="text-sm font-medium text-gray-700">Reported By</label>
@@ -255,7 +496,7 @@ export default function QueueForm({
         </div>
 
         <div>
-          <label className="text-sm font-medium text-gray-700">Priority</label>
+          <label className="text-sm font-medium text-gray-700">Risk Level</label>
           <select
             name="priority"
             value={formData.priority}
@@ -270,20 +511,20 @@ export default function QueueForm({
         </div>
 
         <div>
-          <label className="text-sm font-medium text-gray-700">URL <span className="text-red-500">*</span></label>
+          <label className="text-sm font-medium text-gray-700">Site Location <span className="text-red-500">*</span></label>
           <input
             name="url"
             value={formData.url}
             onChange={handleChange}
             required
-            type="url"
+            // type="url"
             className="w-full mt-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
             disabled={uploading}
           />
         </div>
 
         <div>
-          <label className="text-sm font-medium text-gray-700">Expected Result <span className="text-red-500">*</span></label>
+          <label className="text-sm font-medium text-gray-700">SBC Required Standard <span className="text-red-500">*</span></label>
           <textarea
             name="expectedResult"
             required
@@ -296,7 +537,7 @@ export default function QueueForm({
         </div>
 
         <div>
-          <label className="text-sm font-medium text-gray-700">Actual Result <span className="text-red-500">*</span></label>
+          <label className="text-sm font-medium text-gray-700">Site Finding <span className="text-red-500">*</span></label>
           <textarea
             name="actualResult"
             required
@@ -309,7 +550,7 @@ export default function QueueForm({
         </div>
 
         <div>
-          <label className="text-sm font-medium text-gray-700">Description <span className="text-red-500">*</span></label>
+          <label className="text-sm font-medium text-gray-700">Detailed finding <span className="text-red-500">*</span></label>
           <textarea
             name="description"
             required
@@ -320,9 +561,111 @@ export default function QueueForm({
             disabled={uploading}
           />
         </div>
+  {/* ─── LINK TO TEST CASE DROPDOWN ─── */}
+        <div>
+          <label className="text-sm font-medium text-gray-700">SBC Clause</label>
+          <select
+            name="testCaseId"
+            value={formData.testCaseId}
+            onChange={handleChange}
+            className="w-full mt-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white border-gray-300"
+            disabled={uploading}
+          >
+            <option value="">-- No SBC Clause Linked --</option>
+            {menuNewClause && (
+              <option value={AI_NEW_CLAUSE}>✨ {menuNewClause.title} (AI suggestion)</option>
+            )}
+            {testCases.map((tc: any) => (
+              <option key={tc.id} value={tc.id}>
+                {aiMatchedIds.has(tc.id) ? `✨ ${tc.title} (AI suggestion)` : tc.title}
+              </option>
+            ))}
+          </select>
+          {formData.testCaseId === AI_NEW_CLAUSE && (
+            <p className="text-[11px] text-indigo-700 mt-1">
+              AI-suggested clause, not in this project yet. It will be added to the project&apos;s SBC clauses when you submit. Verify it against the SBC text.
+            </p>
+          )}
+        </div>
+        {checkingAi && (
+          <p className="text-xs text-indigo-600 font-medium animate-pulse">
+            AI is finding the SBC clause for this issue…
+          </p>
+        )}
+
+        {!checkingAi && aiNotice && (
+          <p className="text-xs text-amber-700 font-medium">{aiNotice}</p>
+        )}
+
+        {!checkingAi && aiSuggestion && (aiSuggestion.matches.length > 0 || aiSuggestion.newClause) && (
+          <div className="p-4 bg-indigo-50/90 border border-indigo-200 rounded-xl space-y-3 shadow-sm">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-black text-indigo-900 uppercase tracking-wider">
+                Suggested SBC clause
+              </span>
+              <button
+                type="button"
+                onClick={handleDismissSuggestion}
+                className="text-[11px] text-indigo-700 hover:underline"
+              >
+                Hide
+              </button>
+            </div>
+            {aiSuggestion.matches.map((m) => {
+              const clause = testCases.find((tc: { id: number }) => tc.id === m.testCaseId);
+              const selected = formData.testCaseId === String(m.testCaseId);
+              return (
+                <div
+                  key={m.testCaseId}
+                  className="flex items-start justify-between gap-3 bg-white/80 border border-indigo-100 rounded-lg p-2.5"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-900">
+                      {clause?.title ?? `#${m.testCaseId}`}
+                    </p>
+                    {m.reason && <p className="text-xs text-gray-600 mt-0.5">{m.reason}</p>}
+                    <span className="text-[10px] text-indigo-800 font-bold capitalize">
+                      {m.confidence} confidence
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectClause(m.testCaseId)}
+                    disabled={uploading || selected}
+                    className="shrink-0 bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-700 disabled:bg-green-600 disabled:opacity-100"
+                  >
+                    {selected ? 'Selected ✓' : 'Select'}
+                  </button>
+                </div>
+              );
+            })}
+            {aiSuggestion.newClause && (
+              <div className="flex items-start justify-between gap-3 bg-white/80 border border-dashed border-indigo-300 rounded-lg p-2.5">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-900">
+                    {aiSuggestion.newClause.title}{' '}
+                    <span className="text-[10px] font-bold text-indigo-700">(AI suggestion, not in this project)</span>
+                  </p>
+                  <p className="text-xs text-gray-700 mt-0.5">{aiSuggestion.newClause.standard}</p>
+                  {aiSuggestion.newClause.reason && (
+                    <p className="text-xs text-gray-500 mt-0.5">{aiSuggestion.newClause.reason}</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => aiSuggestion.newClause && handleSelectNewClause(aiSuggestion.newClause)}
+                  disabled={uploading || formData.testCaseId === AI_NEW_CLAUSE}
+                  className="shrink-0 bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-700 disabled:bg-green-600 disabled:opacity-100"
+                >
+                  {formData.testCaseId === AI_NEW_CLAUSE ? 'Selected ✓' : 'Select'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         <div>
-          <label className="text-sm font-medium text-gray-700">Note</label>
+          <label className="text-sm font-medium text-gray-700">Corrective Action Plan</label>
           <textarea
             name="note"
             value={formData.note}
@@ -354,6 +697,18 @@ export default function QueueForm({
               )}
             </div>
           )}
+
+          {formData.attachment?.type.startsWith('image/') && (
+            <button
+              type="button"
+              onClick={() => void handleAnalyzePhoto()}
+              disabled={uploading || analyzingPhoto}
+              className="mt-2 w-full bg-indigo-600 text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60"
+            >
+              {analyzingPhoto ? 'AI is analyzing the photo…' : '✨ Analyze photo with AI'}
+            </button>
+          )}
+          {photoNotice && <p className="text-xs text-indigo-700 font-medium mt-2">{photoNotice}</p>}
         </div>
 
         {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm font-medium">{error}</div>}
@@ -363,7 +718,7 @@ export default function QueueForm({
           disabled={uploading}
           className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {uploading ? 'Adding Bug...' : 'Add Bug'}
+          {uploading ? 'Adding ...' : 'Add Non-Conformity'}
         </button>
       </form>
       
