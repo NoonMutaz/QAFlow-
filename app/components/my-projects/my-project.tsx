@@ -13,6 +13,7 @@ import MyProjectHeader from './MyProjectHeader';
 import ProjectCard from './ProjectCard';
 import CreateProjectForm from './EditProjectForm';
 import { useQueries } from '@tanstack/react-query';
+import { useLanguage } from '../../i18n/LanguageProvider';
 
 const projectTypes = ['Site Inspection',];
 const ITEMS_PER_PAGE = 6;
@@ -35,6 +36,7 @@ export function useProjectsQueue(projects: Project[]) {
 }
 
 export default function MyProjects() {
+  const { t } = useLanguage();
   const { projects, deleteProject, handleOpenProject, isLoading, isOpeningProject, setIsOpeningProject } = useProjects();
   const { queue, fetchBugs } = useQueueContext();
   const { user } = useAuthContext();
@@ -172,14 +174,14 @@ export default function MyProjects() {
                 disabled={currentPage === 1}
                 className="flex-1 inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
               >
-                Previous
+                {t("Previous")}
               </button>
               <button
                 onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))} // FIXED BUG HERE
                 disabled={currentPage === totalPages}
                 className="flex-1 inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
               >
-                Next
+                {t("Next")}
               </button>
             </div>
 
@@ -187,9 +189,11 @@ export default function MyProjects() {
             <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-slate-500">
-                  Showing <span className="font-semibold text-slate-900">{filteredProjects.length === 0 ? 0 : startIndexDisplay}</span> to{' '}
-                  <span className="font-semibold text-slate-900">{endIndexDisplay}</span> of{' '}
-                  <span className="font-semibold text-slate-900">{filteredProjects.length}</span> projects
+                  {t("Showing {from} to {to} of {total} projects", {
+                    from: filteredProjects.length === 0 ? 0 : startIndexDisplay,
+                    to: endIndexDisplay,
+                    total: filteredProjects.length,
+                  })}
                 </p>
               </div>
               
@@ -200,8 +204,8 @@ export default function MyProjects() {
                     disabled={currentPage === 1}
                     className="relative inline-flex items-center rounded-xl bg-white p-2 text-slate-400 border border-slate-200 hover:bg-slate-50 hover:text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95"
                   >
-                    <span className="sr-only">Previous</span>
-                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <span className="sr-only">{t("Previous")}</span>
+                    <svg className="h-5 w-5 rtl:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                       <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
                     </svg>
                   </button>
@@ -231,8 +235,8 @@ export default function MyProjects() {
                     disabled={currentPage === totalPages}
                     className="relative inline-flex items-center rounded-xl bg-white p-2 text-slate-400 border border-slate-200 hover:bg-slate-50 hover:text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95"
                   >
-                    <span className="sr-only">Next</span>
-                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <span className="sr-only">{t("Next")}</span>
+                    <svg className="h-5 w-5 rtl:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                       <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
                     </svg>
                   </button>
