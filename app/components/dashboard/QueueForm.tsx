@@ -70,6 +70,52 @@ interface QueueFormProps {
   onTestCaseCreated?: (testCase: { id: number; title: string; expectedResult: string }) => void;
 }
 
+// ─── UI pieces ────────────────────────────────────────────────────────────────
+
+const inputCls =
+  'w-full mt-1.5 px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 bg-white placeholder:text-gray-400 ' +
+  'focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition disabled:bg-gray-50';
+const labelCls = 'text-[13px] font-medium text-gray-700';
+
+function Section({ step, title, hint, children }: { step: number; title: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center gap-2.5">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[11px] font-bold text-white">
+          {step}
+        </span>
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900 leading-tight">{title}</h3>
+          {hint && <p className="text-xs text-gray-500">{hint}</p>}
+        </div>
+      </div>
+      <div className="space-y-4 pl-0 sm:pl-8">{children}</div>
+    </section>
+  );
+}
+
+function Required() {
+  return <span className="text-red-500"> *</span>;
+}
+
+function SparkleIcon({ className = 'h-4 w-4' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9L12 2zm7 11l.9 2.6 2.6.9-2.6.9L19 20l-.9-2.6-2.6-.9 2.6-.9L19 13z" />
+    </svg>
+  );
+}
+
+function Spinner() {
+  return <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" />;
+}
+
+const RISK_STYLES: Record<Priority, { active: string; dot: string }> = {
+  High: { active: 'border-red-500 bg-red-50 text-red-700', dot: 'bg-red-500' },
+  Medium: { active: 'border-amber-500 bg-amber-50 text-amber-700', dot: 'bg-amber-500' },
+  Low: { active: 'border-emerald-500 bg-emerald-50 text-emerald-700', dot: 'bg-emerald-500' },
+};
+
 export default function QueueForm({
   onAdd,
   projectId,
@@ -423,6 +469,7 @@ export default function QueueForm({
       attachment: e.target.files?.[0] ?? null,
     }));
     setPhotoNotice(null);
+    e.target.value = '';
   };
 
   /** AI looks at the attached photo, writes the finding, and suggests the SBC clause. */
@@ -467,131 +514,266 @@ export default function QueueForm({
 
   if (!canAddBug) {
     return (
-      <div className="bg-white p-6 rounded-xl shadow border border-gray-100 flex flex-col items-center justify-center gap-3 min-h-[200px] text-center">
-        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center font-bold text-gray-500">!</div>
+      <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 text-center">
+        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 text-gray-500">
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 018 0v4" />
+          </svg>
+        </div>
         <div>
-          <p className="text-sm font-semibold text-gray-700">View Only Mode</p>
-          <p className="text-xs text-gray-400 mt-1">Only owners and members have permission to report a new bug.</p>
+          <p className="text-sm font-semibold text-gray-800">View-only access</p>
+          <p className="mt-1 text-xs text-gray-500">Only project owners and members can log non-conformities.</p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
-      <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5">
-        <h2 className="text-lg font-semibold text-gray-800">Log SBC Non-Conformity</h2>
+  const isImage = formData.attachment?.type.startsWith('image/') ?? false;
+  const showSuggestions =
+    !checkingAi && aiSuggestion && (aiSuggestion.matches.length > 0 || aiSuggestion.newClause);
 
-        {/* ─── SIMILARITY ALERT BOX ─── */}
-        {duplicate && (
-          <div className="p-3.5 bg-amber-50/80 border-l-4 border-amber-500 rounded-r-xl animate-in fade-in slide-in-from-top-1 duration-200 shadow-xs">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-black text-amber-800 uppercase tracking-wider">
-                Similarity Alert 
-              </span>
-              <span className="text-[10px] bg-amber-200/70 px-2 py-0.5 rounded-md text-amber-900 font-bold border border-amber-300/40">
-                Matched: {duplicate.matchedKey}
-              </span>
+  return (
+    <form onSubmit={(e) => void handleSubmit(e)} className="space-y-7">
+      {/* ─── HEADER ─── */}
+      <header className="flex items-start justify-between gap-3 border-b border-gray-100 pb-4">
+        <div>
+          <h2 className="text-base font-semibold text-gray-900">Log SBC non-conformity</h2>
+          <p className="mt-0.5 text-xs text-gray-500">Photo → finding → SBC clause. AI helps at each step.</p>
+        </div>
+        <span
+          className="shrink-0 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-medium text-gray-600"
+          title="Reported by"
+        >
+          {formData.name}
+        </span>
+      </header>
+
+      {/* ─── 1. EVIDENCE ─── */}
+      <Section step={1} title="Evidence" hint="A site photo lets AI write the finding for you.">
+        {!formData.attachment ? (
+          <label className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/60 px-4 py-6 text-center transition hover:border-blue-400 hover:bg-blue-50/40">
+            <svg className="h-7 w-7 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+              <path d="M3 8a2 2 0 012-2h2l1.5-2h7L17 6h2a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+              <circle cx="12" cy="13" r="3.5" />
+            </svg>
+            <span className="text-sm font-medium text-gray-700">Upload a site photo or video</span>
+            <span className="text-xs text-gray-400">JPG, PNG, WebP or MP4 · optional</span>
+            <input type="file" accept="image/*,video/*" onChange={handleFileChange} disabled={uploading} className="sr-only" />
+          </label>
+        ) : (
+          <div className="overflow-hidden rounded-xl border border-gray-200">
+            {previewSrc && (
+              <div className="relative h-44 w-full bg-gray-900/5">
+                {isImage ? (
+                  <Image src={previewSrc} alt="Site photo" fill className="object-contain" sizes="420px" />
+                ) : (
+                  <video src={previewSrc} controls className="h-full w-full object-contain" />
+                )}
+              </div>
+            )}
+            <div className="flex items-center justify-between gap-2 border-t border-gray-100 bg-white px-3 py-2">
+              <span className="truncate text-xs text-gray-600">{formData.attachment.name}</span>
+              <div className="flex shrink-0 gap-3 text-xs font-medium">
+                <label className="cursor-pointer text-blue-600 hover:text-blue-700">
+                  Replace
+                  <input type="file" accept="image/*,video/*" onChange={handleFileChange} disabled={uploading} className="sr-only" />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData((prev) => ({ ...prev, attachment: null }));
+                    setPhotoNotice(null);
+                  }}
+                  disabled={uploading}
+                  className="text-gray-500 hover:text-red-600"
+                >
+                  Remove
+                </button>
+              </div>
             </div>
-            <p className="text-sm font-bold text-blue-600 mt-1.5 hover:underline cursor-pointer">
-               {duplicate.item.bugId}
-            </p>
           </div>
         )}
 
-      
-
-        <div>
-          <label className="text-sm font-medium text-gray-700">Reported By</label>
-          <input
-            name="name"
-            value={formData.name}
-            readOnly
-            className="w-full mt-1 px-3 py-2 border rounded-lg text-sm bg-gray-50 cursor-not-allowed border-gray-300 font-medium"
-          />
-        </div>
-
-        <div>
-          <label className="text-sm font-medium text-gray-700">Risk Level</label>
-          <select
-            name="priority"
-            value={formData.priority}
-            onChange={handleChange}
-            className="w-full mt-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-            disabled={uploading}
+        {isImage && (
+          <button
+            type="button"
+            onClick={() => void handleAnalyzePhoto()}
+            disabled={uploading || analyzingPhoto}
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:from-indigo-700 hover:to-violet-700 disabled:opacity-60"
           >
-            <option value="High">High</option>
-            <option value="Medium">Medium</option>
-            <option value="Low">Low</option>
-          </select>
-        </div>
+            {analyzingPhoto ? <Spinner /> : <SparkleIcon />}
+            {analyzingPhoto ? 'Analyzing photo…' : 'Analyze photo with AI'}
+          </button>
+        )}
+        {photoNotice && (
+          <p className="rounded-lg bg-indigo-50 px-3 py-2 text-xs text-indigo-800">{photoNotice}</p>
+        )}
+      </Section>
 
+      {/* ─── 2. FINDING ─── */}
+      <Section step={2} title="Finding" hint="What did you see on site?">
         <div>
-          <label className="text-sm font-medium text-gray-700">Site Location <span className="text-red-500">*</span></label>
+          <label className={labelCls}>Site location<Required /></label>
           <input
             name="url"
             value={formData.url}
             onChange={handleChange}
             required
-            // type="url"
-            className="w-full mt-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g. Block B, ground floor, east stairwell"
+            className={inputCls}
             disabled={uploading}
           />
         </div>
 
         <div>
-          <label className="text-sm font-medium text-gray-700">SBC Required Standard <span className="text-red-500">*</span></label>
-          <textarea
-            name="expectedResult"
-            required
-            value={formData.expectedResult}
-            onChange={handleChange}
-            rows={2}
-            placeholder="Filled from the selected SBC clause, or type it"
-            className="w-full mt-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-            disabled={uploading}
-          />
-          {formData.expectedResult && formData.expectedResult === autoStandard && (
-            <p className="text-[11px] text-gray-500 mt-1">From the selected SBC clause. You can edit it.</p>
-          )}
-        </div>
-
-        <div>
-          <label className="text-sm font-medium text-gray-700">Site Finding <span className="text-red-500">*</span></label>
+          <label className={labelCls}>Site finding<Required /></label>
           <textarea
             name="actualResult"
             required
             value={formData.actualResult}
             onChange={handleChange}
             rows={2}
-            className="w-full mt-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+            placeholder="One line, e.g. Emergency exit door is padlocked"
+            className={inputCls}
             disabled={uploading}
           />
         </div>
 
         <div>
-          <label className="text-sm font-medium text-gray-700">Detailed finding <span className="text-red-500">*</span></label>
+          <label className={labelCls}>Detailed finding<Required /></label>
           <textarea
             name="description"
             required
             value={formData.description}
             onChange={handleChange}
             rows={3}
-            className="w-full mt-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+            placeholder="What is visible, where, and why it is non-compliant"
+            className={inputCls}
             disabled={uploading}
           />
         </div>
-  {/* ─── LINK TO TEST CASE DROPDOWN ─── */}
+
+        {duplicate && (
+          <div className="flex gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
+            <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 2L1 21h22L12 2zm0 6l7.5 13h-15L12 8zm-1 4v4h2v-4h-2zm0 5v2h2v-2h-2z" />
+            </svg>
+            <div className="text-xs text-amber-900">
+              <p className="font-semibold">Possible duplicate</p>
+              <p className="mt-0.5">
+                A similar {duplicate.matchedKey} was already reported as{' '}
+                <span className="font-semibold">{duplicate.item.bugId}</span>. Check it before submitting.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* AI status + suggestions */}
+        {checkingAi && (
+          <p className="flex items-center gap-2 text-xs font-medium text-indigo-600">
+            <Spinner /> AI is matching this finding to an SBC clause…
+          </p>
+        )}
+        {!checkingAi && aiNotice && (
+          <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">{aiNotice}</p>
+        )}
+
+        {showSuggestions && (
+          <div className="rounded-xl border border-indigo-100 bg-gradient-to-b from-indigo-50/80 to-white p-3.5 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-indigo-900">
+                <SparkleIcon className="h-3.5 w-3.5 text-indigo-500" /> Suggested SBC clause
+              </span>
+              <button type="button" onClick={handleDismissSuggestion} className="text-[11px] font-medium text-gray-500 hover:text-gray-700">
+                Dismiss
+              </button>
+            </div>
+
+            {aiSuggestion.matches.map((m) => {
+              const clause = testCases.find((tc: { id: number }) => tc.id === m.testCaseId);
+              const selected = formData.testCaseId === String(m.testCaseId);
+              return (
+                <div
+                  key={m.testCaseId}
+                  className={`flex items-start justify-between gap-3 rounded-lg border bg-white p-3 transition ${
+                    selected ? 'border-emerald-300 ring-1 ring-emerald-200' : 'border-gray-200'
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900">{clause?.title ?? `#${m.testCaseId}`}</p>
+                    {m.reason && <p className="mt-0.5 text-xs leading-relaxed text-gray-600">{m.reason}</p>}
+                    <span
+                      className={`mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${
+                        m.confidence === 'high'
+                          ? 'bg-emerald-50 text-emerald-700'
+                          : m.confidence === 'medium'
+                            ? 'bg-amber-50 text-amber-700'
+                            : 'bg-gray-100 text-gray-600'
+                      }`}
+                    >
+                      {m.confidence} confidence
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectClause(m.testCaseId)}
+                    disabled={uploading || selected}
+                    className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                      selected ? 'bg-emerald-50 text-emerald-700' : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                    }`}
+                  >
+                    {selected ? 'Selected ✓' : 'Select'}
+                  </button>
+                </div>
+              );
+            })}
+
+            {aiSuggestion.newClause && (
+              <div
+                className={`flex items-start justify-between gap-3 rounded-lg border border-dashed bg-white p-3 ${
+                  formData.testCaseId === AI_NEW_CLAUSE ? 'border-emerald-300' : 'border-indigo-300'
+                }`}
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-900">{aiSuggestion.newClause.title}</p>
+                  <span className="mt-1 inline-block rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">
+                    AI suggestion · not in this project
+                  </span>
+                  <p className="mt-1.5 text-xs leading-relaxed text-gray-700">{aiSuggestion.newClause.standard}</p>
+                  {aiSuggestion.newClause.reason && (
+                    <p className="mt-1 text-xs text-gray-500">{aiSuggestion.newClause.reason}</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => aiSuggestion.newClause && handleSelectNewClause(aiSuggestion.newClause)}
+                  disabled={uploading || formData.testCaseId === AI_NEW_CLAUSE}
+                  className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                    formData.testCaseId === AI_NEW_CLAUSE
+                      ? 'bg-emerald-50 text-emerald-700'
+                      : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                  }`}
+                >
+                  {formData.testCaseId === AI_NEW_CLAUSE ? 'Selected ✓' : 'Select'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </Section>
+
+      {/* ─── 3. SBC COMPLIANCE ─── */}
+      <Section step={3} title="SBC compliance" hint="Pick the clause; the required standard fills in.">
         <div>
-          <label className="text-sm font-medium text-gray-700">SBC Clause</label>
+          <label className={labelCls}>SBC clause</label>
           <select
             name="testCaseId"
             value={formData.testCaseId}
             onChange={handleChange}
-            className="w-full mt-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white border-gray-300"
+            className={inputCls}
             disabled={uploading}
           >
-            <option value="">-- No SBC Clause Linked --</option>
+            <option value="">No clause linked</option>
             {menuNewClause && (
               <option value={AI_NEW_CLAUSE}>✨ {menuNewClause.title} (AI suggestion)</option>
             )}
@@ -602,154 +784,85 @@ export default function QueueForm({
             ))}
           </select>
           {formData.testCaseId === AI_NEW_CLAUSE && (
-            <p className="text-[11px] text-indigo-700 mt-1">
-              AI-suggested clause, not in this project yet. It will be added to the project&apos;s SBC clauses when you submit. Verify it against the SBC text.
+            <p className="mt-1.5 text-[11px] leading-relaxed text-indigo-700">
+              Not in this project yet. It will be added to the project&apos;s SBC clauses when you submit. Verify it against the SBC text.
             </p>
           )}
         </div>
-        {checkingAi && (
-          <p className="text-xs text-indigo-600 font-medium animate-pulse">
-            AI is finding the SBC clause for this issue…
-          </p>
-        )}
-
-        {!checkingAi && aiNotice && (
-          <p className="text-xs text-amber-700 font-medium">{aiNotice}</p>
-        )}
-
-        {!checkingAi && aiSuggestion && (aiSuggestion.matches.length > 0 || aiSuggestion.newClause) && (
-          <div className="p-4 bg-indigo-50/90 border border-indigo-200 rounded-xl space-y-3 shadow-sm">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-black text-indigo-900 uppercase tracking-wider">
-                Suggested SBC clause
-              </span>
-              <button
-                type="button"
-                onClick={handleDismissSuggestion}
-                className="text-[11px] text-indigo-700 hover:underline"
-              >
-                Hide
-              </button>
-            </div>
-            {aiSuggestion.matches.map((m) => {
-              const clause = testCases.find((tc: { id: number }) => tc.id === m.testCaseId);
-              const selected = formData.testCaseId === String(m.testCaseId);
-              return (
-                <div
-                  key={m.testCaseId}
-                  className="flex items-start justify-between gap-3 bg-white/80 border border-indigo-100 rounded-lg p-2.5"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-gray-900">
-                      {clause?.title ?? `#${m.testCaseId}`}
-                    </p>
-                    {m.reason && <p className="text-xs text-gray-600 mt-0.5">{m.reason}</p>}
-                    <span className="text-[10px] text-indigo-800 font-bold capitalize">
-                      {m.confidence} confidence
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleSelectClause(m.testCaseId)}
-                    disabled={uploading || selected}
-                    className="shrink-0 bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-700 disabled:bg-green-600 disabled:opacity-100"
-                  >
-                    {selected ? 'Selected ✓' : 'Select'}
-                  </button>
-                </div>
-              );
-            })}
-            {aiSuggestion.newClause && (
-              <div className="flex items-start justify-between gap-3 bg-white/80 border border-dashed border-indigo-300 rounded-lg p-2.5">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-gray-900">
-                    {aiSuggestion.newClause.title}{' '}
-                    <span className="text-[10px] font-bold text-indigo-700">(AI suggestion, not in this project)</span>
-                  </p>
-                  <p className="text-xs text-gray-700 mt-0.5">{aiSuggestion.newClause.standard}</p>
-                  {aiSuggestion.newClause.reason && (
-                    <p className="text-xs text-gray-500 mt-0.5">{aiSuggestion.newClause.reason}</p>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => aiSuggestion.newClause && handleSelectNewClause(aiSuggestion.newClause)}
-                  disabled={uploading || formData.testCaseId === AI_NEW_CLAUSE}
-                  className="shrink-0 bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-700 disabled:bg-green-600 disabled:opacity-100"
-                >
-                  {formData.testCaseId === AI_NEW_CLAUSE ? 'Selected ✓' : 'Select'}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
 
         <div>
-          <label className="text-sm font-medium text-gray-700">Corrective Action Plan</label>
+          <label className={labelCls}>SBC required standard<Required /></label>
+          <textarea
+            name="expectedResult"
+            required
+            value={formData.expectedResult}
+            onChange={handleChange}
+            rows={2}
+            placeholder="Filled from the selected clause, or type it"
+            className={`${inputCls} ${formData.expectedResult && formData.expectedResult === autoStandard ? 'bg-blue-50/40' : ''}`}
+            disabled={uploading}
+          />
+          {formData.expectedResult && formData.expectedResult === autoStandard && (
+            <p className="mt-1 text-[11px] text-gray-500">From the selected SBC clause. You can edit it.</p>
+          )}
+        </div>
+      </Section>
+
+      {/* ─── 4. RISK & ACTION ─── */}
+      <Section step={4} title="Risk & action">
+        <div>
+          <span className={labelCls}>Risk level</span>
+          <div className="mt-1.5 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Risk level">
+            {(['High', 'Medium', 'Low'] as Priority[]).map((level) => {
+              const active = formData.priority === level;
+              return (
+                <button
+                  key={level}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setFormData((prev) => ({ ...prev, priority: level }))}
+                  disabled={uploading}
+                  className={`flex items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-xs font-semibold transition ${
+                    active ? RISK_STYLES[level].active : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                  }`}
+                >
+                  <span className={`h-2 w-2 rounded-full ${RISK_STYLES[level].dot}`} />
+                  {level}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          <label className={labelCls}>Corrective action plan</label>
           <textarea
             name="note"
             value={formData.note}
             onChange={handleChange}
             rows={2}
-            className="w-full mt-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+            placeholder="Optional: what should be done to fix it"
+            className={inputCls}
             disabled={uploading}
           />
         </div>
+      </Section>
 
-        <div>
-          <label className="text-sm font-medium text-gray-700">Screenshot / Video (Optional)</label>
-          <input
-            type="file"
-            accept="image/*,video/*"
-            onChange={handleFileChange}
-            disabled={uploading}
-            className="mt-1 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 w-full text-sm"
-          />
-
-          {formData.attachment && previewSrc && (
-            <div className="mt-2 p-2 bg-gray-50 rounded-lg">
-              {formData.attachment.type.startsWith('video/') ? (
-                <video src={previewSrc} controls className="max-h-32 w-full rounded border object-contain" />
-              ) : (
-                <div className="relative w-full h-32">
-                  <Image src={previewSrc} alt="Preview" fill className="object-contain rounded border" sizes="400px" />
-                </div>
-              )}
-            </div>
-          )}
-
-          {formData.attachment?.type.startsWith('image/') && (
-            <button
-              type="button"
-              onClick={() => void handleAnalyzePhoto()}
-              disabled={uploading || analyzingPhoto}
-              className="mt-2 w-full bg-indigo-600 text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60"
-            >
-              {analyzingPhoto ? 'AI is analyzing the photo…' : '✨ Analyze photo with AI'}
-            </button>
-          )}
-          {photoNotice && <p className="text-xs text-indigo-700 font-medium mt-2">{photoNotice}</p>}
-        </div>
-
-        {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm font-medium">{error}</div>}
-   
+      {/* ─── SUBMIT ─── */}
+      <div className="space-y-3 border-t border-gray-100 pt-5">
+        {error && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">{error}</div>
+        )}
         <button
           type="submit"
           disabled={uploading}
-          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {uploading ? 'Adding ...' : 'Add Non-Conformity'}
+          {uploading && <Spinner />}
+          {uploading ? 'Saving…' : 'Log non-conformity'}
         </button>
-      </form>
-      
-      {duplicate && (
-        <div className="p-3.5 bg-amber-50/80 border-l-4 border-amber-500 rounded-r-xl mt-3 text-xs text-amber-950">
-          ⚠️ Are you sure you want to submit? A similar <span className="font-bold">{duplicate.matchedKey}</span> has already been reported: 
-          <p className="text-sm font-bold text-blue-600 mt-1.5 hover:underline cursor-pointer">
-            {duplicate.item.bugId}
-          </p>
-        </div>
-      )}
-    </div>
+      </div>
+    </form>
   );
 }
