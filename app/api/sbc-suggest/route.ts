@@ -338,6 +338,24 @@ function libraryClauseFor(title: string, library: LibraryClause[]): LibraryClaus
   });
 }
 
+/**
+ * Removes section / clause numbers from AI text ("Section 1031.3", "§906.1", "المادة 1015.2", "1031.3"),
+ * keeping code names like "SBC 801". Unverified suggestions must not show numbers nobody has checked.
+ */
+function stripSectionNumbers(text: string): string {
+  return text
+    .replace(/\(?\s*(?:Sections?|Sec\.?|Clauses?|Articles?|Paragraph)\s*\d{2,4}(?:\.\d+)*\s*\)?/gi, " ")
+    .replace(/\(?\s*§+\s*\d{2,4}(?:\.\d+)*\s*\)?/g, " ")
+    // Arabic, including the word that introduces it: "وفقًا للمادة 1031.3 من الكود", "حسب البند 906.1"
+    .replace(/(?:(?:وفق|طبق)[اًً]*\s*|حسب\s*)?\(?\s*[وفبل]*(?:ال)?(?:مادة|مواد|بند|فقرة|قسم)\s*\(?\d{2,4}(?:\.\d+)*\)?\s*\)?(?:\s*من\s*الكود)?/g, " ")
+    .replace(/(?:\b(?:per|under|see|according to|as per|in accordance with)\s+)?\b\d{3,4}(?:\.\d+)+\b/gi, " ")
+    .replace(/\s+([،,.:;])/g, "$1")
+    .replace(/(\s*[–—-]\s*){2,}/g, " – ")
+    .replace(/\s{2,}/g, " ")
+    .replace(/^[\s–—\-:،,]+|[\s–—\-:،,]+$/g, "")
+    .trim();
+}
+
 function sanitizeBody(raw: unknown): SuggestBody {
   const b = (raw ?? {}) as Partial<SuggestBody>;
   const text = (v: unknown, max: number) => (typeof v === "string" ? v.slice(0, max) : "");
@@ -457,14 +475,15 @@ Only include a clause when its requirement clearly applies to the finding: "high
 "relevantCode": the code document from the official SBC 2024 list below that governs this finding, even when no clause above matches; null if it is not a building-code matter. Use only a code from this list:
 ${SBC_CODES.map((c) => `${c.code}: ${c.nameEn}`).join("\n")}
 "newClause": ONLY when "matches" is empty, propose the clause from your own SBC knowledge, otherwise null:
-   - "title": the relevantCode, then a section number ONLY if you are sure of it, then a short name, e.g. "SBC 801 – Section 906.1 Portable fire extinguishers" or "SBC 801 – Portable fire extinguishers".
-   - "standard": the requirement, concise and inspection-ready, without exact figures you are unsure of.
+   - "title": the relevantCode and a short topic name, with NO section or clause number, e.g. "SBC 801 – Obstructions in exit routes".
+   - "standard": the requirement, concise and inspection-ready, with NO section numbers and without exact figures you are unsure of.
    - "reason": one short sentence.
+   - "sectionGuess": your best guess of the section number (e.g. "1031.3"), or "". It is never shown to users.
 "drawingNote": only if project drawings are given and they say something about this finding, one or two sentences comparing the site with the design (e.g. the drawing shows the exit door opening outward but on site it opens inward); otherwise "".
 The finding may be in Arabic or English; write "reason" and "drawingNote" in ${body.lang === "ar" ? "Arabic" : "English"}.
 
 Respond with JSON only:
-{${body.image ? `"finding": string, "details": string, ` : ""}"matches": [{"key": string, "reason": string, "confidence": "high"|"medium"}], "relevantCode": string | null, "newClause": {"title": string, "standard": string, "reason": string} | null, "drawingNote": string}`,
+{${body.image ? `"finding": string, "details": string, ` : ""}"matches": [{"key": string, "reason": string, "confidence": "high"|"medium"}], "relevantCode": string | null, "newClause": {"title": string, "standard": string, "reason": string, "sectionGuess": string} | null, "drawingNote": string}`,
         },
         {
           role: "user",
@@ -485,7 +504,7 @@ Respond with JSON only:
     finding?: unknown;
     details?: unknown;
     relevantCode?: unknown;
-    newClause?: { title?: unknown; standard?: unknown; reason?: unknown } | null;
+    newClause?: { title?: unknown; standard?: unknown; reason?: unknown; sectionGuess?: unknown } | null;
     drawingNote?: unknown;
   };
   const byKey = new Map(candidates.map((c) => [c.key, c]));
@@ -514,11 +533,20 @@ Respond with JSON only:
       ? { title, standard, reason: typeof nc?.reason === "string" ? nc.reason.trim() : "" }
       : null;
   if (newClause) {
+    // the guessed section is used only to find the clause in the verified library, never shown
+    const guess = typeof nc?.sectionGuess === "string" ? nc.sectionGuess : "";
     const library = candidates.flatMap((c) => (c.match.libraryClause ? [c.match.libraryClause] : []));
-    const known = libraryClauseFor(newClause.title, library);
+    const known = libraryClauseFor(`${newClause.title} ${guess}`, library);
     if (known) {
       matches.push({ libraryClause: known, reason: newClause.reason, confidence: "medium" });
       newClause = null;
+    } else {
+      // unverified: no section number may reach the user
+      newClause = {
+        title: stripSectionNumbers(newClause.title),
+        standard: stripSectionNumbers(newClause.standard),
+        reason: stripSectionNumbers(newClause.reason),
+      };
     }
   }
 
