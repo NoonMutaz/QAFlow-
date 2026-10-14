@@ -290,6 +290,8 @@ export type SbcSuggestionResponse = {
   newClause?: NewClause | null;
   /** how the finding relates to the project drawings, when the drawings say something about it */
   drawingNote?: string;
+  /** size of the SBC library the AI chose from, and why it could not be loaded */
+  library?: { count: number; error?: string };
 };
 
 /** An AI-proposed clause. Its code is from the official list; the section and text are not verified. */
@@ -302,19 +304,38 @@ export type NewClause = {
 };
 
 /** Verified clauses from the shared library; empty when the library is empty or unreachable. */
-async function fetchLibrary(token: string): Promise<LibraryClause[]> {
+async function fetchLibrary(token: string): Promise<{ rows: LibraryClause[]; error?: string }> {
   try {
     const res = await fetch(`${apiBase()}/api/sbc-clauses`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
-    if (!res.ok) return [];
+    if (!res.ok) {
+      console.error(`sbc-suggest: SBC library request returned ${res.status}`);
+      return { rows: [], error: `${res.status}` };
+    }
     const rows = (await res.json()) as LibraryClause[];
-    return Array.isArray(rows) ? rows.slice(0, 1000) : [];
+    return { rows: Array.isArray(rows) ? rows.slice(0, 1000) : [] };
   } catch (err) {
     console.error("sbc-suggest: could not load the SBC library:", err);
-    return [];
+    return { rows: [], error: "unreachable" };
   }
+}
+
+/**
+ * The AI sometimes proposes a clause that is already in the library (same code and section).
+ * Returns that library clause so it is shown as verified instead of "not in the library".
+ */
+function libraryClauseFor(title: string, library: LibraryClause[]): LibraryClause | undefined {
+  const code = findSbcCode(title.match(/SBC\s*\d{3,4}/i)?.[0]);
+  if (!code) return undefined;
+  const rest = title.replace(/SBC\s*\d{3,4}/i, "");
+  const sections = rest.match(/\d{3,4}(?:\.\d+)*/g) ?? [];
+  return library.find((c) => {
+    if (findSbcCode(c.codeType)?.code !== code.code) return false;
+    const lib = c.sectionNumber.trim();
+    return sections.some((s) => s === lib || lib.startsWith(`${s}.`) || s.startsWith(`${lib}.`));
+  });
 }
 
 function sanitizeBody(raw: unknown): SuggestBody {
@@ -432,7 +453,7 @@ Then use the photo together with any text to choose clauses from the list below.
           content: `You are a Saudi Building Code (SBC) inspection assistant. An engineer wrote a site finding and must link it to a clause from a list of engineer-verified SBC clauses.
 
 ${photoTask}"matches": the clauses from the list that this finding actually violates, best first, at most 3. Use only keys from the list (like "p12" or "l5"). Never invent a clause, code or section number.
-Only include a clause when its requirement clearly applies to the finding: "high" when it directly covers it, "medium" when it very likely applies. If nothing in the list applies with that confidence, return an empty array.
+Only include a clause when its requirement clearly applies to the finding: "high" when it directly covers it, "medium" when it very likely applies. A clause counts even when it is worded differently or written in another language than the finding. If nothing in the list applies with that confidence, return an empty array.
 "relevantCode": the code document from the official SBC 2024 list below that governs this finding, even when no clause above matches; null if it is not a building-code matter. Use only a code from this list:
 ${SBC_CODES.map((c) => `${c.code}: ${c.nameEn}`).join("\n")}
 "newClause": ONLY when "matches" is empty, propose the clause from your own SBC knowledge, otherwise null:
@@ -488,10 +509,18 @@ Respond with JSON only:
   const title = typeof nc?.title === "string" ? nc.title.trim().slice(0, 200) : "";
   const standard = typeof nc?.standard === "string" ? nc.standard.trim().slice(0, 800) : "";
   const codeInTitle = findSbcCode(title.match(/SBC\s*\d{3,4}/i)?.[0]);
-  const newClause: NewClause | null =
+  let newClause: NewClause | null =
     matches.length === 0 && title && standard && codeInTitle
       ? { title, standard, reason: typeof nc?.reason === "string" ? nc.reason.trim() : "" }
       : null;
+  if (newClause) {
+    const library = candidates.flatMap((c) => (c.match.libraryClause ? [c.match.libraryClause] : []));
+    const known = libraryClauseFor(newClause.title, library);
+    if (known) {
+      matches.push({ libraryClause: known, reason: newClause.reason, confidence: "medium" });
+      newClause = null;
+    }
+  }
 
   const drawingNote = drawings && typeof parsed.drawingNote === "string" ? parsed.drawingNote.trim().slice(0, 600) : "";
 
@@ -511,7 +540,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ matches: [], source: "none" } satisfies SbcSuggestionResponse);
     }
 
-    const [library, documents] = await Promise.all([
+    const [{ rows: library, error: libraryError }, documents] = await Promise.all([
       fetchLibrary(token),
       body.projectId ? fetchProjectDocuments(token, body.projectId) : Promise.resolve([]),
     ]);
@@ -531,6 +560,7 @@ export async function POST(req: NextRequest) {
           relevantCode,
           newClause,
           ...(drawingNote ? { drawingNote } : {}),
+          library: { count: library.length, ...(libraryError ? { error: libraryError } : {}) },
           source: "openai",
           ...(body.image ? { finding, details } : {}),
         } satisfies SbcSuggestionResponse);
@@ -545,6 +575,7 @@ export async function POST(req: NextRequest) {
       matches,
       source: matches.length ? "keywords" : "none",
       aiUnavailable,
+      library: { count: library.length, ...(libraryError ? { error: libraryError } : {}) },
     } satisfies SbcSuggestionResponse);
   } catch (err) {
     console.error("sbc-suggest route error:", err);

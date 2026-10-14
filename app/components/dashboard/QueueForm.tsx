@@ -34,6 +34,7 @@ type SbcSuggestion = {
   newClause?: NewClause | null;
   /** how the finding compares with the project drawings */
   drawingNote?: string;
+  library?: { count: number; error?: string };
 };
 
 type NewClause = {
@@ -835,6 +836,17 @@ export default function QueueForm({
                       {t('Not verified · not in the library')}
                     </span>
                   </div>
+                  {aiSuggestion.library?.error ? (
+                    <p className="pt-1 text-[11px] text-red-700">
+                      {t('The SBC Library could not be loaded ({error}), so only the AI could answer.', { error: aiSuggestion.library.error })}
+                    </p>
+                  ) : aiSuggestion.library?.count === 0 ? (
+                    <p className="pt-1 text-[11px] text-amber-800">{t('The SBC Library is empty, so there was no verified clause to choose from.')}</p>
+                  ) : aiSuggestion.library ? (
+                    <p className="pt-1 text-[11px] text-slate-500">
+                      {t('None of the {n} library clauses matches this finding.', { n: aiSuggestion.library.count })}
+                    </p>
+                  ) : null}
                 </div>
                 <button
                   type="button"

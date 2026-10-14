@@ -811,4 +811,9 @@ export const ar: Record<string, string> = {
   "Showing clauses of": "بنود",
   "+ Add a clause to {code}": "+ إضافة بند إلى {code}",
   "Show all": "عرض الكل",
+
+  // ── library status in suggestions ──
+  "The SBC Library could not be loaded ({error}), so only the AI could answer.": "تعذّر تحميل مكتبة الكود ({error})، لذلك أجاب الذكاء الاصطناعي من معرفته فقط.",
+  "The SBC Library is empty, so there was no verified clause to choose from.": "مكتبة الكود فارغة، فلم يكن هناك بند موثّق للاختيار منه.",
+  "None of the {n} library clauses matches this finding.": "لا يطابق هذه الملاحظة أيٌّ من بنود المكتبة ({n}).",
 };
