@@ -121,7 +121,7 @@ export default function SbcLibrary() {
     }
     return counts;
   }, [clauses]);
-  const coveredCodes = countByCode.size;
+
 
   const save = async () => {
     if (!editing) return;
@@ -279,9 +279,6 @@ export default function SbcLibrary() {
                 </a>
               </p>
             </div>
-            <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-800">
-              {t('{n} of {total} codes have verified clauses', { n: coveredCodes, total: SBC_CODES.length })}
-            </span>
           </div>
           <p className="mt-3 text-xs leading-relaxed text-slate-600">
             {t('The AI names the governing code only from this official list. Pick a code to see its verified clauses, or add a clause to it.')}
@@ -302,9 +299,11 @@ export default function SbcLibrary() {
                     <span className="shrink-0 rounded-md bg-slate-900 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-brand-300">{code.code}</span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-xs font-medium leading-snug text-slate-800">{lang === 'ar' ? code.nameAr : code.nameEn}</span>
-                      <span className={`mt-0.5 block text-[11px] ${n ? 'text-brand-700' : 'text-slate-400'}`}>
-                        {n ? t(n === 1 ? '{n} verified clause' : '{n} verified clauses', { n }) : t('No verified clauses yet')}
-                      </span>
+                      {n > 0 && (
+                        <span className="mt-0.5 block text-[11px] text-brand-700">
+                          {t(n === 1 ? '{n} verified clause' : '{n} verified clauses', { n })}
+                        </span>
+                      )}
                     </span>
                   </button>
                 </li>

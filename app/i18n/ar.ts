@@ -803,17 +803,13 @@ export const ar: Record<string, string> = {
   // ── official codes in the SBC Library ──
   "Official SBC {edition} codes": "أكواد منظومة كود البناء السعودي {edition} الرسمية",
   "Source: the public index of the Saudi Building Code National Center.": "المصدر: الفهرس العام للمركز الوطني لكود البناء السعودي.",
-  "{n} of {total} codes have verified clauses": "{n} من {total} كودًا لها بنود موثّقة",
   "The AI names the governing code only from this official list. Pick a code to see its verified clauses, or add a clause to it.": "يحدد الذكاء الاصطناعي الكود الحاكم من هذه القائمة الرسمية فقط. اختر كودًا لعرض بنوده الموثّقة أو لإضافة بند إليه.",
   "{n} verified clause": "بند موثّق واحد",
   "{n} verified clauses": "{n} بنود موثّقة",
-  "No verified clauses yet": "لا توجد بنود موثّقة بعد",
   "Showing clauses of": "بنود",
   "+ Add a clause to {code}": "+ إضافة بند إلى {code}",
   "Show all": "عرض الكل",
 
   // ── library status in suggestions ──
   "The SBC Library could not be loaded ({error}), so only the AI could answer.": "تعذّر تحميل مكتبة الكود ({error})، لذلك أجاب الذكاء الاصطناعي من معرفته فقط.",
-  "The SBC Library is empty, so there was no verified clause to choose from.": "مكتبة الكود فارغة، فلم يكن هناك بند موثّق للاختيار منه.",
-  "None of the {n} library clauses matches this finding.": "لا يطابق هذه الملاحظة أيٌّ من بنود المكتبة ({n}).",
 };
