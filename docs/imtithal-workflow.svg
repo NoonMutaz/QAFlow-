@@ -78,8 +78,8 @@
 <text x="345" y="1838" text-anchor="middle" direction="rtl" font-size="13" fill="#475569">نعم</text>
 <rect x="1015.0" y="1938.0" width="280" height="74" rx="10" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.6"/>
 <text text-anchor="middle" dominant-baseline="middle" direction="rtl" font-size="14" font-weight="500" fill="#1e293b"><tspan x="1155" y="1975.0">يغلق المرحلة</tspan></text>
-<path d="M 495,1905 L 495,1940 L 1155,1940 L 1155,1938" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)"/>
-<text x="481" y="1928" text-anchor="middle" direction="rtl" font-size="13" fill="#475569">لا</text>
+<path d="M 495,1905 L 495,1921 L 1155,1921 L 1155,1938" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)"/>
+<text x="481" y="1917" text-anchor="middle" direction="rtl" font-size="13" fill="#475569">لا</text>
 <rect x="345.0" y="2043.0" width="300" height="74" rx="10" fill="#e8f5f5" stroke="#1f777c" stroke-width="1.6"/>
 <text text-anchor="middle" dominant-baseline="middle" direction="rtl" font-size="14" font-weight="500" fill="#1e293b"><tspan x="495" y="2070.9">يصدر تقرير المرحلة: البنود،</tspan><tspan x="495" y="2089.1">صور قبل وبعد، من أصلح ومن اعتمد</tspan></text>
 <path d="M 1155,2012.0 L 1155,2027.5 L 495,2027.5 L 495,2043.0" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)"/>
