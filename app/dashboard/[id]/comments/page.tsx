@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useQueueContext } from '../../../context/QueueContext';
 import { useQuery } from '@tanstack/react-query'; 
 import Link from 'next/link';
+import { useLanguage } from '../../../i18n/LanguageProvider';
 
 //  Types 
 
@@ -61,6 +62,7 @@ interface ProjectDiscussionsProps {
 }
 
 export default function ProjectDiscussions({ projectId }: ProjectDiscussionsProps) {
+  const { t } = useLanguage();
   const { queue, fetchBugs, updateQueue } = useQueueContext();
   const { data: allBugs = [], isLoading: loadingBugs } = useQuery({
     queryKey: ['bugs', projectId],
@@ -203,17 +205,17 @@ useEffect(() => {
         {/* Page Header */}
         <div className="border-b border-slate-200 pb-4">
           <p className="text-xs text-slate-400 font-medium mb-1">
-            <Link href="/dashboard" className="hover:underline">Dashboard</Link>
+            <Link href="/dashboard" className="hover:underline">{t("Dashboard")}</Link>
             {' / '}
-            <Link href={`/dashboard/${projectId}`} className="hover:underline">Project</Link>
+            <Link href={`/dashboard/${projectId}`} className="hover:underline">{t("Project")}</Link>
             {' / '}
-            <span className="text-blue-500 font-semibold">Discussions</span>
+            <span className="text-blue-500 font-semibold">{t("Discussions")}</span>
           </p>
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">Bug Discussions</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t("Bug Discussions")}</h1>
               <p className="mt-1 text-sm text-slate-500">
-                {assignedBugs.length} assigned {assignedBugs.length === 1 ? 'bug' : 'bugs'} in this project
+                {assignedBugs.length}{" "}{t("assigned")}{" "}{assignedBugs.length === 1 ? 'bug' : 'bugs'}{" "}{t("in this project")}
               </p>
             </div>
           </div>
@@ -228,7 +230,7 @@ useEffect(() => {
 
             <div className="p-4 border-b border-slate-200 bg-white shrink-0">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Assigned Bugs ({assignedBugs.length})
+                {t("Assigned Bugs (")}{assignedBugs.length})
               </p>
             </div>
 
@@ -244,8 +246,8 @@ useEffect(() => {
                   <svg className="w-10 h-10 mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0" />
                   </svg>
-                  <p className="text-sm font-semibold">No assigned bugs yet</p>
-                  <p className="text-xs mt-1">Bugs will appear here once assigned to a team member.</p>
+                  <p className="text-sm font-semibold">{t("No assigned bugs yet")}</p>
+                  <p className="text-xs mt-1">{t("Bugs will appear here once assigned to a team member.")}</p>
                 </div>
               )}
 
@@ -312,7 +314,7 @@ useEffect(() => {
                 <svg className="w-10 h-10 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
-                <p className="text-sm font-semibold">Select a bug to view its thread</p>
+                <p className="text-sm font-semibold">{t("Select a bug to view its thread")}</p>
               </div>
             ) : (
               <>
@@ -343,13 +345,13 @@ useEffect(() => {
                                                                    'bg-red-100     text-red-700     border-red-200'
                           }`}
                         >
-                          <option value="notFixed">Not Fixed</option>
-                          <option value="in-progress">In Progress</option>
-                          <option value="fixed">Fixed</option>
+                          <option value="notFixed">{t("Not Fixed")}</option>
+                          <option value="in-progress">{t("In Progress")}</option>
+                          <option value="fixed">{t("Fixed")}</option>
                         </select>
 
                         {updatingId === selectedBug.id && (
-                          <span className="text-[11px] text-slate-400 animate-pulse">Saving...</span>
+                          <span className="text-[11px] text-slate-400 animate-pulse">{t("Saving...")}</span>
                         )}
 
                         {/* Assignee badge */}
@@ -369,14 +371,14 @@ useEffect(() => {
                       {/* Meta */}
                       <div className="flex flex-wrap gap-3 text-[11px] text-slate-400">
                         <span>
-                          Reporter: <strong className="text-slate-600">{selectedBug.name ?? (selectedBug as any).Name ?? '—'}</strong>
+                          {t("Reporter:")}{" "}<strong className="text-slate-600">{selectedBug.name ?? (selectedBug as any).Name ?? '—'}</strong>
                         </span>
                         <span>
-                          Assigned by: <strong className="text-slate-600">{selectedBug.assignedByName ?? (selectedBug as any).AssignedByName ?? '—'}</strong>
+                          {t("Assigned by:")}{" "}<strong className="text-slate-600">{selectedBug.assignedByName ?? (selectedBug as any).AssignedByName ?? '—'}</strong>
                         </span>
                         {(selectedBug.createdAt ?? (selectedBug as any).CreatedAt) && (
                           <span>
-                            Created: <span className="font-mono">{formatDate(selectedBug.createdAt ?? (selectedBug as any).CreatedAt)}</span>
+                            {t("Created:")}{" "}<span className="font-mono">{formatDate(selectedBug.createdAt ?? (selectedBug as any).CreatedAt)}</span>
                           </span>
                         )}
                       </div>
@@ -386,7 +388,7 @@ useEffect(() => {
                       href={`/dashboard/${selectedBug.projectId ?? projectId}`}
                       className="shrink-0 text-[11px] font-semibold text-blue-600 hover:underline whitespace-nowrap"
                     >
-                      View project ↗
+                      {t("View project ↗")}
                     </Link>
                   </div>
                 </div>
@@ -394,7 +396,7 @@ useEffect(() => {
                 {/* Comment stream */}
                 <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
                   {loadingComments && (
-                    <div className="flex justify-center pt-8 text-slate-400 text-xs animate-pulse">Loading thread...</div>
+                    <div className="flex justify-center pt-8 text-slate-400 text-xs animate-pulse">{t("Loading thread...")}</div>
                   )}
 
                   {!loadingComments && threadComments.length === 0 && (
@@ -402,8 +404,8 @@ useEffect(() => {
                       <svg className="w-8 h-8 mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                       </svg>
-                      <p className="text-xs font-semibold">No messages yet</p>
-                      <p className="text-xs mt-1">Start the conversation about this bug.</p>
+                      <p className="text-xs font-semibold">{t("No messages yet")}</p>
+                      <p className="text-xs mt-1">{t("Start the conversation about this bug.")}</p>
                     </div>
                   )}
 

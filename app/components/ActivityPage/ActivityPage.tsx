@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useLanguage } from '../../i18n/LanguageProvider';
 
 export default function ActivityPage() {
+  const { t } = useLanguage();
   const [activities, setActivities] = useState<any[]>([]);
   // State to track the project details
   const [project, setProject] = useState<{ name: string } | null>(null);
@@ -35,7 +37,7 @@ export default function ActivityPage() {
       if (projectRes.status === 404) {
         setError({
           type: 'not_found',
-          message: `Project #${projectId} could not be found. It may have been deleted or never existed.`
+          message: t('Project #{id} could not be found. It may have been deleted or never existed.', { id: String(projectId) })
         });
         return;
       }
@@ -57,7 +59,7 @@ export default function ActivityPage() {
       if (res.status === 403) {
         setError({
           type: 'access',
-          message: 'Access Denied. Only the project owner is authorized to view the system activity logs.'
+          message: t('Access Denied. Only the project owner is authorized to view the system activity logs.')
         });
         return;
       }
@@ -72,7 +74,7 @@ export default function ActivityPage() {
       console.error(err);
       setError({
         type: 'generic',
-        message: 'Something went wrong while trying to load the activity stream.'
+        message: t('Something went wrong while trying to load the activity stream.')
       });
     } finally {
       setLoading(false);
@@ -151,7 +153,7 @@ export default function ActivityPage() {
               onClick={() => router.push(`/dashboard/${projectId}`)}
               className="w-full rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 transition dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
             >
-              Back to Project Workspace
+              {t("Back to Project Workspace")}
             </button>
           </div>
         </div>
@@ -171,7 +173,7 @@ export default function ActivityPage() {
         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
         </svg>
-        Back to Workspace
+        {t("Back to Workspace")}
       </button>
 
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950 print:border-none print:shadow-none">
@@ -183,7 +185,7 @@ export default function ActivityPage() {
               {project?.name ? `${project.name} • Logs` : 'Project Audit Logs'}
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Real-time infrastructure operations for Project Context Target <span className="font-mono bg-gray-100 text-gray-700 px-1 py-0.5 rounded dark:bg-zinc-800 dark:text-zinc-300">#{projectId}</span>
+              {t("Real-time infrastructure operations for Project Context Target")}{" "}<span className="font-mono bg-gray-100 text-gray-700 px-1 py-0.5 rounded dark:bg-zinc-800 dark:text-zinc-300">#{projectId}</span>
             </p>
           </div>
 
@@ -196,7 +198,7 @@ export default function ActivityPage() {
                 onClick={exportToCSV}
                 className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900"
               >
-                CSV Spreadsheet
+                {t("CSV Spreadsheet")}
               </button>
 
               {/* Native Print Engine to PDF */}
@@ -207,7 +209,7 @@ export default function ActivityPage() {
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
                 </svg>
-                Download PDF
+                {t("Download PDF")}
               </button>
 
             </div>
@@ -217,7 +219,7 @@ export default function ActivityPage() {
         <div className="p-5">
           {activities.length === 0 ? (
             <div className="py-12 text-center text-sm text-gray-400 dark:text-zinc-500">
-              No recent administrative actions have been captured in the system database.
+              {t("No recent administrative actions have been captured in the system database.")}
             </div>
           ) : (
             <div className="relative border-l border-gray-200 pl-6 space-y-6 dark:border-zinc-800 print:border-zinc-300">

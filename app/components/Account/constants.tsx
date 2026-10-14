@@ -2,69 +2,69 @@ import { SubscriptionPlan } from './types';
 
 export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
-    name: 'Starter',
+    name: 'Starter Compliance',
     price: '$0',
-    priceId: 'price_free_forever', // ي)
+    priceId: 'price_free_forever',
     period: 'forever',
     badge: '',
-    tone: 'For trying QAFlow',
+    tone: 'For initial inspection pilot',
     current: true,
     features: [
-      'Track bugs in 2 projects max',
-      'Up to 50 active bugs',
-      'Simple status workflow',
-      'Clean, distraction-free UI'
+      'Track non-conformities in 2 audits max',
+      'Up to 50 active inspection findings',
+      'Basic approval & verification workflow',
+      'Clean, governance-ready interface'
     ],
     limits: {
       maxProjects: 2,
       maxBugs: 50,
-      maxMembers: 1, // الباقة المجانية للمطور المستقل فقط بدون دعوات
-      hasSmartAlerts: false, // ميزة منع التكرار مقفولة هنا
+      maxMembers: 1,
+      hasSmartAlerts: false,
       hasAnalytics: false
     }
   },
   {
-    name: 'Builder',
+    name: 'Standard Governance',
     price: '$12',
-    priceId: 'price_builder_monthly', // يُربط بـ Stripe Product ID لاحقاً
+    priceId: 'price_builder_monthly',
     period: 'per month',
     badge: 'Most Popular',
-    tone: 'For serious developers',
+    tone: 'For dedicated compliance officers',
     current: false,
     features: [
-      'Unlimited projects & bugs',
-      'Smart duplicate detection (Similarity Alert)', // ميزتك القاتلة مفعلة هنا!
-      'Advanced search & filters (Fuse.js)',
-      'Priority & workflow control',
-      'Basic analytics (Bug trends & charts)'
+      'Unlimited audits & compliance findings',
+      'Smart duplicate requirement alerts (Similarity Detection)',
+      'Advanced standard search & regulatory filter',
+      'Priority resolution & status control',
+      'Basic compliance trend analytics'
     ],
     limits: {
       maxProjects: 9999,
       maxBugs: 99999,
-      maxMembers: 1, // مخصصة للمطور المستقل المحترف
-      hasSmartAlerts: true, // تفعيل التنبيه الذكي للمنع
+      maxMembers: 1,
+      hasSmartAlerts: true,
       hasAnalytics: true
     }
   },
   {
-    name: 'Team',
+    name: 'Enterprise Audit',
     price: '$40',
     priceId: 'price_team_monthly',
     period: 'per month',
     badge: 'Best Value',
-    tone: 'For small teams shipping fast',
+    tone: 'For complete organization oversight',
     current: false,
     features: [
-      'Everything in Builder plan',
-      'Team collaboration & organization setup', // تفعيل الـ Workspace الجماعي لـ مديرك وفريقك
-      'Advanced roles management (Owner / Member / Viewer)', // التحكم بالصلاحيات المشروحة في الكنترولر
-      'Full Project Activity Logs Timeline', // صفحة الـ Logs والـ Timeline كاملة
-      'Attachments, screenshots & shared dashboards'
+      'Everything in Standard Governance plan',
+      'Multi-department & workspace collaboration',
+      'Granular roles (Auditor / Inspector / Reviewer)',
+      'Full Audit Activity Logs & Compliance Timeline',
+      'Evidentiary attachments, reports & executive dashboards'
     ],
     limits: {
       maxProjects: 9999,
       maxBugs: 99999,
-      maxMembers: 20, // يدعم حتى 20 مستخدم في المنظمة أو الفريق
+      maxMembers: 20,
       hasSmartAlerts: true,
       hasAnalytics: true
     }

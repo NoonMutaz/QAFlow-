@@ -9,7 +9,7 @@ import {
 } from './types.js';
 
 const PRIORITY_VALUES: readonly BugPriority[] = ['High', 'Medium', 'Low'];
-const STATUS_VALUES: readonly BugStatus[] = ['notFixed', 'in-progress', 'fixed'];
+const STATUS_VALUES: readonly BugStatus[] = ['notFixed', 'in-progress', 'pendingReview', 'fixed'];
 
 function toBugPriority(value: unknown): BugPriority {
   return typeof value === 'string' && (PRIORITY_VALUES as readonly string[]).includes(value)
@@ -28,6 +28,7 @@ function normalizeComment(raw: RawComment): BugComment {
     authorName: raw.authorName ?? raw.AuthorName ?? 'Unknown User',
     createdAt: raw.createdAt ?? raw.CreatedAt ?? '',
     text: raw.text ?? raw.Text ?? '',
+    imageUrl: raw.imageUrl ?? raw.ImageUrl,
   };
 }
 
@@ -61,6 +62,9 @@ export function normalizeBug(raw: RawAssignedBug): AssignedBug {
     url: raw.url ?? raw.Url,
     note: raw.note ?? raw.Note,
     attachmentUrl: raw.attachmentUrl ?? raw.AttachmentUrl,
+    resolutionEvidenceUrl: raw.resolutionEvidenceUrl ?? raw.ResolutionEvidenceUrl,
+    reviewComment: raw.reviewComment ?? raw.ReviewComment,
+    deadline: raw.deadline ?? raw.Deadline ?? undefined,
     testCase: normalizeTestCase(raw),
     comments: (raw.comments ?? raw.Comments ?? []).map(normalizeComment),
   };

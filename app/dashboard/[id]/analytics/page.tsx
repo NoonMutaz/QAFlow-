@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useLanguage } from '../../../i18n/LanguageProvider';
 
 interface AnalyticsData {
   openBugs: number;
@@ -12,6 +13,7 @@ interface AnalyticsData {
 }
 
 export default function AnalyticsPage() {
+  const { t } = useLanguage();
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null); // 🔍 Added error state tracking
@@ -78,13 +80,13 @@ export default function AnalyticsPage() {
       <div className="p-6 max-w-xl mx-auto mt-10 text-center">
         <div className="rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900/50 dark:bg-red-950/20">
           <span className="text-3xl">⚠️</span>
-          <h2 className="mt-2 font-semibold text-red-800 dark:text-red-400">Dashboard Failed to Load</h2>
+          <h2 className="mt-2 font-semibold text-red-800 dark:text-red-400">{t("Dashboard Failed to Load")}</h2>
           <p className="mt-1 text-sm text-red-600 dark:text-red-400/80">{error}</p>
           <button 
             onClick={() => router.push(`/dashboard/${projectId}`)}
             className="mt-4 text-xs font-medium bg-white px-3 py-1.5 border border-red-300 rounded-md text-red-700 shadow-sm hover:bg-red-50"
           >
-            Go Back to Project Workspace
+            {t("Go Back to Project Workspace")}
           </button>
         </div>
       </div>
@@ -101,34 +103,34 @@ export default function AnalyticsPage() {
           onClick={() => router.push(`/dashboard/${projectId}`)}
           className="text-xs text-gray-500 hover:text-gray-900 transition flex items-center gap-1 mb-2"
         >
-          ← Back to Workspace
+          {t("← Back to Workspace")}
         </button>
-        <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-50">Project Analytics Dashboard</h1>
+        <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-50">{t("Project Analytics Dashboard")}</h1>
       </div>
 
       {/* 📊 Metrics Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-          <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400">Open Bugs</div>
+          <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400">{t("Open Bugs")}</div>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-3xl font-bold text-gray-900 dark:text-gray-50">{data.openBugs}</span>
-            <span className="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded dark:bg-amber-950/30 dark:text-amber-400">Active</span>
+            <span className="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded dark:bg-amber-950/30 dark:text-amber-400">{t("Active")}</span>
           </div>
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-          <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400">Fixed Bugs</div>
+          <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400">{t("Fixed Bugs")}</div>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-3xl font-bold text-gray-900 dark:text-gray-50">{data.fixedBugs}</span>
-            <span className="text-xs text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded dark:bg-emerald-950/30 dark:text-emerald-400">Resolved</span>
+            <span className="text-xs text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded dark:bg-emerald-950/30 dark:text-emerald-400">{t("Resolved")}</span>
           </div>
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-          <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400">Critical Status</div>
+          <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400">{t("Critical Status")}</div>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-3xl font-bold text-red-600 dark:text-red-500">{data.criticalBugs}</span>
-            <span className="text-xs text-red-600 bg-red-50 px-1.5 py-0.5 rounded dark:bg-red-950/30 dark:text-red-400">High Priority</span>
+            <span className="text-xs text-red-600 bg-red-50 px-1.5 py-0.5 rounded dark:bg-red-950/30 dark:text-red-400">{t("High Priority")}</span>
           </div>
         </div>
       </div>
@@ -138,7 +140,7 @@ export default function AnalyticsPage() {
         <div className="flex items-center gap-4 rounded-xl border border-gray-100 bg-gray-50/50 p-4 dark:border-zinc-900 dark:bg-zinc-900/30">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">🥇</div>
           <div>
-            <div className="text-xs font-medium text-gray-400 dark:text-zinc-500">Top Contributor</div>
+            <div className="text-xs font-medium text-gray-400 dark:text-zinc-500">{t("Top Contributor")}</div>
             <div className="text-sm font-semibold text-gray-900 dark:text-gray-50">{data.topContributor}</div>
           </div>
         </div>
@@ -146,7 +148,7 @@ export default function AnalyticsPage() {
         <div className="flex items-center gap-4 rounded-xl border border-gray-100 bg-gray-50/50 p-4 dark:border-zinc-900 dark:bg-zinc-900/30">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-950/50 dark:text-purple-400">🔍</div>
           <div>
-            <div className="text-xs font-medium text-gray-400 dark:text-zinc-500">Most Active Tester</div>
+            <div className="text-xs font-medium text-gray-400 dark:text-zinc-500">{t("Most Active Tester")}</div>
             <div className="text-sm font-semibold text-gray-900 dark:text-gray-50">{data.mostActiveTester}</div>
           </div>
         </div>

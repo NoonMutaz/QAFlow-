@@ -1,4 +1,5 @@
 import { BugPriority } from './types';
+import { useLanguage } from '../../i18n/LanguageProvider';
 
 const PRIORITY_STYLES: Record<BugPriority, string> = {
   High: 'bg-red-50 text-red-700 border-red-100 ring-red-500/20',
@@ -11,13 +12,14 @@ interface PriorityBadgeProps {
 }
 
 export default function PriorityBadge({ priority }: PriorityBadgeProps) {
+  const { t } = useLanguage();
   const style = PRIORITY_STYLES[priority] ?? PRIORITY_STYLES.Low;
 
   return (
     <span
       className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${style}`}
     >
-      {priority}
+      {t(priority)}
     </span>
   );
 }

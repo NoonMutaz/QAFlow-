@@ -2,6 +2,7 @@
 import { useState, useMemo } from "react";
 import { useAuth } from "@/app/hooks/useAuth";
 import Link from "next/link";
+import { useLanguage } from '../i18n/LanguageProvider';
 
 const EyeIcon = ({ show }: { show: boolean }) => (
   <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,6 +34,7 @@ const getPasswordStrength = (password: string) => {
 };
 
 export default function RegisterPage() {
+  const { t } = useLanguage();
   const { register, error, loading } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -71,40 +73,40 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 w-full max-w-md">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Create account</h1>
-        <p className="text-gray-500 text-sm mb-6">Start tracking bugs today</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("Create account")}</h1>
+        <p className="text-gray-500 text-sm mb-6">{t("Start tracking bugs today")}</p>
 
      
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Full Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("Full Name")}</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value.replace(/[^a-zA-Z\s]/g, ""))}
               className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="John Doe"
+              placeholder={t("John Doe")}
               required
             />
           </div>
 
           {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("Email")}</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="you@example.com"
+              placeholder={t("you@example.com")}
               required
             />
           </div>
 
           {/* Password */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("Password")}</label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -142,7 +144,7 @@ export default function RegisterPage() {
                     strength.score === 2 ? "text-orange-500" :
                     strength.score === 3 ? "text-yellow-600" : "text-green-600"
                   }`}>
-                    {strength.label} password
+                    {strength.label}{" "}{t("password")}
                   </p>
                 )}
 
@@ -167,7 +169,7 @@ export default function RegisterPage() {
 
           {/* Confirm Password */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("Confirm Password")}</label>
             <div className="relative">
               <input
                 type={showConfirm ? "text" : "password"}
@@ -192,10 +194,10 @@ export default function RegisterPage() {
               </button>
             </div>
             {confirm && password !== confirm && (
-              <p className="mt-1 text-xs text-red-500">Passwords do not match</p>
+              <p className="mt-1 text-xs text-red-500">{t("Passwords do not match")}</p>
             )}
             {confirm && password === confirm && (
-              <p className="mt-1 text-xs text-green-600">Passwords match ✓</p>
+              <p className="mt-1 text-xs text-green-600">{t("Passwords match ✓")}</p>
             )}
           </div>
 
@@ -214,9 +216,9 @@ export default function RegisterPage() {
         )}
 
         <p className="text-center text-sm text-gray-500 mt-6">
-          Already have an account?{" "}
+          {t("Already have an account?")}{" "}
           <Link href="/login" className="text-blue-600 hover:underline text-sm font-medium">
-            Sign in
+            {t("Sign in")}
           </Link>
         </p>
       </div>

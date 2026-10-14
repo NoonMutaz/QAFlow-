@@ -1,10 +1,11 @@
-export type BugStatus = 'notFixed' | 'in-progress' | 'fixed';
+export type BugStatus = 'notFixed' | 'in-progress' | 'pendingReview' | 'fixed';
 export type BugPriority = 'High' | 'Medium' | 'Low';
 
 export interface BugComment {
   authorName: string;
   createdAt: string;
   text: string;
+  imageUrl?: string;
 }
 
 export interface TestCaseRef {
@@ -33,6 +34,12 @@ export interface AssignedBug {
   url?: string;
   note?: string;
   attachmentUrl?: string;
+  /** photo of the fix uploaded by the assignee */
+  resolutionEvidenceUrl?: string;
+  /** owner's reason when a fix was rejected */
+  reviewComment?: string;
+  /** due date set by the owner, "YYYY-MM-DD" */
+  deadline?: string;
   testCase?: TestCaseRef;
   comments: BugComment[];
 }
@@ -78,6 +85,12 @@ export interface RawAssignedBug {
   Note?: string;
   attachmentUrl?: string;
   AttachmentUrl?: string;
+  resolutionEvidenceUrl?: string;
+  ResolutionEvidenceUrl?: string;
+  reviewComment?: string;
+  ReviewComment?: string;
+  deadline?: string | null;
+  Deadline?: string | null;
   testCaseId?: number;
   TestCaseId?: number;
   testCase?: { title?: string };
@@ -93,4 +106,6 @@ export interface RawComment {
   CreatedAt?: string;
   text?: string;
   Text?: string;
+  imageUrl?: string;
+  ImageUrl?: string;
 }

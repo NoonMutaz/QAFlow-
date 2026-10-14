@@ -8,12 +8,16 @@ import SkeletonRow from './SkeletonRow';
 import BugRow from './BugRow';
 import BugDetailModal from './BugDetailModal';
 import { CheckCircleIcon } from './Icons';
+import ResolveDialog from './ResolveDialog';
+import { useLanguage } from '../../i18n/LanguageProvider';
 
 export default function Assigned() {
+  const { t } = useLanguage();
   const { myAssignedBugs, loadingMyBugs, fetchMyAssignedBugs, updateQueue } = useQueueContext();
 
   const [selectedBugId, setSelectedBugId] = useState<number | null>(null);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [resolvingBug, setResolvingBug] = useState<AssignedBug | null>(null);
 
   useEffect(() => {
     fetchMyAssignedBugs();
@@ -51,6 +55,19 @@ const allBugs = useMemo<AssignedBug[]>(
     }
   };
 
+  /** Uploads the fix photo; the bug becomes "pendingReview" until the owner approves it. */
+  const handleResolve = async (bug: AssignedBug, photo: File) => {
+    const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2] ?? localStorage.getItem('token');
+    const body = new FormData();
+    body.append('file', photo);
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${bug.projectId}/bugs/${bug.id}/resolve`,
+      { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body },
+    );
+    if (!res.ok) throw new Error((await res.text().catch(() => '')) || `Upload failed (${res.status})`);
+    await fetchMyAssignedBugs();
+  };
+
   const handleAddComment = async (bug: AssignedBug, text: string) => {
     // TODO: Connect your backend API interaction here
     // await addCommentToBug(bug.id, text);
@@ -64,8 +81,8 @@ const allBugs = useMemo<AssignedBug[]>(
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">My Queue</h1>
-            <p className="mt-1 text-sm text-slate-500">You have {visibleBugs.length} active assignments.</p>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t("My Queue")}</h1>
+            <p className="mt-1 text-sm text-slate-500">{t("You have {n} active assignments.", { n: visibleBugs.length })}</p>
           </div>
         </div>
 
@@ -73,10 +90,10 @@ const allBugs = useMemo<AssignedBug[]>(
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           {/* Table Header */}
           <div className="hidden sm:grid sm:grid-cols-12 border-b border-slate-100 bg-slate-50/50 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-            <div className="col-span-3">Task & Status</div>
-            <div className="col-span-2">Priority</div>
-            <div className="col-span-4">Details</div>
-            <div className="col-span-3 text-right">Actions</div>
+            <div className="col-span-3">{t("Task & Status")}</div>
+            <div className="col-span-2">{t("Priority")}</div>
+            <div className="col-span-4">{t("Details")}</div>
+            <div className="col-span-3 text-end">{t("Actions")}</div>
           </div>
 
           {/* Loading State */}
@@ -94,7 +111,7 @@ const allBugs = useMemo<AssignedBug[]>(
               <div className="rounded-full bg-slate-50 p-4 ring-1 ring-slate-100">
                 <CheckCircleIcon className="h-8 w-8 text-emerald-500" />
               </div>
-              <h3 className="mt-4 text-sm font-semibold text-slate-900">All caught up!</h3>
+              <h3 className="mt-4 text-sm font-semibold text-slate-900">{t("All caught up!")}</h3>
             </div>
           )}
 
@@ -108,6 +125,7 @@ const allBugs = useMemo<AssignedBug[]>(
                   isUpdating={updatingId === bug.id}
                   onStatusChange={handleStatusChange}
                   onView={(viewedBug) => setSelectedBugId(viewedBug.id)}
+                  onResolve={setResolvingBug}
                 />
               ))}
             </ul>
@@ -123,7 +141,12 @@ const allBugs = useMemo<AssignedBug[]>(
           onClose={() => setSelectedBugId(null)}
           onStatusChange={handleStatusChange}
           onAddComment={handleAddComment}
+          onResolve={setResolvingBug}
         />
+      )}
+
+      {resolvingBug && (
+        <ResolveDialog bug={resolvingBug} onClose={() => setResolvingBug(null)} onSubmit={handleResolve} />
       )}
     </div>
   );

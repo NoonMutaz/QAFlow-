@@ -49,7 +49,7 @@ export default function Analytics() {
 
   return (
     <div className="space-y-6">
-      {/* 📊 Main Numerical Performance Grid */}
+      {/*   Main Numerical Performance Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         
         {/* Open Bugs Card */}
@@ -81,7 +81,7 @@ export default function Analytics() {
 
       </div>
 
-      {/* 🏆 Human Roster Highlights Banner */}
+      {/* Human Roster Highlights Banner */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="flex items-center gap-4 rounded-xl border border-gray-100 bg-gray-50/50 p-4 dark:border-zinc-900 dark:bg-zinc-900/30">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">

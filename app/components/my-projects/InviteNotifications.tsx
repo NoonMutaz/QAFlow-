@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from "react";
 import { useAuthContext } from "../../context/AuthContext";
+import { useLanguage } from '../../i18n/LanguageProvider';
 
 interface BackendInvite {
   id: number;
@@ -18,6 +19,7 @@ interface BackendInvite {
 }
 
 export default function InviteNotifications() {
+  const { t } = useLanguage();
   const [invites, setInvites] = useState<BackendInvite[]>([]);
   const { token } = useAuthContext();
 
@@ -114,7 +116,7 @@ export default function InviteNotifications() {
                 📨
               </div>
               <div>
-                <h2 className="font-bold text-lg text-gray-900">Project Invites</h2>
+                <h2 className="font-bold text-lg text-gray-900">{t("Project Invites")}</h2>
                 <p className="text-xs text-gray-500">{invites.length} {invites.length === 1 ? 'invitation' : 'invitations'}</p>
               </div>
             </div>
@@ -155,7 +157,7 @@ export default function InviteNotifications() {
                         <h3 className="font-bold text-gray-900 text-lg leading-tight truncate pr-2">
                               {invite.project.name}
                         </h3>
-                        <p className="text-sm text-gray-500 mt-0.5"> {invite.sender.name} wants to invite you</p>
+                        <p className="text-sm text-gray-500 mt-0.5"> {invite.sender.name}{" "}{t("wants to invite you")}</p>
                       </div>
                       <span className={`px-2.5 py-1 text-xs font-semibold rounded-full border ${getRoleBadge(invite.role)}`}>
                         {getRoleLabel(invite.role)}
@@ -203,7 +205,7 @@ export default function InviteNotifications() {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
-                        Join Project
+                        {t("Join Project")}
                       </button>
                       
                       <button

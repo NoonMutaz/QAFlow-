@@ -2,12 +2,17 @@
 import React, { useState, useEffect, use } from "react";
 import CreateTestCase from "./CreateTestCase";
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useLanguage } from '../../../i18n/LanguageProvider';
 
 interface LinkedBug {
   id: number;
   bugId: string;
-  status: 'notFixed' | 'in-progress' | 'fixed';
+  status: 'notFixed' | 'in-progress' | 'pendingReview' | 'fixed';
 }
+
+const authToken = () =>
+  document.cookie.match(/(^| )token=([^;]+)/)?.[2] ?? localStorage.getItem('token') ?? '';
 
 interface TestCase {
   id: number;
@@ -15,15 +20,17 @@ interface TestCase {
   expectedResult: string;
   steps?: string[];
   linkedBugs?: LinkedBug[];
-  status?: 'passed' | 'failed'; // Added to track execution status when no bugs exist
+  status?: 'passed' | 'failed' | null; // inspection result when no finding is linked
 }
 
 export default function TestCasesPage({ params }: { params: Promise<{ id: string }> }) {
+  const { t } = useLanguage();
   const [testCases, setTestCases] = useState<TestCase[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [expandedCases, setExpandedCases] = useState<Record<number, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   
   const router = useRouter();
   const resolvedParams = use(params);
@@ -34,16 +41,15 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
     setIsLoading(true);
     setError(null);
     try {
-      const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2];
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/testcases`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${authToken()}` } }
       );
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
       setTestCases(data);
     } catch (err) {
-      setError("Failed to load test cases. Please try again.");
+      setError(t("Failed to load the SBC clauses. Please try again."));
     } finally {
       setIsLoading(false);
     }
@@ -55,28 +61,42 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
     setExpandedCases((prev) => ({ ...prev, [tcId]: !prev[tcId] }));
   };
 
-  // Status Change API Handler for cases without bugs
-  const handleStatusChange = async (tcId: number, nextStatus: 'passed' | 'failed') => {
-    // Optimistic local UI State update
-    setTestCases((prev) =>
-      prev.map((tc) => (tc.id === tcId ? { ...tc, status: nextStatus } : tc))
-    );
+  /** Marks a clause with no linked finding as compliant ("passed"); calling it again clears it. */
+  const handleStatusChange = async (tc: TestCase, clicked: 'passed' | 'failed') => {
+    const previous = tc.status ?? null;
+    const next = previous === clicked ? null : clicked;
+    setTestCases((prev) => prev.map((t) => (t.id === tc.id ? { ...t, status: next } : t)));
 
     try {
-      const token = document.cookie.match(/(^| )token=([^;]+)/)?.[2];
-      await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/testcases/${tcId}/status`,
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/testcases/${tc.id}/status`,
         {
           method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ status: nextStatus }),
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken()}` },
+          body: JSON.stringify({ status: next }),
         }
       );
+      if (!res.ok) throw new Error(`Status not saved (${res.status})`);
     } catch (err) {
-      console.error("Failed to persist status change:", err);
+      console.error(err);
+      setTestCases((prev) => prev.map((t) => (t.id === tc.id ? { ...t, status: previous } : t)));
+      setError(t("Could not save the result. Please try again."));
+    }
+  };
+
+  const handleDelete = async (tcId: number) => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${projectId}/testcases/${tcId}`,
+        { method: "DELETE", headers: { Authorization: `Bearer ${authToken()}` } }
+      );
+      if (!res.ok) throw new Error(`Delete failed (${res.status})`);
+      setTestCases((prev) => prev.filter((t) => t.id !== tcId));
+    } catch (err) {
+      console.error(err);
+      setError(t("Could not delete the clause. Please try again."));
+    } finally {
+      setConfirmDelete(null);
     }
   };
 
@@ -86,32 +106,35 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
       <div className="mb-8 pb-6 border-b border-gray-200">
         <div className="flex flex-col sm:flex-row justify-between items-start gap-6">
           <div>
-            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Project Test Cases</h1>
-            <p className="text-sm text-gray-500 mt-1.5">Manage, trace, and monitor your verification matrix.</p>
+            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">{t("SBC Clauses")}</h1>
+            <p className="text-sm text-gray-500 mt-1.5">{t("The code requirements this project is inspected against, and the findings linked to each.")}</p>
           </div>
 
           <div className="flex gap-3">
             <button onClick={() => router.back()} className="px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-gray-700 font-semibold text-sm hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-sm">
-              Back
+              {t("Back")}
             </button>
-            <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-blue-700 transition-colors shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-              Add Test Case
+            <button onClick={() => setIsModalOpen(true)} className="bg-brand-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-brand-700 transition-colors shadow-sm focus:ring-2 focus:ring-brand-500 focus:ring-offset-2">
+              {t("+ Add SBC clause")}
             </button>
           </div>
         </div>
 
         {/* Legend Row */}
         <div className="flex w-fit items-center gap-6 mt-6 px-4 py-2.5 bg-white rounded-lg border border-gray-200 shadow-sm">
-          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Bug Status:</span>
+          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t("Linked findings:")}</span>
           <div className="flex gap-4">
             <div className="flex items-center gap-2 text-xs text-gray-700 font-medium">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm"></span> Fixed
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm"></span> {t("Fixed")}
             </div>
             <div className="flex items-center gap-2 text-xs text-gray-700 font-medium">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm"></span> In Progress
+              <span className="w-2.5 h-2.5 rounded-full bg-brand-500 shadow-sm"></span> {t("In Progress")}
             </div>
             <div className="flex items-center gap-2 text-xs text-gray-700 font-medium">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm"></span> Not Fixed
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm"></span> {t("Awaiting approval")}
+            </div>
+            <div className="flex items-center gap-2 text-xs text-gray-700 font-medium">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm"></span> {t("Not Fixed")}
             </div>
           </div>
         </div>
@@ -121,7 +144,7 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 flex justify-between items-center">
           <p className="text-sm font-medium">{error}</p>
-          <button onClick={fetchTestCases} className="text-xs font-bold underline hover:text-red-800">Retry</button>
+          <button onClick={fetchTestCases} className="text-xs font-bold underline hover:text-red-800">{t("Retry")}</button>
         </div>
       )}
 
@@ -140,10 +163,10 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
             </svg>
           </div>
-          <h3 className="text-lg font-bold text-gray-900 mb-1">No test cases yet</h3>
-          <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">Get started by creating your first test case to start tracking bugs and verification steps.</p>
-          <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-blue-700 shadow-sm transition-colors">
-            Create First Test Case
+          <h3 className="text-lg font-bold text-gray-900 mb-1">{t("No SBC clauses yet")}</h3>
+          <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">{t("Add the code requirements this project must meet, from the SBC Library or manually. Findings will be linked to them.")}</p>
+          <button onClick={() => setIsModalOpen(true)} className="bg-brand-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-brand-700 shadow-sm transition-colors">
+            {t("Add first clause")}
           </button>
         </div>
       ) : (
@@ -154,25 +177,30 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
             const openBugs = bugs.filter(b => b.status !== 'fixed').length;
             const isFullyFixed = bugs.length > 0 && openBugs === 0;
             
-            // Unified Completion Logic (Fully Fixed bugs OR marked explicitly as Passed)
-            const isCompleted = isFullyFixed || (bugs.length === 0 && tc.status === 'passed');
+            // done = all linked findings fixed, or no findings and the engineer marked it compliant
+            const isCompliant = bugs.length === 0 && tc.status === 'passed';
+            const isCompleted = isFullyFixed || isCompliant;
 
             return (
               <div key={tc.id} className="p-6 transition-colors hover:bg-gray-50/50">
                 <div className="flex justify-between items-center gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 group cursor-pointer w-fit" onClick={() => toggleExpand(tc.id)}>
-                      <button className="p-1 text-gray-400 group-hover:text-blue-600 group-hover:bg-blue-50 rounded-md transition-colors">
+                      <button className="p-1 text-gray-400 group-hover:text-brand-600 group-hover:bg-brand-50 rounded-md transition-colors">
                         <svg className={`w-5 h-5 transition-transform duration-200 ${expandedCases[tc.id] ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                       </button>
-                      <h3 className={`font-bold text-lg transition-colors ${isCompleted ? 'text-gray-400 line-through decoration-gray-300' : 'text-gray-900 group-hover:text-blue-700'}`}>{tc.title}</h3>
+                      {isCompleted && (
+                        <svg className="h-5 w-5 shrink-0 text-emerald-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.7-9.3a1 1 0 00-1.4-1.4L9 10.6 7.7 9.3a1 1 0 00-1.4 1.4l2 2a1 1 0 001.4 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                      <h3 className="font-bold text-lg text-gray-900 transition-colors group-hover:text-brand-700">{tc.title}</h3>
                     </div>
                     
-                    {/* Conditionally crossed out Expected Result line if case is completed */}
-                    <p className={`pl-9 text-sm mt-1 transition-all ${isCompleted ? 'line-through text-gray-400/70 decoration-gray-300' : 'text-gray-600'}`}>
-                      <span className={`font-medium ${isCompleted ? 'text-gray-400' : 'text-gray-700'}`}>Expected:</span> {tc.expectedResult}
+                    <p className="pl-9 text-sm mt-1 text-gray-600">
+                      <span className="font-medium text-gray-700">{t("Required:")}</span> {tc.expectedResult}
                     </p>
                     
                     {bugs.length > 0 && (
@@ -182,13 +210,15 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
                             key={bug.id} 
                             className={`text-xs px-2.5 py-1 rounded-md border font-mono font-medium shadow-sm transition-all ${
                               bug.status === 'fixed' 
-                                ? 'bg-emerald-50/60 text-emerald-900/70 border-emerald-100 line-through decoration-emerald-700' 
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
                                 : bug.status === 'in-progress'
-                                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                ? 'bg-brand-50 text-brand-700 border-brand-200'
+                                : bug.status === 'pendingReview'
+                                ? 'bg-amber-50 text-amber-700 border-amber-200'
                                 : 'bg-rose-50 text-rose-700 border-rose-200'
                             }`}
                           >
-                            {bug.bugId}
+                            {bug.status === 'fixed' && '✓ '}{bug.bugId}
                           </span>
                         ))}
                       </div>
@@ -196,46 +226,58 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
                   </div>
 
                   {/* Right Side: Bug Summary Status OR Interactive Segment Selector */}
-                  <div className="flex-shrink-0">
+                  <div className="flex flex-shrink-0 items-center gap-2">
                     {bugs.length > 0 ? (
                       <span className={`px-3 py-1 text-xs font-bold rounded-full border ${
-                        isFullyFixed 
-                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
-                          : 'bg-amber-50 text-amber-800 border-amber-200'
+                        isFullyFixed
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                          : 'bg-rose-50 text-rose-700 border-rose-200'
                         }`}>
-                        {isFullyFixed ? "All Fixed" : `${openBugs} Active Bugs` } 
+                        {isFullyFixed ? t("✓ All fixed") : t(openBugs === 1 ? "{n} open finding" : "{n} open findings", { n: openBugs })}
+                      </span>
+                    ) : isCompliant ? (
+                      <span className="flex items-center gap-2">
+                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
+                          {t("✓ Compliant")}
+                        </span>
+                        <button
+                          onClick={() => void handleStatusChange(tc, 'passed')}
+                          className="text-xs font-medium text-gray-400 hover:text-gray-700 hover:underline"
+                        >
+                          {t("Undo")}
+                        </button>
                       </span>
                     ) : (
-                      /* Interactive Pill Toggle for Pass/Fail */
-                      <div className="flex items-center gap-0.5 bg-gray-100 p-1 rounded-xl border border-gray-200 shadow-inner">
-                        <button 
-                          onClick={() => handleStatusChange(tc.id, 'passed')}
-                          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-150 tracking-wide select-none ${
-                            tc.status === 'passed' 
-                              ? 'bg-emerald-600 text-white shadow-sm' 
-                              : 'text-gray-500 hover:text-emerald-600 hover:bg-white/60'
-                          }`}
-                        >
-                          Pass
+                      // hidden for now: "Not inspected" + Mark compliant / Report finding (see git history)
+                      null
+                    )}
+                    {confirmDelete === tc.id ? (
+                      <span className="flex items-center gap-1">
+                        <button onClick={() => void handleDelete(tc.id)} className="rounded-lg bg-red-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-red-700">
+                          {t("Delete")}
                         </button>
-                        <button 
-                          onClick={() => handleStatusChange(tc.id, 'failed')}
-                          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-150 tracking-wide select-none ${
-                            tc.status === 'failed' 
-                              ? 'bg-rose-600 text-white shadow-sm' 
-                              : 'text-gray-500 hover:text-rose-600 hover:bg-white/60'
-                          }`}
-                        >
-                          Fail
+                        <button onClick={() => setConfirmDelete(null)} className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-gray-600">
+                          {t("Cancel")}
                         </button>
-                      </div>
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmDelete(tc.id)}
+                        className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                        title={bugs.length ? t('Delete clause (linked findings are kept)') : t('Delete clause')}
+                        aria-label={t("Delete clause")}
+                      >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     )}
                   </div>
                 </div>
 
                 {expandedCases[tc.id] && (
                   <div className="mt-5 ml-9 p-5 bg-gray-50 rounded-xl border border-gray-100/80 shadow-inner">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">Execution Steps</h4>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">{t("Inspection checklist")}</h4>
                     {tc.steps && tc.steps.length > 0 ? (
                       <div className="space-y-2">
                         {tc.steps.map((step, idx) => (
@@ -246,7 +288,7 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
                         ))}
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-400 italic">No execution steps documented.</p>
+                      <p className="text-sm text-gray-400 italic">{t("No checklist items.")}</p>
                     )}
                   </div>
                 )}
@@ -258,10 +300,11 @@ export default function TestCasesPage({ params }: { params: Promise<{ id: string
       
       {/* Modal Backdrop Container */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity">
-          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-[60] transition-opacity" onClick={() => setIsModalOpen(false)}>
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
             <CreateTestCase 
               projectId={projectId}  
+              existingTitles={testCases.map((tc) => tc.title)}
               onSuccess={() => {
                 setIsModalOpen(false);
                 fetchTestCases();

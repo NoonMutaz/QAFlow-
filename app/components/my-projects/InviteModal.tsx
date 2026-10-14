@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from "react";
 import RemoveMemberModal from "./RemoveMemberModal";
+import { useLanguage } from '../../i18n/LanguageProvider';
 
 interface Member {
   id: string;       
@@ -47,6 +48,7 @@ export default function InviteModal({
   setRemovingMemberId,
   setUpdatingMemberId,
 }: InviteModalProps) {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'invite' | 'members'>('invite');
   const [email, setEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -177,9 +179,9 @@ const handleRoleUpdate = async (memberId: string, role: Member['role']) => {
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-100">
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Team Management</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t("Team Management")}</h2>
               <p className="text-sm text-gray-500 mt-0.5">
-                Manage members for <span className="font-medium text-blue-600">{customer.name}</span>
+                {t("Manage members for")}{" "}<span className="font-medium text-blue-600">{customer.name}</span>
               </p>
             </div>
             <button
@@ -201,7 +203,7 @@ const handleRoleUpdate = async (memberId: string, role: Member['role']) => {
             <div className="min-w-0 flex-1">
               <p className="font-semibold text-gray-900 truncate">{customer.name}</p>
               <p className="text-xs text-gray-400 font-mono mt-0.5">
-                ID: {String(customer.id).slice(-8)} • {members.length} {members.length === 1 ? 'member' : 'members'}
+                {t("ID:")}{" "}{String(customer.id).slice(-8)} • {members.length} {members.length === 1 ? 'member' : 'members'}
               </p>
             </div>
           </div>
@@ -217,7 +219,7 @@ const handleRoleUpdate = async (memberId: string, role: Member['role']) => {
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
-                Invite New
+                {t("Invite New")}
               </button>
               <button
                 onClick={() => setActiveTab('members')}
@@ -227,7 +229,7 @@ const handleRoleUpdate = async (memberId: string, role: Member['role']) => {
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
-                Members ({members.length})
+                {t("Members (")}{members.length})
               </button>
             </nav>
           </div>
@@ -239,19 +241,19 @@ const handleRoleUpdate = async (memberId: string, role: Member['role']) => {
               <form onSubmit={handleInviteSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                    Team Member Email <span className="text-red-500">*</span>
+                    {t("Team Member Email")}{" "}<span className="text-red-500">*</span>
                   </label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@company.com"
+                    placeholder={t("name@company.com")}
                     autoComplete="email"
                     disabled={isSending}
                     className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
                   />
                   <p className="text-xs text-gray-400 mt-1.5">
-                  Only registered users can be invited. They&apos;ll get a notification to accept or decline the invite.
+                  {t("Only registered users can be invited. They'll get a notification to accept or decline the invite.")}
                   </p>
                 </div>
 
@@ -262,7 +264,7 @@ const handleRoleUpdate = async (memberId: string, role: Member['role']) => {
                     disabled={isSending}
                     className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 transition-all disabled:opacity-50"
                   >
-                    View Members
+                    {t("View Members")}
                   </button>
                   <button
                     type="submit"
@@ -276,14 +278,14 @@ const handleRoleUpdate = async (memberId: string, role: Member['role']) => {
                           <path className="opacity-75" fill="currentColor"
                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                         </svg>
-                        Sending...
+                        {t("Sending...")}
                       </>
                     ) : (
                       <>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                         </svg>
-                        Send Invite
+                        {t("Send Invite")}
                       </>
                     )}
                   </button>
@@ -294,12 +296,12 @@ const handleRoleUpdate = async (memberId: string, role: Member['role']) => {
               <div className="space-y-4">
                    <div className="text-left py-4 text-gray-500">
                     <p className="font-medium text-gray-600 text-sm bg-blue-100 text-blue-800 p-2 rounded-lg">
-                      As owner you can only modify your team but You cannot modify your own role or remove yourself from the project.
+                      {t("As owner you can only modify your team but You cannot modify your own role or remove yourself from the project.")}
                     </p>
                   </div>
                 {members.length === 1 && (
                   <div className="text-center py-4 text-gray-500">
-                    Only you are a member of this project.
+                    {t("Only you are a member of this project.")}
                   </div>
                 )}
 
@@ -308,8 +310,8 @@ const handleRoleUpdate = async (memberId: string, role: Member['role']) => {
                     <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    <p className="font-medium text-gray-600">No members yet</p>
-                    <p className="text-sm mt-1">Invite someone to get started</p>
+                    <p className="font-medium text-gray-600">{t("No members yet")}</p>
+                    <p className="text-sm mt-1">{t("Invite someone to get started")}</p>
                   </div>
                 ) : (
 <div className="space-y-3">
@@ -343,7 +345,7 @@ const handleRoleUpdate = async (memberId: string, role: Member['role']) => {
               <p className="font-medium text-gray-900 truncate">{member.email}</p>
               {self && (
                 <span className="px-2 py-px bg-blue-100 text-blue-800 text-xs font-semibold rounded-full tracking-wide">
-                  YOU
+                  {t("YOU")}
                 </span>
               )}
             </div>
@@ -387,9 +389,9 @@ const handleRoleUpdate = async (memberId: string, role: Member['role']) => {
   }`}
   title={!canModify(member) ? "Cannot modify yourself" : "Change role"}
 >
-  <option value="viewer">Viewer</option>
-  <option value="member">Member</option>
-  <option value="owner">Owner</option>
+  <option value="viewer">{t("Viewer")}</option>
+  <option value="member">{t("Member")}</option>
+  <option value="owner">{t("Owner")}</option>
 </select>
            <button
       disabled={!canModify(member)}
@@ -416,14 +418,14 @@ const handleRoleUpdate = async (memberId: string, role: Member['role']) => {
                     onClick={() => setActiveTab('invite')}
                     className="flex-1 px-4 py-2.5 text-sm font-medium text-blue-600 border border-blue-200 bg-blue-50 rounded-xl hover:bg-blue-100 transition-all"
                   >
-                    + Invite New Member
+                    {t("+ Invite New Member")}
                   </button>
                   <button
                     type="button"
                     onClick={onClose}
                     className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 transition-all"
                   >
-                    Done
+                    {t("Done")}
                   </button>
                 </div>
               </div>

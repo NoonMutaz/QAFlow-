@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import ApexCharts from "apexcharts";
+import { useLanguage } from '../../i18n/LanguageProvider';
 
 type Status = "notFixed" | "in-progress" | "fixed";
 
@@ -13,6 +14,7 @@ interface Customer {
 }
 
 export default function PieChart({ queue }: { queue: Customer[] }) {
+  const { t } = useLanguage();
   const elRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<ApexCharts | null>(null);
 
@@ -25,14 +27,15 @@ export default function PieChart({ queue }: { queue: Customer[] }) {
 
     // If chart exists, just update it
     if (chartRef.current) {
+      chartRef.current.updateOptions({ labels: [t("Open"), t("Under Review"), t("Compliant")] }, false, false);
       chartRef.current.updateSeries([notFixed, inProgress, fixed], true);
       return;
     }
 
-    // First time: create chart
+    //  create chart
     chartRef.current = new ApexCharts(elRef.current, {
       series: [notFixed, inProgress, fixed],
-      labels: ["Not Fixed", "In Progress", "Fixed"],
+      labels: [t("Open"), t("Under Review"), t("Compliant")],
       colors: ["#F59E0B", "#3B82F6", "#10B981"],
       chart: { type: "pie", height: 380 },
       dataLabels: {
@@ -48,12 +51,13 @@ export default function PieChart({ queue }: { queue: Customer[] }) {
       chartRef.current?.destroy();
       chartRef.current = null;
     };
-  }, [queue]); // runs on every queue change, updates in place
+  }, [queue, t]); // runs on every queue or language change, updates in place
 
   return (
     <div className="max-w-sm w-full bg-white rounded-xl shadow p-6">
       <h2 className="text-lg font-semibold text-gray-800 mb-4">
-        Status Distribution
+    {/* //    Status Distribution */}
+{t("SBC Compliance Status")}
       </h2>
       <div ref={elRef} />
     </div>

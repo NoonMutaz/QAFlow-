@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { type Project } from '../../context/ProjectContext';
+import { useLanguage } from '../../i18n/LanguageProvider';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -55,6 +56,7 @@ export default function ProjectCard({
   queue,
   isOwner,
 }: ProjectCardProps) {
+  const { t } = useLanguage();
   
   const renderEmptyState = (): ReactNode => {
     if (projects.length === 0) {
@@ -65,19 +67,19 @@ export default function ProjectCard({
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
             </svg>
           </div>
-          <h3 className="mt-5 text-base font-semibold text-slate-900">No projects yet</h3>
+          <h3 className="mt-5 text-base font-semibold text-slate-900">{t("No projects yet")}</h3>
           <p className="mt-2 text-sm text-slate-500 max-w-sm leading-relaxed">
-            Get started by creating your first project to track issues and collaborate with your team.
+            {t("Get started by creating your first project to track issues and collaborate with your team.")}
           </p>
           <button
             type="button"
             // onClick={handleCreateProject} // TODO: Wire this up to your context/modal
             className="mt-6 inline-flex items-center justify-center rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
           >
-            <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+            <svg className="me-2 h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
-            Create Project
+            {t("Create Project")}
           </button>
         </div>
       );
@@ -91,16 +93,16 @@ export default function ProjectCard({
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
             </svg>
           </div>
-          <p className="text-base font-semibold text-slate-900">No results for &quot;{searchTerm}&quot;</p>
+          <p className="text-base font-semibold text-slate-900">{t("No results for \"{q}\"", { q: searchTerm })}</p>
           <p className="mt-2 text-sm text-slate-500">
-            We couldn&apos;t find anything matching your search. Try adjusting your keywords.
+            {t("We couldn't find anything matching your search. Try adjusting your keywords.")}
           </p>
           <button
             type="button"
             onClick={() => setSearchTerm('')}
             className="mt-6 font-medium text-primary hover:text-primary/80 focus:outline-none focus:underline"
           >
-            Clear Search Filter
+            {t("Clear Search Filter")}
           </button>
         </div>
       );
@@ -172,13 +174,13 @@ export default function ProjectCard({
                     </h3>
                     <div className="mt-1 flex items-center gap-2">
                       <p className="truncate text-sm font-medium text-slate-500">
-                        {project.type ?? 'General'}
+                        {t((project.type ?? 'General').trim())}
                       </p>
                       <span className="h-1 w-1 rounded-full bg-slate-300" />
                       <span className={`text-[11px] font-bold uppercase tracking-wider ${
                         project.role === 'owner' ? 'text-purple-600' : 'text-slate-500'
                       }`}>
-                        {project.role || 'Member'}
+                        {t(project.role === 'owner' ? 'Owner' : project.role === 'viewer' ? 'Viewer' : 'Member')}
                       </span>
                     </div>
                   </div>
@@ -188,24 +190,27 @@ export default function ProjectCard({
 
               {/* Description */}
               <p className="mt-5 min-h-[2.5rem] text-sm leading-relaxed text-slate-600 line-clamp-2">
-                {project.description ?? <span className="italic text-slate-400">No description provided.</span>}
+                {project.description || <span className="italic text-slate-400">{t("No description provided.")}</span>}
               </p>
 
               {/* Minimalist Integrated Metrics */}
               <div className="mt-6 rounded-xl border border-slate-100 bg-slate-50/50 p-4">
-                <div className="flex items-center divide-x divide-slate-200/60">
-                  <div className="flex flex-1 flex-col pr-4">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total</span>
+                <div className="flex items-center divide-x divide-slate-200/60 rtl:divide-x-reverse">
+                  <div className="flex flex-1 flex-col pe-4">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      {t("Total Non-Conformities")}
+                      {/* Total */}
+                      </span>
                     <span className="mt-0.5 text-lg font-bold text-slate-900">{bugCount}</span>
                   </div>
                   <div className="flex flex-1 flex-col px-4">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Open</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{t("Open")}</span>
                     <span className={`mt-0.5 text-lg font-bold ${openCount > 0 ? 'text-red-600' : 'text-slate-900'}`}>
                       {openCount}
                     </span>
                   </div>
-                  <div className="flex flex-1 flex-col pl-4">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Fixed</span>
+                  <div className="flex flex-1 flex-col ps-4">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{t("Verified")}</span>
                     <span className={`mt-0.5 text-lg font-bold ${fixedCount > 0 ? 'text-emerald-600' : 'text-slate-900'}`}>
                       {fixedCount}
                     </span>
@@ -238,11 +243,11 @@ export default function ProjectCard({
                   onClick={() => handleOpenProject(project.id)}
                   className="flex flex-1 items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-slate-800 hover:shadow focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 active:scale-[0.98]"
                 >
-                  View Board
+                  {t("View Project")}
                 </button>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <ActionBtn
-                    label="Invite Team"
+                    label={t("Invite Team")}
                     disabled={!owner}
                     onClick={() => handleInviteClick(project)}
                     icon={
@@ -252,7 +257,7 @@ export default function ProjectCard({
                     }
                   />
                   <ActionBtn
-                    label="Settings"
+                    label={t("Settings")}
                     disabled={!owner}
                     onClick={() => openProjectSettings(project)}
                     icon={
@@ -263,7 +268,7 @@ export default function ProjectCard({
                     }
                   />
                   <ActionBtn
-                    label="Delete Project"
+                    label={t("Delete Project")}
                     disabled={!owner}
                     danger
                     onClick={() => handleDeleteClick(project)}
@@ -285,6 +290,7 @@ export default function ProjectCard({
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function Badge({ label, variant }: { label: string; variant: 'green' | 'amber' | 'blue' | 'purple' | 'slate' }) {
+  const { t } = useLanguage();
   const styles = {
     green: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
     amber: 'bg-amber-50 text-amber-700 ring-amber-600/20',
@@ -295,7 +301,7 @@ function Badge({ label, variant }: { label: string; variant: 'green' | 'amber' |
 
   return (
     <span className={`inline-flex shrink-0 items-center rounded-md px-2 py-1 text-[11px] font-bold uppercase tracking-wider ring-1 ring-inset ${styles}`}>
-      {label}
+      {t(label)}
     </span>
   );
 }

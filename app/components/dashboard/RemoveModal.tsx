@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import { useLanguage } from '../../i18n/LanguageProvider';
 
 interface RemoveModalProps {
   customer: {
@@ -13,6 +14,7 @@ interface RemoveModalProps {
 }
 
 export default function RemoveModal({ customer, removeQueue, onClose }: RemoveModalProps) {
+  const { t } = useLanguage();
   const modalRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -73,25 +75,25 @@ export default function RemoveModal({ customer, removeQueue, onClose }: RemoveMo
             </svg>
           </div>
           <h3 className="font-bold text-lg text-gray-900">
-            Delete Bug
+            {t("Delete Bug")}
           </h3>
         </div>
 
         {/* Body */}
         <div className="mb-6">
           <p className="text-gray-600 mb-4">
-            Are you sure you want to delete this bug? This action cannot be undone.
+            {t("Are you sure you want to delete this bug? This action cannot be undone.")}
           </p>
           
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm font-semibold text-gray-700">Bug ID:</span>
+              <span className="text-sm font-semibold text-gray-700">{t("Bug ID:")}</span>
               <span className="font-mono text-sm text-gray-900 bg-gray-200 px-2 py-0.5 rounded">
                 {customer.bugId}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-gray-700">Reported By:</span>
+              <span className="text-sm font-semibold text-gray-700">{t("Reported By:")}</span>
               <span className="text-sm text-gray-900 font-medium">
                 {customer.name}
               </span>
@@ -118,7 +120,7 @@ export default function RemoveModal({ customer, removeQueue, onClose }: RemoveMo
                 d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
               />
             </svg>
-            Delete
+            {t("Delete")}
           </button>
           <button
             onClick={() => {
@@ -127,14 +129,14 @@ export default function RemoveModal({ customer, removeQueue, onClose }: RemoveMo
             }}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
           >
-            Cancel
+            {t("Cancel")}
           </button>
         </div>
       </div>
 
     
       <form method="dialog" className="modal-backdrop">
-        <button>close</button>
+        <button>{t("close")}</button>
       </form>
     </dialog>
   );

@@ -3,6 +3,7 @@
 import React from 'react';
 //  Import Project from context — no local redefinition
 import { type Project } from '../../context/ProjectContext';
+import { useLanguage } from '../../i18n/LanguageProvider';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -39,6 +40,7 @@ export default function CreateProjectForm({
   setProjectForm,
   setSettingsModalProjectId,
 }: CreateProjectFormProps) {
+  const { t } = useLanguage();
   // role is optional in ProjectContext.Project — default to '' so isOwner returns false
   if (
     settingsModalProjectId == null ||
@@ -54,7 +56,7 @@ export default function CreateProjectForm({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Edit Project</h2>
+            <h2 className="text-xl font-bold text-gray-900">{t("Edit Project")}</h2>
             <p className="text-sm text-gray-500 mt-0.5">{currentProject.name}</p>
           </div>
           <button
@@ -77,7 +79,7 @@ export default function CreateProjectForm({
           {/* Name */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Project Name *
+              {t("Project Name *")}
             </label>
             <input
               type="text"
@@ -90,7 +92,7 @@ export default function CreateProjectForm({
                   ? 'border-red-300 bg-red-50 ring-2 ring-red-200'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
-              placeholder="Enter project name"
+              placeholder={t("Enter project name")}
             />
             {projectErrors.name && (
               <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
@@ -109,7 +111,7 @@ export default function CreateProjectForm({
           {/* Description */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Description
+              {t("Description")}
             </label>
             <textarea
               value={projectForm.description}
@@ -119,7 +121,7 @@ export default function CreateProjectForm({
               }
               rows={3}
               className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none hover:border-gray-300 transition-all"
-              placeholder="Brief project description (optional)"
+              placeholder={t("Brief project description (optional)")}
             />
             <p className="text-xs text-gray-400 text-right mt-1">
               {projectForm.description.length}/100
@@ -132,7 +134,7 @@ export default function CreateProjectForm({
           {/* Type */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Project Type
+              {t("Project Type")}
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {projectTypes.map((type) => (
@@ -179,7 +181,7 @@ export default function CreateProjectForm({
               disabled={isProjectSubmitting}
               className="flex-1 py-2.5 border border-gray-200 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-50 hover:shadow-sm transition-all"
             >
-              Cancel
+              {t("Cancel")}
             </button>
             <button
               onClick={handleUpdateProject}
@@ -203,7 +205,7 @@ export default function CreateProjectForm({
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     />
                   </svg>
-                  Saving...
+                  {t("Saving...")}
                 </>
               ) : (
                 'Save Changes'

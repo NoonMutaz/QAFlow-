@@ -139,8 +139,8 @@ export default function TableOfQueue({
                 <th className="w-12 px-4 py-4"></th>
                 <th className="px-4 py-4 text-[10px] font-black uppercase text-gray-500 tracking-wider whitespace-nowrap">ID</th>
                 <th className="px-4 py-4 text-[10px] font-black uppercase text-gray-500 tracking-wider whitespace-nowrap">Reporter</th>
-                <th className="px-4 py-4 text-[10px] font-black uppercase text-gray-500 tracking-wider whitespace-nowrap">Priority</th>
-                <th className="px-4 py-4 text-[10px] font-black uppercase text-gray-500 tracking-wider whitespace-nowrap">Summary / Description</th>
+                <th className="px-4 py-4 text-[10px] font-black uppercase text-gray-500 tracking-wider whitespace-nowrap">Risk level</th>
+                <th className="px-4 py-4 text-[10px] font-black uppercase text-gray-500 tracking-wider whitespace-nowrap">Detailed finding</th>
                 <th className="px-4 py-4 text-[10px] font-black uppercase text-gray-500 tracking-wider whitespace-nowrap">Status</th>
                 <th className="px-4 py-4 text-[10px] font-black uppercase text-gray-500 tracking-wider whitespace-nowrap">Assigned To</th>
               </tr>
@@ -233,9 +233,9 @@ const testCaseTitle = bug.testCase?.title || bug.TestCase?.title || bug.TestCase
                                 : 'bg-red-100 text-red-700 border-red-200'
                           }`}
                         >
-                          <option value="notFixed">Not Fixed</option>
+                          <option value="notFixed">Non-Conformities</option>
                           <option value="in-progress">In Progress</option>
-                          <option value="fixed">Fixed</option>
+                          <option value="fixed">Verified</option>
                         </select>
                       </td>
 
@@ -282,7 +282,7 @@ const testCaseTitle = bug.testCase?.title || bug.TestCase?.title || bug.TestCase
                               <div className="flex items-center justify-between border-b pb-1">
                                 <h4 className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Reproduction & Environment</h4>
                                 
-                                {/* ◄ 2. FULL EXPANDED PANEL DISPLAY LINE */}
+                                {/*  FULL EXPANDED PANEL DISPLAY LINE */}
                                 {hasTestCase ? (
                                   <span className="text-[10px] font-extrabold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 flex items-center gap-1">
                                     <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
@@ -295,17 +295,17 @@ const testCaseTitle = bug.testCase?.title || bug.TestCase?.title || bug.TestCase
                               
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                  <span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Expected Result</span>
+                                  <span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">SBC Required Standard</span>
                                   <EditableCell value={bug.expectedResult} field="expectedResult" bugId={bug.id} projectId={projectId} canEdit={canEdit} updateBugInState={updateBugInState} />
                                 </div>
                                 <div>
-                                  <span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Actual Result</span>
+                                  <span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Site Finding</span>
                                   <EditableCell value={bug.actualResult} field="actualResult" bugId={bug.id} projectId={projectId} canEdit={canEdit} updateBugInState={updateBugInState} />
                                 </div>
                               </div>
 
                               <div className="pt-1">
-                                <span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Full Long-form Description</span>
+                                <span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Detailed finding</span>
                                 <EditableCell value={bug.description} field="description" bugId={bug.id} projectId={projectId} canEdit={canEdit} updateBugInState={updateBugInState} />
                               </div>
 
@@ -317,7 +317,7 @@ const testCaseTitle = bug.testCase?.title || bug.TestCase?.title || bug.TestCase
                                   </div>
                                   {bug.url && (
                                     <a href={bug.url} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 text-xs font-bold rounded-lg border border-blue-100 whitespace-nowrap transition-all">
-                                      Open URL ↗
+                                      Open location ↗
                                     </a>
                                   )}
                                 </div>
