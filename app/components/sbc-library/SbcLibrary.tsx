@@ -74,6 +74,8 @@ export default function SbcLibrary() {
   const [clauses, setClauses] = useState<LibraryClause[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
+  /** official code picked in the codes section; filters the clause list */
+  const [codeFilter, setCodeFilter] = useState<string | null>(null);
   const [editing, setEditing] = useState<{ id: number | null; value: ClauseInput } | null>(null);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string; details?: string[] } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -103,11 +105,23 @@ export default function SbcLibrary() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return clauses;
-    return clauses.filter((c) =>
-      [c.codeType, c.codeVersion, c.sectionNumber, c.title, c.requirementText].join(' ').toLowerCase().includes(q),
+    return clauses.filter(
+      (c) =>
+        (!codeFilter || findSbcCode(c.codeType)?.code === codeFilter) &&
+        (!q || [c.codeType, c.codeVersion, c.sectionNumber, c.title, c.requirementText].join(' ').toLowerCase().includes(q)),
     );
-  }, [clauses, query]);
+  }, [clauses, query, codeFilter]);
+
+  /** verified clauses per official code */
+  const countByCode = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const c of clauses) {
+      const code = findSbcCode(c.codeType)?.code;
+      if (code) counts.set(code, (counts.get(code) ?? 0) + 1);
+    }
+    return counts;
+  }, [clauses]);
+  const coveredCodes = countByCode.size;
 
   const save = async () => {
     if (!editing) return;
@@ -250,6 +264,70 @@ export default function SbcLibrary() {
                 ))}
               </ul>
             )}
+          </div>
+        )}
+
+        {/* Official SBC 2024 codes */}
+        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-slate-900">{t('Official SBC {edition} codes', { edition: SBC_EDITION })}</h2>
+              <p className="mt-0.5 text-xs text-slate-500">
+                {t('Source: the public index of the Saudi Building Code National Center.')}{' '}
+                <a href="https://www.sbc.gov.sa" target="_blank" rel="noopener noreferrer" className="font-semibold text-brand-700 hover:underline">
+                  sbc.gov.sa ↗
+                </a>
+              </p>
+            </div>
+            <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-800">
+              {t('{n} of {total} codes have verified clauses', { n: coveredCodes, total: SBC_CODES.length })}
+            </span>
+          </div>
+          <p className="mt-3 text-xs leading-relaxed text-slate-600">
+            {t('The AI names the governing code only from this official list. Pick a code to see its verified clauses, or add a clause to it.')}
+          </p>
+          <ul className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {SBC_CODES.map((code) => {
+              const n = countByCode.get(code.code) ?? 0;
+              const active = codeFilter === code.code;
+              return (
+                <li key={code.code}>
+                  <button
+                    type="button"
+                    onClick={() => setCodeFilter(active ? null : code.code)}
+                    className={`flex w-full items-start gap-3 rounded-lg border px-3 py-2.5 text-start transition ${
+                      active ? 'border-brand-500 bg-brand-50 ring-1 ring-brand-200' : 'border-slate-200 hover:border-brand-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className="shrink-0 rounded-md bg-slate-900 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-brand-300">{code.code}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-xs font-medium leading-snug text-slate-800">{lang === 'ar' ? code.nameAr : code.nameEn}</span>
+                      <span className={`mt-0.5 block text-[11px] ${n ? 'text-brand-700' : 'text-slate-400'}`}>
+                        {n ? t(n === 1 ? '{n} verified clause' : '{n} verified clauses', { n }) : t('No verified clauses yet')}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+
+        {codeFilter && (
+          <div className="flex flex-wrap items-center gap-2 rounded-lg bg-brand-50 px-4 py-2.5 text-sm text-brand-900">
+            <span>
+              {t('Showing clauses of')} <span className="font-semibold">{codeFilter}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setEditing({ id: null, value: { ...EMPTY, CodeType: codeFilter } })}
+              className="ms-auto rounded-md bg-brand-700 px-3 py-1 text-xs font-semibold text-white hover:bg-brand-800"
+            >
+              {t('+ Add a clause to {code}', { code: codeFilter })}
+            </button>
+            <button type="button" onClick={() => setCodeFilter(null)} className="text-xs font-semibold text-brand-700 hover:underline">
+              {t('Show all')}
+            </button>
           </div>
         )}
 
