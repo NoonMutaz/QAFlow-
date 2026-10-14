@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="2200" viewBox="0 0 1320 2200" font-family="'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, Arial, sans-serif">
+<defs>
+  <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1e293b"/></marker>
+  <marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c0392b"/></marker>
+</defs>
+<rect width="1320" height="2200" fill="#ffffff"/>
+<rect x="990" y="0" width="330" height="2200" fill="#f3f6f5" stroke="#cbd5d1"/>
+<rect x="990" y="0" width="330" height="64" fill="#dfe8e5" stroke="#cbd5d1"/>
+<text text-anchor="middle" dominant-baseline="middle" direction="rtl" font-size="17" font-weight="700" fill="#1e293b"><tspan x="1155.0" y="32.0">المستشار (مالك المشروع)</tspan></text>
+<rect x="660" y="0" width="330" height="2200" fill="#f8faf9" stroke="#cbd5d1"/>
+<rect x="660" y="0" width="330" height="64" fill="#dfe8e5" stroke="#cbd5d1"/>
+<text text-anchor="middle" dominant-baseline="middle" direction="rtl" font-size="17" font-weight="700" fill="#1e293b"><tspan x="825.0" y="32.0">المهندس المراقب</tspan></text>
+<rect x="330" y="0" width="330" height="2200" fill="#f3f6f5" stroke="#cbd5d1"/>
+<rect x="330" y="0" width="330" height="64" fill="#dfe8e5" stroke="#cbd5d1"/>
+<text text-anchor="middle" dominant-baseline="middle" direction="rtl" font-size="17" font-weight="700" fill="#1e293b"><tspan x="495.0" y="32.0">النظام والذكاء الاصطناعي</tspan></text>
+<rect x="0" y="0" width="330" height="2200" fill="#f8faf9" stroke="#cbd5d1"/>
+<rect x="0" y="0" width="330" height="64" fill="#dfe8e5" stroke="#cbd5d1"/>
+<text text-anchor="middle" dominant-baseline="middle" direction="rtl" font-size="17" font-weight="700" fill="#1e293b"><tspan x="165.0" y="32.0">العضو المسؤول عن الإصلاح</tspan></text>
+<circle cx="1155" cy="105" r="13" fill="#1e293b"/>
+<rect x="1010.0" y="152.0" width="290" height="96" rx="10" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.6"/>
+<text text-anchor="middle" dominant-baseline="middle" direction="rtl" font-size="14" font-weight="500" fill="#1e293b"><tspan x="1155" y="181.8">ينشئ المشروع ويدعو الفريق</tspan><tspan x="1155" y="200.0">ويحدد الأدوار، ويضع الخطة الزمنية</tspan><tspan x="1155" y="218.2">(المراحل وبنود كل مرحلة)</tspan></text>
+<path d="M 1155,118 L 1155,152" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)"/>
+<rect x="685.0" y="293.0" width="280" height="74" rx="10" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.6"/>
+<text text-anchor="middle" dominant-baseline="middle" direction="rtl" font-size="14" font-weight="500" fill="#1e293b"><tspan x="825" y="330.0">يرفع مخططات المشروع</tspan></text>
+<path d="M 1155,248.0 L 1155,270.5 L 825,270.5 L 825,293.0" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)"/>
+<rect x="355.0" y="293.0" width="280" height="74" rx="10" fill="#e8f5f5" stroke="#1f777c" stroke-width="1.6"/>
+<text text-anchor="middle" dominant-baseline="middle" direction="rtl" font-size="14" font-weight="500" fill="#1e293b"><tspan x="495" y="320.9">يقرأ المخططات مرة واحدة</tspan><tspan x="495" y="339.1">ويحفظ ملخص التصميم</tspan></text>
+<path d="M 685.0,330 L 635.0,330" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)"/>
+<rect x="685.0" y="413.0" width="280" height="74" rx="10" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.6"/>
+<text text-anchor="middle" dominant-baseline="middle" direction="rtl" font-size="14" font-weight="500" fill="#1e293b"><tspan x="825" y="440.9">يسجّل الملاحظة في الموقع</tspan><tspan x="825" y="459.1">(صورة أو وصف أو الاثنان)</tspan></text>
+<path d="M 825,367 L 825,413" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)"/>
+<rect x="345.0" y="525.0" width="300" height="150" rx="10" fill="#e8f5f5" stroke="#1f777c" stroke-width="1.6"/>
+<text text-anchor="middle" dominant-baseline="middle" direction="rtl" font-size="14" font-weight="500" fill="#1e293b"><tspan x="495" y="554.5">يقرأ الملاحظة ويقارنها بالمخططات،</tspan><tspan x="495" y="572.7">ويقترح بندًا من بنود المشروع</tspan><tspan x="495" y="590.9">والمكتبة الموثّقة</tspan><tspan x="495" y="609.1">• صورة بلا وصف: يحللها ويكتب الملاحظة</tspan><tspan x="495" y="627.3">• لا بند موثّق: يحدد الكود الحاكم</tspan><tspan x="495" y="645.5">ويقترح بندًا غير موثّق</tspan></text>
+<path d="M 825,487.0 L 825,506.0 L 495,506.0 L 495,525.0" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)"/>
+<rect x="685.0" y="723.0" width="280" height="74" rx="10" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.6"/>
+<text text-anchor="middle" dominant-baseline="middle" direction="rtl" font-size="14" font-weight="500" fill="#1e293b"><tspan x="825" y="750.9">يقبل البند المقترح</tspan><tspan x="825" y="769.1">أو يختار غيره أو يتركه</tspan></text>
+<path d="M 495,675.0 L 495,699.0 L 825,699.0 L 825,723.0" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)"/>
+<polygon points="495,835.0 620.0,890 495,945.0 370.0,890" fill="#ffffff" stroke="#1f777c" stroke-width="1.8"/>
+<text text-anchor="middle" dominant-baseline="middle" direction="rtl" font-size="14" font-weight="500" fill="#1e293b"><tspan x="495" y="880.9">ملاحظة مشابهة</tspan><tspan x="495" y="899.1">مسجلة من قبل؟</tspan></text>
+<path d="M 825,797.0 L 825,816.0 L 495,816.0 L 495,835.0" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)"/>
+<rect x="685.0" y="853.0" width="280" height="74" rx="10" fill="#e8f5f5" stroke="#1f777c" stroke-width="1.6"/>
+<text text-anchor="middle" dominant-baseline="middle" direction="rtl" font-size="14" font-weight="500" fill="#1e293b"><tspan x="825" y="880.9">تنبيه برقم الملاحظة،</tspan><tspan x="825" y="899.1">والمهندس يقرر الإرسال أو التوقف</tspan></text>
+<path d="M 620,890 L 685.0,890" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)"/>
+<text x="645" y="878" text-anchor="middle" direction="rtl" font-size="13" fill="#475569">نعم</text>
+<rect x="685.0" y="973.0" width="280" height="74" rx="10" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.6"/>
+<text text-anchor="middle" dominant-baseline="middle" direction="rtl" font-size="14" font-weight="500" fill="#1e293b"><tspan x="825" y="1010.0">يضغط زر الإرسال</tspan></text>
+<path d="M 825,927 L 825,973" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)"/>
+<path d="M 495,945 L 495,975 L 677.0,975 L 677.0,1005 L 685.0,1005" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)"/>
+<text x="481" y="965" text-anchor="middle" direction="rtl" font-size="13" fill="#475569">لا</text>
+<rect x="355.0" y="1083.0" width="280" height="74" rx="10" fill="#e8f5f5" stroke="#1f777c" stroke-width="1.6"/>
+<text text-anchor="middle" dominant-baseline="middle" direction="rtl" font-size="14" font-weight="500" fill="#1e293b"><tspan x="495" y="1110.9">تُضاف الملاحظة للوحة</tspan><tspan x="495" y="1129.1">وتتحدث الإحصاءات والخطة الزمنية</tspan></text>
+<path d="M 825,1047.0 L 825,1065.0 L 495,1065.0 L 495,1083.0" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)"/>
+<rect x="1015.0" y="1193.0" width="280" height="74" rx="10" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.6"/>
+<text text-anchor="middle" dominant-baseline="middle" direction="rtl" font-size="14" font-weight="500" fill="#1e293b"><tspan x="1155" y="1220.9">يعيّن عضوًا للإصلاح</tspan><tspan x="1155" y="1239.1">مع موعد نهائي</tspan></text>
+<path d="M 495,1157.0 L 495,1175.0 L 1155,1175.0 L 1155,1193.0" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)"/>
+<rect x="25.0" y="1303.0" width="280" height="74" rx="10" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.6"/>
+<text text-anchor="middle" dominant-baseline="middle" direction="rtl" font-size="14" font-weight="500" fill="#1e293b"><tspan x="165" y="1330.9">يستلم المهمة في «المهام المسندة»</tspan><tspan x="165" y="1349.1">برقم الملاحظة والمشروع والموعد</tspan></text>
+<path d="M 1155,1267.0 L 1155,1285.0 L 165,1285.0 L 165,1303.0" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)"/>
+<rect x="25.0" y="1423.0" width="280" height="74" rx="10" fill="#fbf7ec" stroke="#c08a32" stroke-width="1.6"/>
+<text text-anchor="middle" dominant-baseline="middle" direction="rtl" font-size="14" font-weight="500" fill="#1e293b"><tspan x="165" y="1450.9">يصلح ويرفع صورة دليل الإصلاح</tspan><tspan x="165" y="1469.1">الحالة: بانتظار موافقة المستشار</tspan></text>
+<path d="M 165,1377 L 165,1423" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)"/>
+<polygon points="1155,1531.0 1290.0,1590 1155,1649.0 1020.0,1590" fill="#ffffff" stroke="#1f777c" stroke-width="1.8"/>
+<text text-anchor="middle" dominant-baseline="middle" direction="rtl" font-size="14" font-weight="500" fill="#1e293b"><tspan x="1155" y="1580.9">يقارن صورتي قبل وبعد:</tspan><tspan x="1155" y="1599.1">الدليل يثبت الإصلاح؟</tspan></text>
+<path d="M 305.0,1460 L 1155,1460 L 1155,1531" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)"/>
+<text x="660.0" y="1450" text-anchor="middle" direction="rtl" font-size="13" fill="#475569">إشعار في صفحة «الموافقات»</text>
+<path d="M 1020,1590 L 125,1590 L 125,1497" fill="none" stroke="#c0392b" stroke-width="1.8" stroke-dasharray="7 6" marker-end="url(#arrRed)"/>
+<text x="600.0" y="1580" text-anchor="middle" direction="rtl" font-size="13" fill="#c0392b">لا: يُعاد للعضو مع سبب الرفض</text>
+<rect x="355.0" y="1683.0" width="280" height="74" rx="10" fill="#e8f5f5" stroke="#1f777c" stroke-width="1.6"/>
+<text text-anchor="middle" dominant-baseline="middle" direction="rtl" font-size="14" font-weight="500" fill="#1e293b"><tspan x="495" y="1710.9">تُغلق الملاحظة</tspan><tspan x="495" y="1729.1">ويُسجَّل من اعتمدها ومتى</tspan></text>
+<path d="M 1155,1649 L 1155,1680 L 495,1680 L 495,1683" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)"/>
+<text x="1115" y="1672" text-anchor="middle" direction="rtl" font-size="13" fill="#475569">نعم</text>
+<polygon points="495,1795.0 620.0,1850 495,1905.0 370.0,1850" fill="#ffffff" stroke="#1f777c" stroke-width="1.8"/>
+<text text-anchor="middle" dominant-baseline="middle" direction="rtl" font-size="14" font-weight="500" fill="#1e293b"><tspan x="495" y="1840.9">بقيت بنود مفتوحة</tspan><tspan x="495" y="1859.1">في المرحلة؟</tspan></text>
+<path d="M 495,1757 L 495,1795" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)"/>
+<rect x="25.0" y="1813.0" width="280" height="74" rx="10" fill="#fff5f4" stroke="#c0392b" stroke-width="1.6"/>
+<text text-anchor="middle" dominant-baseline="middle" direction="rtl" font-size="14" font-weight="500" fill="#1e293b"><tspan x="165" y="1840.9">المرحلة تبقى مقفلة</tspan><tspan x="165" y="1859.1">حتى إنجاز الباقي</tspan></text>
+<path d="M 370,1850 L 305.0,1850" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)"/>
+<text x="345" y="1838" text-anchor="middle" direction="rtl" font-size="13" fill="#475569">نعم</text>
+<rect x="1015.0" y="1938.0" width="280" height="74" rx="10" fill="#ffffff" stroke="#9aa5b1" stroke-width="1.6"/>
+<text text-anchor="middle" dominant-baseline="middle" direction="rtl" font-size="14" font-weight="500" fill="#1e293b"><tspan x="1155" y="1975.0">يغلق المرحلة</tspan></text>
+<path d="M 495,1905 L 495,1940 L 1155,1940 L 1155,1938" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)"/>
+<text x="481" y="1928" text-anchor="middle" direction="rtl" font-size="13" fill="#475569">لا</text>
+<rect x="345.0" y="2043.0" width="300" height="74" rx="10" fill="#e8f5f5" stroke="#1f777c" stroke-width="1.6"/>
+<text text-anchor="middle" dominant-baseline="middle" direction="rtl" font-size="14" font-weight="500" fill="#1e293b"><tspan x="495" y="2070.9">يصدر تقرير المرحلة: البنود،</tspan><tspan x="495" y="2089.1">صور قبل وبعد، من أصلح ومن اعتمد</tspan></text>
+<path d="M 1155,2012.0 L 1155,2027.5 L 495,2027.5 L 495,2043.0" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)"/>
+<circle cx="495" cy="2162" r="15" fill="none" stroke="#1e293b" stroke-width="2"/>
+<circle cx="495" cy="2162" r="8" fill="#1e293b"/>
+<path d="M 495,2117 L 495,2145" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arr)"/>
+</svg>
