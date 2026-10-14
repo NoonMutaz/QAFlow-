@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useLanguage } from '../../i18n/LanguageProvider';
 
 interface RemoveMemberModalProps {
   member: {
@@ -18,6 +19,7 @@ export default function RemoveMemberModal({
   onCancel, 
   isLoading 
 }: RemoveMemberModalProps) {
+  const { t } = useLanguage();
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 max-w-md w-full mx-4 max-h-[90vh] overflow-hidden">
@@ -40,8 +42,8 @@ export default function RemoveMemberModal({
               </svg>
             </div>
             <div>
-              <h3 className="text-lg font-bold text-gray-900">Remove Team Member</h3>
-              <p className="text-sm text-gray-600 mt-1">This action cannot be undone.</p>
+              <h3 className="text-lg font-bold text-gray-900">{t("Remove Team Member")}</h3>
+              <p className="text-sm text-gray-600 mt-1">{t("This action cannot be undone.")}</p>
             </div>
           </div>
         </div>
@@ -50,14 +52,14 @@ export default function RemoveMemberModal({
         <div className="p-6">
           <div className="bg-red-50 border border-red-100 rounded-xl p-4">
             <p className="text-sm font-medium text-red-800">
-              Are you sure you want to remove{' '}
+              {t("Are you sure you want to remove")}{' '}
               <span className="font-semibold bg-red-200 px-1.5 py-0.5 rounded text-red-900">
                 {member.email}
               </span>{' '}
-              from this project?
+              {t("from this project?")}
             </p>
             <p className="text-xs text-red-700 mt-2">
-              They will lose all access immediately.
+              {t("They will lose all access immediately.")}
             </p>
           </div>
         </div>
@@ -69,7 +71,7 @@ export default function RemoveMemberModal({
             disabled={isLoading}
             className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 border border-gray-200 rounded-xl hover:bg-white transition-all shadow-sm disabled:opacity-50"
           >
-            Cancel
+            {t("Cancel")}
           </button>
           <button
             onClick={onConfirm}
@@ -93,7 +95,7 @@ export default function RemoveMemberModal({
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   />
                 </svg>
-                Removing...
+                {t("Removing...")}
               </>
             ) : (
               <>
@@ -110,7 +112,7 @@ export default function RemoveMemberModal({
                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                   />
                 </svg>
-                Remove Member
+                {t("Remove Member")}
               </>
             )}
           </button>

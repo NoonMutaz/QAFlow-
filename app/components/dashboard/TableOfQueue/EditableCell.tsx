@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { patchBugField } from "./api";
 import type { UpdateBugInState } from "./types";
+import { useLanguage } from '../../../i18n/LanguageProvider';
 
 interface Props {
   value?: string;
@@ -15,6 +16,7 @@ interface Props {
 
 /** Click-to-edit text cell that saves through the generic PATCH endpoint. */
 export default function EditableCell({ value, field, bugId, projectId, canEdit, updateBugInState, placeholder }: Props) {
+  const { t } = useLanguage();
   const [local, setLocal] = useState(value);
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -66,7 +68,7 @@ export default function EditableCell({ value, field, bugId, projectId, canEdit, 
       {loading && (
         <div className="absolute -top-10 right-0 flex items-center gap-1 px-3 py-1.5 bg-blue-100 border border-blue-200 text-blue-800 text-xs rounded-full shadow-lg z-10">
           <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping" />
-          Saving...
+          {t("Saving...")}
         </div>
       )}
     </div>

@@ -1,6 +1,9 @@
+'use client';
+
 import React from "react";
 import DeadlineButton from "./DeadlineButton";
 import type { Bug, ProjectMember } from "./types";
+import { useLanguage } from '../../../i18n/LanguageProvider';
 
 interface Props {
   bug: Bug;
@@ -12,6 +15,7 @@ interface Props {
 
 /** Assignee picker, avatar, and (once someone is assigned) the deadline button. */
 export default function AssigneeCell({ bug, members, canEdit, onAssign, onDeadlineChange }: Props) {
+  const { t } = useLanguage();
   const isAssigned = bug.assignedToUserId != null;
 
   return (
@@ -22,7 +26,7 @@ export default function AssigneeCell({ bug, members, canEdit, onAssign, onDeadli
         disabled={!canEdit}
         className="text-[11px] font-bold border border-gray-200 rounded-lg p-1 focus:ring-2 focus:ring-blue-400 outline-none bg-white min-w-[125px] disabled:opacity-50 transition-all cursor-pointer hover:border-gray-300"
       >
-        <option value="">Unassigned</option>
+        <option value="">{t("Unassigned")}</option>
         {members.map((member) => (
           <option key={member.userId} value={member.userId}>
             {member.name}

@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useRef } from 'react';
 import emailjs from '@emailjs/browser';
+import { useLanguage } from '../i18n/LanguageProvider';
 
 /* ───────────────── Types ───────────────── */
 
@@ -33,6 +34,7 @@ interface InfoProps {
 /* ───────────────── Page ───────────────── */
 
 export default function Contact() {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -96,7 +98,7 @@ export default function Contact() {
       setFormData({ name: '', email: '', subject: '', message: '' });
       setErrors({});
     } catch {
-      setError('Something went wrong. Please try again.');
+      setError(t('Something went wrong. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -107,10 +109,9 @@ export default function Contact() {
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-14 max-w-2xl">
-          <h1 className="text-4xl font-semibold text-gray-900">Contact us</h1>
+          <h1 className="text-4xl font-semibold text-gray-900">{t("Contact us")}</h1>
           <p className="mt-3 text-gray-600">
-            Have a bug, feature request, or question? We usually reply within 3
-            days.
+            {t("Have a bug, feature request, or question? We usually reply within 3 days.")}
           </p>
         </div>
 
@@ -136,18 +137,18 @@ export default function Contact() {
                 </div>
 
                 <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-                  Message sent successfully!
+                  {t("Message sent successfully!")}
                 </h2>
 
                 <p className="text-gray-600 mb-8">
-                  We’ll get back to you within 3 days.
+                  {t("We’ll get back to you within 3 days.")}
                 </p>
 
                 <button
                   onClick={() => setSubmitted(false)}
                   className="text-blue-600 font-semibold hover:underline text-sm"
                 >
-                  Send another message →
+                  {t("Send another message →")}
                 </button>
               </div>
             ) : (
@@ -159,7 +160,7 @@ export default function Contact() {
                 )}
 
                 <Input
-                  label="Full name"
+                  label={t("Full name")}
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
@@ -169,7 +170,7 @@ export default function Contact() {
                 />
 
                 <Input
-                  label="Email address"
+                  label={t("Email address")}
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
@@ -180,7 +181,7 @@ export default function Contact() {
                 />
 
                 <Input
-                  label="Subject (optional)"
+                  label={t("Subject (optional)")}
                   name="subject"
                   value={formData.subject}
                   onChange={handleChange}
@@ -190,7 +191,7 @@ export default function Contact() {
                 />
 
                 <Textarea
-                  label="Your message"
+                  label={t("Your message")}
                   name="message"
                   value={formData.message}
                   onChange={handleChange}
@@ -218,12 +219,12 @@ export default function Contact() {
 
           {/* SIDE INFO */}
           <div className="flex flex-col justify-center space-y-8 text-sm">
-            <Info title="  Email">
-              noonalmutaz002@gmail.com
+            <Info title={t("  Email")}>
+              {t("noonalmutaz002@gmail.com")}
             </Info>
 
-            <Info title=" Response time">
-              Within 3 business days
+            <Info title={t(" Response time")}>
+              {t("Within 3 business days")}
             </Info>
 
             {/* <Info title="  What we help with">

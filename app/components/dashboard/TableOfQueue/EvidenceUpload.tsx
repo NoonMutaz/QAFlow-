@@ -1,7 +1,10 @@
+'use client';
+
 import React from "react";
 import { PlayIcon, UploadIcon } from "./icons";
 import { isVideo, } from "./helpers";
 import { mediaUrl } from "./api";
+import { useLanguage } from '../../../i18n/LanguageProvider';
 
 interface Props {
   attachmentUrl?: string;
@@ -13,6 +16,7 @@ interface Props {
 
 /** Thumbnail of the current evidence plus the upload control. */
 export default function EvidenceUpload({ attachmentUrl, uploading, canEdit, onUpload, onPreview }: Props) {
+  const { t } = useLanguage();
   return (
     <div className="flex items-center gap-3">
       {attachmentUrl && !uploading && (
@@ -25,7 +29,7 @@ export default function EvidenceUpload({ attachmentUrl, uploading, canEdit, onUp
               <PlayIcon className="w-6 h-6 text-blue-500" />
             </div>
           ) : (
-            <img src={mediaUrl(attachmentUrl)} alt="Evidence" className="w-full h-full object-cover" />
+            <img src={mediaUrl(attachmentUrl)} alt={t("Evidence")} className="w-full h-full object-cover" />
           )}
         </div>
       )}
@@ -34,7 +38,7 @@ export default function EvidenceUpload({ attachmentUrl, uploading, canEdit, onUp
         {canEdit && !uploading && (
           <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50/50 cursor-pointer text-xs font-semibold text-gray-600 transition-colors">
             <UploadIcon className="w-4 h-4 text-gray-400" />
-            <span>Upload File</span>
+            <span>{t("Upload File")}</span>
             <input
               type="file"
               className="hidden"
@@ -47,7 +51,7 @@ export default function EvidenceUpload({ attachmentUrl, uploading, canEdit, onUp
         {uploading && (
           <div className="flex items-center gap-1.5 text-blue-600 text-xs font-bold animate-pulse">
             <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping" />
-            Saving file...
+            {t("Saving file...")}
           </div>
         )}
       </div>

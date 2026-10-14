@@ -15,11 +15,13 @@ import DashboardHeader from "./DashboardHeader";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { useParams } from "next/navigation";
+import { useLanguage } from '../../i18n/LanguageProvider';
 
 type Status = "notFixed" | "in-progress" | "pendingReview" | "fixed";
 type Priority = "High" | "Medium" | "Low";
 
 export default function Dashboard() {
+  const { t } = useLanguage();
   const params = useParams();
   const id = Array.isArray(params.id) ? params.id[0] : (params.id ?? "");
   const [testCases, setTestCases] = useState<(TimelineClause & { expectedResult?: string })[]>([]);
@@ -174,7 +176,7 @@ export default function Dashboard() {
   const project = projects.find((p) => p.id.toString() === id);
 
   if (!projects.length) {
-    return <div className="min-h-screen flex items-center justify-center"><p className="text-gray-400 text-lg">Loading project...</p></div>;
+    return <div className="min-h-screen flex items-center justify-center"><p className="text-gray-400 text-lg">{t("Loading project...")}</p></div>;
   }
   
   if (!project) {
@@ -186,16 +188,16 @@ export default function Dashboard() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 0 1 2.008 1.24l.885 1.77a2.25 2.25 0 0 0 2.007 1.24h1.98a2.25 2.25 0 0 0 2.007-1.24l.885-1.77a2.25 2.25 0 0 1 2.007-1.24h3.86m-18 1.5V7.5A2.25 2.25 0 0 1 4.5 5.25h15A2.25 2.25 0 0 1 21.75 7.5v9a2.25 2.25 0 0 1-2.25 2.25h-15A2.25 2.25 0 0 1 2.25 16.5Z" />
             </svg>
           </div>
-          <h3 className="text-xl font-bold text-gray-900 tracking-tight dark:text-gray-50">Project Not found</h3>
+          <h3 className="text-xl font-bold text-gray-900 tracking-tight dark:text-gray-50">{t("Project Not found")}</h3>
           <p className="mt-2.5 text-sm text-gray-500 leading-relaxed dark:text-gray-400">
-           This project doesn't exist or you don't have permission to view it. Double-check your workspace ID or return to your active dashboard.
+           {t("This project doesn't exist or you don't have permission to view it. Double-check your workspace ID or return to your active dashboard.")}
           </p>
           <div className="mt-6">
             <button onClick={() => window.location.href = '/my-projects'} className="inline-flex items-center justify-center gap-2 w-full sm:w-auto rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-gray-800 transition dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
               </svg>
-              Return to projects 
+              {t("Return to projects")} 
             </button>
           </div>
         </div>
@@ -218,7 +220,7 @@ export default function Dashboard() {
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-2xl shadow-sm border flex flex-col gap-6 border-gray-100 p-6">
             <button onClick={exportToExcel} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">
-              Export Audit Data to Excel
+              {t("Export Audit Data to Excel")}
             </button>
             <Chart queue={projectQueue} />
             <PieChart queue={projectQueue} />

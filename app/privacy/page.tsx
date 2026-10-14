@@ -1,386 +1,208 @@
 'use client';
+
 import { useState } from 'react';
-import Contactus from '../components/AboutUs/Contactus';
-// import { ShieldCheckIcon, LockClosedIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import Link from 'next/link';
+import { useLanguage } from '../i18n/LanguageProvider';
+
+type Section = { id: string; title: string; points: string[] };
+
+/** Privacy policy, in English and Arabic. Describes what Imtithal actually stores and sends. */
+const CONTENT: Record<'en' | 'ar', { title: string; intro: string; updated: string; contact: string; sections: Section[] }> = {
+  en: {
+    title: 'Privacy Policy',
+    intro: 'We collect only what Imtithal needs to run site inspections, and we tell you where your data goes.',
+    updated: 'Last updated: 14 October 2026',
+    contact: 'Questions or requests about your data? Contact us',
+    sections: [
+      {
+        id: '1',
+        title: 'Information we collect',
+        points: [
+          'Account: your name, email address and password.',
+          'Projects: project names and descriptions, members and their roles, invitations, phases and dates.',
+          'Inspection records: findings, their location, risk level, SBC clauses, comments, deadlines, and who reported, fixed and approved them.',
+          'Files you upload: site photos, photos of fixes, and project drawings (PDF or images).',
+          'Activity log: actions taken in a project (created, assigned, updated, approved), shown to the project owner.',
+        ],
+      },
+      {
+        id: '2',
+        title: 'How we use it',
+        points: [
+          'To run the service: show your projects, findings, timeline, reports and dashboards to the right people.',
+          'To give AI suggestions: describe photos, read drawings, and suggest the matching SBC clause.',
+          'We do not sell your data and we do not use it for advertising.',
+        ],
+      },
+      {
+        id: '3',
+        title: 'AI processing',
+        points: [
+          'When you use an AI feature, the finding text, the photo you analyse, the project drawings and the project’s SBC clauses are sent to our AI provider (Google Gemini) to produce the suggestion.',
+          'Drawings are read once when uploaded; the short design summary is stored with the project.',
+          'On the provider’s free tier, the provider may use submitted content to improve its models. Do not upload drawings or photos you are not allowed to share with a third party.',
+          'AI output is a suggestion only. An engineer confirms every clause, and fixes are closed only after the project owner approves the evidence.',
+        ],
+      },
+      {
+        id: '4',
+        title: 'Who can see your data',
+        points: [
+          'Project data is visible only to accepted members of that project, according to their role (owner, member or viewer).',
+          'Only owners can approve fixes, close phases and view the activity log.',
+          'The shared SBC Library contains code clauses, not project data.',
+        ],
+      },
+      {
+        id: '5',
+        title: 'Keeping and deleting data',
+        points: [
+          'Data is kept while your account and projects exist.',
+          'Owners and members can delete findings, clauses, drawings and phases; deleting a drawing also deletes its file.',
+          'To delete your account and its data, contact us and we will process the request.',
+        ],
+      },
+      {
+        id: '6',
+        title: 'Your rights',
+        points: [
+          'You can ask to see, correct or delete the personal data we hold about you.',
+          'You can stop using AI features at any time by not using the AI buttons; the rest of the platform works without them.',
+        ],
+      },
+      {
+        id: '7',
+        title: 'Changes to this policy',
+        points: ['If this policy changes, we will update the date below and show the change in the app.'],
+      },
+    ],
+  },
+  ar: {
+    title: 'سياسة الخصوصية',
+    intro: 'نجمع فقط ما يحتاجه امتثال لإدارة التفتيش الميداني، ونوضح لك أين تذهب بياناتك.',
+    updated: 'آخر تحديث: 14 أكتوبر 2026',
+    contact: 'أسئلة أو طلبات بخصوص بياناتك؟ تواصل معنا',
+    sections: [
+      {
+        id: '1',
+        title: 'المعلومات التي نجمعها',
+        points: [
+          'الحساب: الاسم والبريد الإلكتروني وكلمة المرور.',
+          'المشاريع: أسماء المشاريع ووصفها، والأعضاء وأدوارهم، والدعوات، والمراحل وتواريخها.',
+          'سجلات التفتيش: الملاحظات وموقعها ومستوى خطورتها وبنود الكود والتعليقات والمواعيد، ومن سجّلها ومن أصلحها ومن اعتمدها.',
+          'الملفات التي ترفعها: صور الموقع، وصور الإصلاح، ومخططات المشروع (PDF أو صور).',
+          'سجل النشاط: الإجراءات التي تتم في المشروع (إنشاء، إسناد، تعديل، اعتماد)، ويظهر لمالك المشروع.',
+        ],
+      },
+      {
+        id: '2',
+        title: 'كيف نستخدمها',
+        points: [
+          'لتشغيل الخدمة: عرض المشاريع والملاحظات والخطة الزمنية والتقارير ولوحات المتابعة للأشخاص المخوّلين.',
+          'لتقديم اقتراحات الذكاء الاصطناعي: وصف الصور وقراءة المخططات واقتراح بند الكود المطابق.',
+          'لا نبيع بياناتك ولا نستخدمها للإعلانات.',
+        ],
+      },
+      {
+        id: '3',
+        title: 'المعالجة بالذكاء الاصطناعي',
+        points: [
+          'عند استخدام ميزة ذكاء اصطناعي، تُرسَل نصوص الملاحظة والصورة المراد تحليلها ومخططات المشروع وبنود الكود الخاصة به إلى مزوّد الذكاء الاصطناعي (Google Gemini) لإنتاج الاقتراح.',
+          'تُقرأ المخططات مرة واحدة عند رفعها، ويُحفظ ملخص التصميم المختصر مع المشروع.',
+          'في الخطة المجانية للمزوّد، قد يستخدم المزوّد المحتوى المرسل لتحسين نماذجه. لا ترفع مخططات أو صورًا لا يحق لك مشاركتها مع طرف ثالث.',
+          'مخرجات الذكاء الاصطناعي اقتراحات فقط: المهندس يؤكد كل بند، ولا تُغلق الإصلاحات إلا بعد اعتماد مالك المشروع للدليل.',
+        ],
+      },
+      {
+        id: '4',
+        title: 'من يرى بياناتك',
+        points: [
+          'بيانات المشروع يراها فقط أعضاء المشروع المقبولون، حسب دور كل منهم (مالك، عضو، مشاهد).',
+          'المالك وحده يعتمد الإصلاحات ويغلق المراحل ويطّلع على سجل النشاط.',
+          'مكتبة الكود المشتركة تحتوي بنود الكود فقط، ولا تحتوي بيانات المشاريع.',
+        ],
+      },
+      {
+        id: '5',
+        title: 'حفظ البيانات وحذفها',
+        points: [
+          'تُحفظ البيانات ما دام حسابك ومشاريعك موجودة.',
+          'يمكن للمالك والأعضاء حذف الملاحظات والبنود والمخططات والمراحل، وحذف المخطط يحذف ملفه أيضًا.',
+          'لحذف حسابك وبياناته، تواصل معنا وسنعالج الطلب.',
+        ],
+      },
+      {
+        id: '6',
+        title: 'حقوقك',
+        points: [
+          'يحق لك طلب الاطلاع على بياناتك الشخصية لدينا أو تصحيحها أو حذفها.',
+          'يمكنك التوقف عن استخدام ميزات الذكاء الاصطناعي في أي وقت بعدم استخدام أزرارها، وباقي المنصة يعمل بدونها.',
+        ],
+      },
+      {
+        id: '7',
+        title: 'التغييرات على هذه السياسة',
+        points: ['إذا تغيّرت هذه السياسة، سنحدّث التاريخ أدناه ونُظهر التغيير داخل التطبيق.'],
+      },
+    ],
+  },
+};
 
 export default function PrivacyPolicy() {
+  const { lang } = useLanguage();
+  const c = CONTENT[lang];
   const [activeSection, setActiveSection] = useState('1');
 
-  const sections = [
-    {
-      id: '1',
-      title: 'Information We Collect',
-      //icon: ShieldCheckIcon,
-      content: `
-        <p className="mb-4 text-gray-700 leading-relaxed">
-          We collect minimal information necessary to provide our bug tracking and project management services:
-        </p>
-        <ul className="space-y-3 mb-6">
-          <li className="flex items-start gap-3 p-3 bg-blue-50 rounded-xl border-l-4 border-blue-500">
-            <ShieldCheckIcon className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-            <div>
-              <strong className="text-gray-900">Account Information:</strong> Email, name (optional)
-            </div>
-          </li>
-          <li className="flex items-start gap-3 p-3 bg-emerald-50 rounded-xl border-l-4 border-emerald-500">
-            <LockClosedIcon className="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-            <div>
-              <strong className="text-gray-900">Project Data:</strong> Project names, descriptions, bug reports, team members
-            </div>
-          </li>
-          <li className="flex items-start gap-3 p-3 bg-purple-50 rounded-xl border-l-4 border-purple-500">
-            <UserGroupIcon className="w-5 h-5 text-purple-500 mt-0.5 flex-shrink-0" />
-            <div>
-              <strong className="text-gray-900">Team Collaboration:</strong> Invites, role assignments, member emails
-            </div>
-          </li>
-        </ul>
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-2xl border border-blue-100">
-          <p className="text-sm text-gray-700">
-            <strong> No unnecessary data:</strong> We don't collect payment info, location, or personal identifiers beyond what's needed for team collaboration.
+  return (
+    <div className="min-h-screen bg-slate-50 px-4 py-16 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-3xl">
+        <div className="mb-12">
+          <h1 className="text-4xl font-bold tracking-tight text-gray-900">{c.title}</h1>
+          <p className="mt-3 text-lg text-gray-600">{c.intro}</p>
+        </div>
+
+        <div className="divide-y divide-gray-200 rounded-2xl border border-gray-200 bg-white shadow-sm">
+          {c.sections.map((section) => {
+            const isActive = activeSection === section.id;
+            return (
+              <div key={section.id}>
+                <button
+                  onClick={() => setActiveSection(isActive ? '' : section.id)}
+                  className="flex w-full items-center justify-between px-6 py-5 text-start transition hover:bg-gray-50"
+                  aria-expanded={isActive}
+                >
+                  <h2 className="text-lg font-semibold text-gray-900">{section.title}</h2>
+                  <span className={`transform text-gray-400 transition-transform duration-300 ${isActive ? 'rotate-180' : ''}`}>▼</span>
+                </button>
+                <div
+                  className={`grid transition-all duration-500 ease-in-out ${isActive ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+                >
+                  <div className="overflow-hidden">
+                    <ul className="space-y-2.5 px-6 pb-6 pt-1">
+                      {section.points.map((point) => (
+                        <li key={point} className="flex gap-3 text-sm leading-relaxed text-gray-700">
+                          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-600" />
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-10 border-t border-gray-200 pt-6 text-center text-sm text-gray-600">
+          <p>{c.updated}</p>
+          <p className="mt-2">
+            {c.contact}{' '}
+            <Link href="/contactus" className="font-semibold text-brand-700 hover:underline">
+              →
+            </Link>
           </p>
         </div>
-      `
-    },
-    {
-      id: '2',
-      title: 'How We Use Your Information',
-     // icon: ShieldCheckIcon,
-      content: `
-        <div className="grid md:grid-cols-2 gap-6 mb-6">
-          <div className="space-y-4">
-            <div className="p-4 bg-green-50 rounded-2xl border border-green-200">
-              <h4 className="font-semibold text-green-900 mb-2"> Core Services</h4>
-              <ul className="text-sm text-green-800 space-y-1">
-                <li>• Bug tracking & project management</li>
-                <li>• Team collaboration & invites</li>
-                <li>• Role-based access control</li>
-              </ul>
-            </div>
-          </div>
-          <div className="space-y-4">
-            <div className="p-4 bg-blue-50 rounded-2xl border border-blue-200">
-              <h4 className="font-semibold text-blue-900 mb-2">Security & Operations</h4>
-              <ul className="text-sm text-blue-800 space-y-1">
-                <li>• Authentication & authorization</li>
-                <li>• Service improvement (anonymized)</li>
-                <li>• Abuse prevention</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-        <blockquote className="border-l-4 border-indigo-500 bg-indigo-50 pl-6 py-4 italic text-gray-700">
-          We never sell your data or use it for advertising.
-        </blockquote>
-      `
-    },
-    {
-      id: '3',
-      title: 'Data Sharing & Security',
-    //  icon: LockClosedIcon,
-      content: `
-        <div className="grid gap-6">
-          <div className="bg-gradient-to-r from-red-50 to-pink-50 p-6 rounded-2xl border border-red-200">
-            <h4 className="font-bold text-xl text-gray-900 mb-3 flex items-center gap-2">
-              <LockClosedIcon className="w-6 h-6 text-red-500" />
-              No Third-Party Sharing
-            </h4>
-            <p className="text-gray-700 mb-4">
-              Your project data stays within our secure infrastructure. We don't share with:
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <div className="text-center p-3 bg-white rounded-xl shadow-sm border">
-                <div className="text-2xl mb-1"> </div>
-                <div className="text-xs font-medium text-gray-900">Analytics</div>
-              </div>
-              <div className="text-center p-3 bg-white rounded-xl shadow-sm border">
-                <div className="text-2xl mb-1"> </div>
-                <div className="text-xs font-medium text-gray-900">Advertisers</div>
-              </div>
-              <div className="text-center p-3 bg-white rounded-xl shadow-sm border">
-                <div className="text-2xl mb-1"> </div>
-                <div className="text-xs font-medium text-gray-900">Data Brokers</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-r from-emerald-50 to-teal-50 p-6 rounded-2xl border border-emerald-200">
-            <h4 className="font-bold text-xl text-gray-900 mb-3 flex items-center gap-2">
-               Security Measures
-            </h4>
-            <ul className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <li className="flex items-start gap-3 p-3 bg-white rounded-xl shadow-sm border">
-                <div className="w-5 h-5 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-xs mt-0.5 flex-shrink-0"> </div>
-                <span>End-to-end encryption for data at rest & transit</span>
-              </li>
-              <li className="flex items-start gap-3 p-3 bg-white rounded-xl shadow-sm border">
-                <div className="w-5 h-5 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-xs mt-0.5 flex-shrink-0"> </div>
-                <span>Role-based access control (Owner/Member/Viewer)</span>
-              </li>
-                           <li className="flex items-start gap-3 p-3 bg-white rounded-xl shadow-sm border">
-                <div className="w-5 h-5 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-xs mt-0.5 flex-shrink-0"> </div>
-                <span>Regular security audits & penetration testing</span>
-              </li>
-              <li className="flex items-start gap-3 p-3 bg-white rounded-xl shadow-sm border">
-                <div className="w-5 h-5 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-xs mt-0.5 flex-shrink-0"> </div>
-                <span>Secure JWT authentication with short-lived tokens</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      `
-    },
-    {
-      id: '4',
-      title: 'Your Rights & Data Control',
-    //  icon: UserGroupIcon,
-      content: `
-        <div className="grid md:grid-cols-2 gap-8">
-          <div>
-            <h4 className="font-bold text-xl text-gray-900 mb-4">Individual Rights</h4>
-            <ul className="space-y-3 text-sm">
-              <li className="flex items-center gap-3 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border">
-                <div className="w-6 h-6 bg-indigo-500 rounded-lg flex items-center justify-center text-white font-bold text-xs"> </div>
-                <span><strong>Access:</strong> Download your project data anytime</span>
-              </li>
-              <li className="flex items-center gap-3 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border">
-                <div className="w-6 h-6 bg-indigo-500 rounded-lg flex items-center justify-center text-white font-bold text-xs"> </div>
-                <span><strong>Delete:</strong> Remove projects & account permanently</span>
-              </li>
-              <li className="flex items-center gap-3 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border">
-                <div className="w-6 h-6 bg-indigo-500 rounded-lg flex items-center justify-center text-white font-bold text-xs"> </div>
-                <span><strong>Control:</strong> Manage team members & permissions</span>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-bold text-xl text-gray-900 mb-4"> Team Admin Rights</h4>
-            <ul className="space-y-3 text-sm">
-              <li className="flex items-center gap-3 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border">
-                <div className="w-6 h-6 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-xs"> </div>
-                <span><strong>Full Control:</strong> Invite/remove members, assign roles</span>
-              </li>
-              <li className="flex items-center gap-3 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border">
-                <div className="w-6 h-6 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-xs"> </div>
-                <span><strong>Export:</strong> Download project data & reports</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      `
-    },
-    {
-      id: '5',
-      title: 'Cookies & Tracking',
-   //   icon: ShieldCheckIcon,
-      content: `
-        <div className="space-y-6">
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 pl-4 py-4">
-            <h4 className="font-bold text-lg text-gray-900 mb-2"> Minimal Cookie Usage</h4>
-            <p className="text-sm text-gray-700 mb-4">
-              We use <strong>essential cookies only</strong> for authentication and session management:
-            </p>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm bg-white rounded-xl shadow-sm border">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="px-4 py-3 text-left font-semibold text-gray-900">Cookie</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-900">Purpose</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-900">Duration</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-t">
-                    <td className="px-4 py-3 font-mono text-xs bg-gray-50">auth_token</td>
-                    <td className="px-4 py-3">JWT Authentication</td>
-                    <td className="px-4 py-3">Session (30 days)</td>
-                  </tr>
-                  <tr className="border-t bg-gray-50">
-                    <td className="px-4 py-3 font-mono text-xs">userId</td>
-                    <td className="px-4 py-3">User identification</td>
-                                   <tr className="border-t">
-                    <td className="px-4 py-3 font-mono text-xs">userId</td>
-                    <td className="px-4 py-3">User identification</td>
-                    <td className="px-4 py-3">Session</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <p className="text-xs text-gray-600 mt-4">
-              <strong>No tracking cookies.</strong> No Google Analytics, no ads, no behavioral tracking.
-            </p>
-          </div>
-
-          <div className="bg-gradient-to-r from-orange-50 to-red-50 p-6 rounded-2xl border border-orange-200">
-            <h4 className="font-bold text-lg text-gray-900 mb-3">  Browser Storage</h4>
-            <p className="text-sm text-gray-700">
-              We use <code className="font-mono bg-orange-100 px-1.5 py-0.5 rounded text-xs">localStorage</code> for:
-            </p>
-            <ul className="mt-3 space-y-2 text-sm list-disc list-inside text-gray-700">
-              <li>Authentication tokens (JWT)</li>
-              <li>User ID for session persistence</li>
-              <li>UI preferences (dark mode, etc.)</li>
-            </ul>
-          </div>
-        </div>
-      `
-    },
-    {
-      id: '6',
-      title: 'Data Retention & Deletion',
- //     icon: LockClosedIcon,
-      content: `
-        <div className="space-y-6">
-          <div className="bg-gradient-to-br from-slate-50 to-gray-50 p-8 rounded-3xl border border-slate-200 shadow-xl">
-            <div className="text-center mb-8">
-              <div className="w-20 h-20 mx-auto bg-gradient-to-br from-emerald-400 to-teal-500 rounded-3xl flex items-center justify-center text-white text-2xl font-bold shadow-2xl mb-4">
-                
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">You Own Your Data</h3>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Delete anytime. No questions asked. Data gone forever.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-8">
-              <div className="space-y-4">
-                <div className="p-5 bg-white rounded-2xl shadow-sm border hover:shadow-md transition-all">
-                  <h5 className="font-semibold text-gray-900 mb-2">Project Deletion</h5>
-                  <ul className="text-sm text-gray-700 space-y-1">
-                    <li>• Immediate permanent deletion</li>
-                    <li>• All bugs, members, history removed</li>
-                    <li>• No recovery possible</li>
-                  </ul>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <div className="p-5 bg-white rounded-2xl shadow-sm border hover:shadow-md transition-all">
-                  <h5 className="font-semibold text-gray-900 mb-2">Account Deletion</h5>
-                  <ul className="text-sm text-gray-700 space-y-1">
-                    <li>• Contact support@qaflow.com</li>
-                    <li>• 30-day grace period</li>
-                    <li>• Complete data purge</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      `
-    },
-    {
-      id: '7',
-      title: 'Changes to This Policy',
-  //    icon: ShieldCheckIcon,
-      content: `
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 p-8 rounded-3xl border border-amber-200">
-          <h4 className="text-2xl font-bold text-gray-900 mb-6 text-center"> We'll Always Tell You</h4>
-          <div className="max-w-2xl mx-auto space-y-6">
-            <div className="bg-white p-6 rounded-2xl shadow-lg border">
-              <h5 className="font-semibold text-lg text-gray-900 mb-3">How We'll Notify You</h5>
-              <div className="grid md:grid-cols-2 gap-4 text-sm">
-                <div className="p-4 bg-emerald-50 rounded-xl border">
-                  <div className="font-bold text-emerald-900 mb-1"> In-App Banner</div>
-                  <p className="text-emerald-800 text-xs">Visible on login</p>
-                </div>
-                <div className="p-4 bg-blue-50 rounded-xl border">
-                  <div className="font-bold text-blue-900 mb-1">  Email</div>
-                  <p className="text-blue-800 text-xs">Sent to project owners</p>
-                </div>
-                <div className="p-4 bg-purple-50 rounded-xl border">
-                  <div className="font-bold text-purple-900 mb-1">  Continued Use</div>
-                  <p className="text-purple-800 text-xs">Accepted by continued use</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="text-center pt-6 border-t border-amber-200">
-              <p className="text-sm text-gray-600 mb-4">
-                Last updated: <strong>April 15, 2026</strong>
-              </p>
-              <p className="text-xs text-gray-500">
-                Questions? <a href="mailto:info@qaflow.com" className="text-blue-600 hover:text-blue-700 font-medium underline">support@qaflow.com</a>
-              </p>
-            </div>
-          </div>
-        </div>
-      `
-    }
-  ];
-
-return (
-  <div className="min-h-screen bg-slate-50 py-16 px-4 sm:px-6 lg:px-8">
-    <div className="max-w-3xl mx-auto">
-
-      {/* Header */}
-      <div className="mb-12">
-        <h1 className="text-4xl font-bold text-gray-900 tracking-tight">
-          Privacy Policy
-        </h1>
-        <p className="mt-3 text-gray-600 text-lg">
-          We respect your data and keep things simple and transparent.
-        </p>
-      </div>
-
-      {/* Sections */}
-      <div className="divide-y divide-gray-200 border border-gray-200 rounded-2xl bg-white shadow-sm">
-        {sections.map((section) => {
-          const isActive = activeSection === section.id;
-
-          return (
-            <div key={section.id}>
-              {/* Header */}
-              <button
-                onClick={() =>
-                  setActiveSection(isActive ? '' : section.id)
-                }
-                className="w-full flex items-center justify-between px-6 py-5 text-left hover:bg-gray-50 transition"
-              >
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    {section.title}
-                  </h2>
-                  <p className="text-sm text-gray-500">
-                    {/* Section {section.id} */}
-                  </p>
-                </div>
-
-                <div
-                  className={`transform transition-transform duration-300 ${
-                    isActive ? "rotate-180" : ""
-                  }`}
-                >
-                  ▼
-                </div>
-              </button>
-
-              {/* Content */}
-              <div
-                className={`grid transition-all duration-500 ease-in-out ${
-                  isActive
-                    ? "grid-rows-[1fr] opacity-100"
-                    : "grid-rows-[0fr] opacity-0"
-                }`}
-              >
-                <div className="overflow-hidden">
-                  <div
-                    className="px-6 pb-6 pt-2 text-gray-700 leading-relaxed"
-                    dangerouslySetInnerHTML={{
-                      __html: section.content,
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Footer */}
-      <div className="mt-12">
-     
       </div>
     </div>
-  </div>
-);
+  );
 }

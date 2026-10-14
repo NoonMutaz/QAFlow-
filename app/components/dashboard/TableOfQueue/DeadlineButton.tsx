@@ -2,6 +2,7 @@
 import React, { useRef } from "react";
 import { CalendarIcon } from "./icons";
 import { getDeadlineInfo, todayISO, type DeadlineTone } from "./helpers";
+import { useLanguage } from '../../../i18n/LanguageProvider';
 
 const TONES: Record<DeadlineTone, string> = {
   none: "bg-white text-gray-500 border-gray-200 hover:border-blue-400 hover:text-blue-600",
@@ -21,8 +22,9 @@ interface Props {
 type PickerInput = HTMLInputElement & { showPicker?: () => void };
 
 export default function DeadlineButton({ deadline, status, canEdit, onChange }: Props) {
+  const { t, lang } = useLanguage();
   const inputRef = useRef<HTMLInputElement>(null);
-  const info = getDeadlineInfo(deadline, status);
+  const info = getDeadlineInfo(deadline, status, t, lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US');
 
   if (!canEdit && info.tone === "none") return null;
 
@@ -54,7 +56,7 @@ export default function DeadlineButton({ deadline, status, canEdit, onChange }: 
       >
         <CalendarIcon className="w-3 h-3" />
         {/* التعديل هنا: إذا وُجد تاريخ يعرضه (مثل 15 Oct)، وإذا لم يوجد يعرض كلمة Deadline */}
-        <span>{rawDate ? info.label : "Deadline"}</span>
+        <span>{rawDate ? info.label : t("Deadline")}</span>
       </button>
 
       <input
@@ -72,8 +74,8 @@ export default function DeadlineButton({ deadline, status, canEdit, onChange }: 
         <button
           type="button"
           onClick={() => onChange("")}
-          title="Clear deadline"
-          aria-label="Clear deadline"
+          title={t("Clear deadline")}
+          aria-label={t("Clear deadline")}
           className="text-xs leading-none text-gray-300 hover:text-red-500 transition-colors"
         >
           ✕

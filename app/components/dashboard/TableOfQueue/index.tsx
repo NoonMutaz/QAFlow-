@@ -13,6 +13,7 @@ import { patchBugField } from "./api";
 import { nextPriority } from "./helpers";
 import { useAttachmentUpload } from "./useAttachmentUpload";
 import type { Bug, UpdateBugInState } from "./types";
+import { useLanguage } from '../../../i18n/LanguageProvider';
 
 const PAGE_SIZE = 10;
 const COLUMNS = ["ID", "Reporter", "Risk level", "Detailed finding", "Status", "Assigned To"];
@@ -44,6 +45,7 @@ export default function TableOfQueue({
   selectP,
   setSelectP,
 }: Props) {
+  const { t } = useLanguage();
   const { updateBugInState: updateBugInContext, projectMembers, fetchProjectMembers, assignBug } = useQueueContext();
   // the context types bugs as Customer; the table's Bug has extra fields (deadline, ...)
   const updateBugInState = updateBugInContext as unknown as UpdateBugInState;
@@ -90,7 +92,7 @@ export default function TableOfQueue({
         </div>
         <div className="px-4 py-1.5 bg-white border border-gray-150 rounded-full text-[11px] font-bold shadow-sm flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          ROLE: <span className="text-blue-600 uppercase">{currentUserRole}</span>
+          {t("ROLE:")}{" "}<span className="text-blue-600 uppercase">{currentUserRole}</span>
         </div>
       </div>
 
@@ -143,7 +145,7 @@ export default function TableOfQueue({
           {filteredQueue.length === 0 && (
             <div className="py-20 flex flex-col items-center text-gray-400">
               <FileIcon className="w-12 h-12 mb-2 opacity-20" />
-              <p className="text-sm font-bold tracking-widest uppercase">No Bugs Found</p>
+              <p className="text-sm font-bold tracking-widest uppercase">{t("No Bugs Found")}</p>
             </div>
           )}
         </div>

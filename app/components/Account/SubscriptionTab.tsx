@@ -1,15 +1,19 @@
+'use client';
+
 import { SubscriptionPlan } from './types';
+import { useLanguage } from '../../i18n/LanguageProvider';
 
 interface SubscriptionTabProps {
   plans: SubscriptionPlan[];
 }
 
 export default function SubscriptionTab({ plans }: SubscriptionTabProps) {
+  const { t } = useLanguage();
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-bold text-slate-100">Select Enterprise Tier</h2>
-        <p className="text-sm text-slate-400 mt-1">Upgrade your plan to unlock advanced regulatory auditing tools</p>
+        <h2 className="text-lg font-bold text-slate-100">{t("Select Enterprise Tier")}</h2>
+        <p className="text-sm text-slate-400 mt-1">{t("Upgrade your plan to unlock advanced regulatory auditing tools")}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -24,7 +28,7 @@ export default function SubscriptionTab({ plans }: SubscriptionTabProps) {
           >
             {plan.current && (
               <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-emerald-500 text-slate-950 text-xs font-bold rounded-full whitespace-nowrap">
-                Current Plan
+                {t("Current Plan")}
               </span>
             )}
             {plan.badge && !plan.current && (
@@ -34,7 +38,7 @@ export default function SubscriptionTab({ plans }: SubscriptionTabProps) {
             )}
 
             <div className="mb-4">
-              <h3 className="text-lg font-bold text-slate-100">{plan.name}</h3>
+              <h3 className="text-lg font-bold text-slate-100">{t(plan.name)}</h3>
               <div className="mt-2 flex items-baseline gap-1">
                 <span className="text-3xl font-black text-slate-100">{plan.price}</span>
                 <span className="text-sm text-slate-400">/{plan.period}</span>
@@ -47,7 +51,7 @@ export default function SubscriptionTab({ plans }: SubscriptionTabProps) {
                   <svg className="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  {feature}
+                  {t(feature)}
                 </li>
               ))}
             </ul>
@@ -60,7 +64,7 @@ export default function SubscriptionTab({ plans }: SubscriptionTabProps) {
                   : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-md shadow-emerald-950/50'
               }`}
             >
-              {plan.current ? 'Active Plan' : `Upgrade to ${plan.name}`}
+              {plan.current ? t('Active Plan') : t('Upgrade to {plan}', { plan: t(plan.name) })}
             </button>
           </div>
         ))}
@@ -71,7 +75,7 @@ export default function SubscriptionTab({ plans }: SubscriptionTabProps) {
           <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          Enterprise procurement & payment integration coming soon. <span className="text-rose-400 text-xs ml-1">(Feature in development)</span>
+          {t("Enterprise procurement & payment integration coming soon.")}{" "}<span className="text-rose-400 text-xs ml-1">{t("(Feature in development)")}</span>
         </p>
       </div>
     </div>

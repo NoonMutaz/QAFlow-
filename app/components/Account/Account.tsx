@@ -12,8 +12,10 @@ import ProfileTab from './ProfileTab';
 import SubscriptionTab from './SubscriptionTab';
 import { SUBSCRIPTION_PLANS } from './constants';
 import { Bug } from './types';
+import { useLanguage } from '../../i18n/LanguageProvider';
 
 export default function Account() {
+  const { t } = useLanguage();
   const { user, token, clearAuth, updateUser } = useAuthContext();
   const { projects } = useProjects();
   const { queue, fetchBugs } = useQueueContext();
@@ -111,10 +113,10 @@ export default function Account() {
               <p className="text-slate-400 text-sm mt-0.5 truncate">{user?.email}</p>
               <div className="flex flex-wrap gap-2 mt-3">
                 <span className="px-3 py-1 bg-slate-800 text-slate-300 border border-slate-700 text-xs font-semibold rounded-full">
-                  Standard Tier
+                  {t("Standard Tier")}
                 </span>
                 <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold rounded-full flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" /> Compliance Active
+                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />{" "}{t("Compliance Active")}
                 </span>
               </div>
             </div>
@@ -126,17 +128,17 @@ export default function Account() {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
-              Sign Out
+              {t("Sign Out")}
             </button>
           </div>
         </div>
 
         {/* Aggregate Audit Stats Section */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <StatCard label="Active Audits" value={projects.length} />
-          <StatCard label="Total Findings" value={stats.totalBugs} />
-          <StatCard label="Pending Action" value={stats.activeBugs} />
-          <StatCard label="Compliant / Resolved" value={stats.fixedBugs} />
+          <StatCard label={t("Active Audits")} value={projects.length} />
+          <StatCard label={t("Total Findings")} value={stats.totalBugs} />
+          <StatCard label={t("Pending Action")} value={stats.activeBugs} />
+          <StatCard label={t("Compliant / Resolved")} value={stats.fixedBugs} />
         </div>
 
         {/* Tab Shell Switcher Container */}

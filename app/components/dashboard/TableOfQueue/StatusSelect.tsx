@@ -1,5 +1,8 @@
+'use client';
+
 import React from "react";
 import type { Status } from "../../../context/QueueContext";
+import { useLanguage } from '../../../i18n/LanguageProvider';
 
 const STYLES: Record<string, string> = {
   fixed: "bg-emerald-100 text-emerald-700 border-emerald-200",
@@ -15,6 +18,7 @@ interface Props {
 }
 
 export default function StatusSelect({ status, disabled, onChange }: Props) {
+  const { t } = useLanguage();
   return (
     <select
       value={status}
@@ -24,11 +28,11 @@ export default function StatusSelect({ status, disabled, onChange }: Props) {
         STYLES[status] ?? STYLES.notFixed
       } ${disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
     >
-      <option value="notFixed">Non-Conformities</option>
-      <option value="in-progress">In Progress</option>
+      <option value="notFixed">{t("Non-Conformities")}</option>
+      <option value="in-progress">{t("In Progress")}</option>
       {/* set only by the assignee's evidence upload; the owner decides on the Approvals page */}
-      <option value="pendingReview" disabled>Awaiting approval</option>
-      <option value="fixed">Verified</option>
+      <option value="pendingReview" disabled>{t("Awaiting approval")}</option>
+      <option value="fixed">{t("Verified")}</option>
     </select>
   );
 }

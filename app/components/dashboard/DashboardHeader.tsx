@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthContext } from '../../context/AuthContext';
+import { useLanguage } from '../../i18n/LanguageProvider';
 
 export interface Project {
   id: number;
@@ -52,6 +53,7 @@ async function fetchProjectAnalytics(id: string | number, token: string): Promis
 }
 
 export default function DashboardHeader({ project, id, members = [] }: DashboardHeaderProps) {
+  const { t } = useLanguage();
   const { token, isReady } = useAuthContext();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -93,7 +95,7 @@ export default function DashboardHeader({ project, id, members = [] }: Dashboard
         {/* Team Avatars */}
         {members.length > 0 && (
           <div className="flex items-center gap-2 mt-2 relative">
-            <span className="text-xs text-gray-400 font-medium">Team:</span>
+            <span className="text-xs text-gray-400 font-medium">{t("Team:")}</span>
             <div 
               className="flex -space-x-2 cursor-pointer"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -122,7 +124,7 @@ export default function DashboardHeader({ project, id, members = [] }: Dashboard
               <div className="absolute top-14 left-0 w-72 bg-white border border-gray-200 rounded-lg shadow-lg z-50 dark:bg-zinc-950 dark:border-zinc-800">
                 <div className="p-3 border-b border-gray-100 dark:border-zinc-900">
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    Team Members ({members.length})
+                    {t("Team Members (")}{members.length})
                   </h3>
                 </div>
                 <div className="max-h-60 overflow-y-auto">
@@ -168,7 +170,7 @@ export default function DashboardHeader({ project, id, members = [] }: Dashboard
           <svg className="h-4 w-4 text-gray-500 dark:text-zinc-400" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
           </svg>
-          Activity Log
+          {t("Activity Log")}
         </Link>
 
         {/* Test Cases Button */}
@@ -180,7 +182,7 @@ export default function DashboardHeader({ project, id, members = [] }: Dashboard
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
           </svg>
           {/* Test Cases */}
-          SBC Clauses
+          {t("SBC Clauses")}
         </Link>
 
         {/* Bug Comments / Discussions Button */}
@@ -191,7 +193,7 @@ export default function DashboardHeader({ project, id, members = [] }: Dashboard
           <svg className="h-4 w-4 text-gray-500 dark:text-zinc-400" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
           </svg>
-          Comments
+          {t("Comments")}
         </Link>
 
         <div className="hidden sm:block h-8 w-px bg-gray-200 dark:bg-zinc-800" />
@@ -202,7 +204,7 @@ export default function DashboardHeader({ project, id, members = [] }: Dashboard
             <svg className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" fill="currentColor" viewBox="0 0 24 24">
               <path d="M11.48 3.499c.151-.39.71-.39.862 0l2.394 6.128 6.562.338c.42.022.588.54.262.858l-4.97 4.834 1.624 6.4c.104.414-.352.746-.71.535L12 18.732l-5.632 3.454c-.358.22-.814-.112-.71-.535l1.624-6.4-4.97-4.834c-.326-.317-.158-.836.262-.858l6.562-.338 2.394-6.128z" />
             </svg>
-            Top Contributor:
+            {t("Top Contributor:")}
           </p>
           <p
             className="text-sm font-semibold text-zinc-800 truncate max-w-[130px] mt-0.5 dark:text-zinc-200"
@@ -215,7 +217,7 @@ export default function DashboardHeader({ project, id, members = [] }: Dashboard
 
         {/* Active Bugs Counter */}
         <div className="text-right min-w-[70px]">
-          <p className="text-xs text-gray-500 dark:text-zinc-400">Active Bugs</p>
+          <p className="text-xs text-gray-500 dark:text-zinc-400">{t("Active Bugs")}</p>
           <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
             {isLoadingAnalytics ? '...' : activeCount}
           </p>

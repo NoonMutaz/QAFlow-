@@ -1,3 +1,5 @@
+'use client';
+
 import React from "react";
 import type { Priority, Status } from "../../../context/QueueContext";
 import PriorityBadge from "./PriorityBadge";
@@ -6,6 +8,7 @@ import AssigneeCell from "./AssigneeCell";
 import { ChevronIcon, FileIcon } from "./icons";
 import { getLinkedTestCase } from "./helpers";
 import type { Bug, ProjectMember } from "./types";
+import { useLanguage } from '../../../i18n/LanguageProvider';
 
 interface Props {
   bug: Bug;
@@ -34,6 +37,7 @@ export default function BugRow({
   onAssign,
   onDeadlineChange,
 }: Props) {
+  const { t } = useLanguage();
   const testCase = getLinkedTestCase(bug);
 
   return (
@@ -62,7 +66,7 @@ export default function BugRow({
       <td className="px-4 py-4 max-w-[200px] md:max-w-md">
         <div className="flex flex-col gap-1">
           <p className="text-xs text-gray-600 truncate font-medium">
-            {bug.description || <span className="text-gray-300 italic">No details written</span>}
+            {bug.description || <span className="text-gray-300 italic">{t("No details written")}</span>}
           </p>
           {testCase && (
             <div className="flex items-center gap-1 mt-0.5">

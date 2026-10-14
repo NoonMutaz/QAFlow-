@@ -36,17 +36,23 @@ function parseDay(value?: string | null): Date | null {
   return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
 }
 
-export function getDeadlineInfo(value: string | null | undefined, status: string) {
+export function getDeadlineInfo(
+  value: string | null | undefined,
+  status: string,
+  t: (text: string, vars?: Record<string, string | number>) => string = (x, v) =>
+    v ? x.replace(/\{(\w+)\}/g, (_, k) => String(v[k])) : x,
+  locale = "en-US",
+) {
   const due = parseDay(value);
-  if (!due) return { tone: "none" as DeadlineTone, label: "Deadline", title: "Set a deadline" };
+  if (!due) return { tone: "none" as DeadlineTone, label: t("Deadline"), title: t("Set a deadline") };
 
   // تنسيق التاريخ ليظهر صراحة على الزر (مثال: "15 Oct" أو "15 Oct 2026")
-  const short = due.toLocaleDateString("en-US", { day: "numeric", month: "short" });
-  const full = due.toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" });
+  const short = due.toLocaleDateString(locale, { day: "numeric", month: "short" });
+  const full = due.toLocaleDateString(locale, { day: "numeric", month: "long", year: "numeric" });
 
   // إذا تم توثيق وحل البند
   if (status === "fixed") {
-    return { tone: "done" as DeadlineTone, label: short, title: `Deadline ${full} · verified` };
+    return { tone: "done" as DeadlineTone, label: short, title: `${t("Deadline")} ${full} · ${t("verified")}` };
   }
 
   const today = new Date();
@@ -54,14 +60,14 @@ export function getDeadlineInfo(value: string | null | undefined, status: string
   const daysLeft = Math.round((due.getTime() - today.getTime()) / DAY_MS);
 
   if (daysLeft < 0) {
-    return { tone: "overdue" as DeadlineTone, label: short, title: `Deadline ${full} · overdue by ${-daysLeft}d` };
+    return { tone: "overdue" as DeadlineTone, label: short, title: `${t("Deadline")} ${full} · ${t("Overdue by {n} days", { n: -daysLeft })}` };
   }
   if (daysLeft === 0) {
-    return { tone: "soon" as DeadlineTone, label: short, title: `Deadline ${full} · Due today` };
+    return { tone: "soon" as DeadlineTone, label: short, title: `${t("Deadline")} ${full} · ${t("Due today")}` };
   }
   return {
     tone: (daysLeft <= 2 ? "soon" : "ok") as DeadlineTone,
     label: short,
-    title: `Deadline ${full} · ${daysLeft} day${daysLeft === 1 ? "" : "s"} left`,
+    title: `${t("Deadline")} ${full} · ${t("{n} days left", { n: daysLeft })}`,
   };
 }

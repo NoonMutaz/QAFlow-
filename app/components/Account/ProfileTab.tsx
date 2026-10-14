@@ -1,4 +1,7 @@
+'use client';
+
 import { User } from './types';
+import { useLanguage } from '../../i18n/LanguageProvider';
 
 interface ProfileTabProps {
   user: User | null;
@@ -23,16 +26,17 @@ export default function ProfileTab({
   isSaving,
   handleSave,
 }: ProfileTabProps) {
+  const { t } = useLanguage();
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-slate-100">Officer Information</h2>
+        <h2 className="text-lg font-bold text-slate-100">{t("Officer Information")}</h2>
         {!isEditing ? (
           <button
             onClick={() => setIsEditing(true)}
             className="px-4 py-2 text-sm font-medium text-emerald-400 border border-emerald-500/30 rounded-xl hover:bg-emerald-500/10 transition-all"
           >
-            Edit Profile
+            {t("Edit Profile")}
           </button>
         ) : (
           <div className="flex gap-2">
@@ -43,7 +47,7 @@ export default function ProfileTab({
               }}
               className="px-4 py-2 text-sm font-medium text-slate-400 border border-slate-700 rounded-xl hover:bg-slate-800 transition-all"
             >
-              Cancel
+              {t("Cancel")}
             </button>
             <button
               onClick={handleSave}
@@ -58,7 +62,7 @@ export default function ProfileTab({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
-          <label className="block text-sm font-semibold text-slate-300 mb-1.5">Full Name</label>
+          <label className="block text-sm font-semibold text-slate-300 mb-1.5">{t("Full Name")}</label>
           {isEditing ? (
             <>
               <input
@@ -78,7 +82,7 @@ export default function ProfileTab({
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-slate-300 mb-1.5">Corporate Email</label>
+          <label className="block text-sm font-semibold text-slate-300 mb-1.5">{t("Corporate Email")}</label>
           {isEditing ? (
             <>
               <input
@@ -100,20 +104,20 @@ export default function ProfileTab({
       </div>
 
       <div className="mt-8 pt-6 border-t border-slate-800">
-        <h3 className="text-sm font-bold text-rose-400 mb-3">Danger Zone</h3>
+        <h3 className="text-sm font-bold text-rose-400 mb-3">{t("Danger Zone")}</h3>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-rose-950/10 border border-rose-900/30 rounded-xl gap-3">
           <div>
-            <p className="text-sm font-semibold text-slate-200">Deactivate Organization Account</p>
+            <p className="text-sm font-semibold text-slate-200">{t("Deactivate Organization Account")}</p>
             <p className="text-xs text-slate-400 mt-0.5">
-              Permanently delete this account and all associated compliance records.{' '}
-              <span className="text-rose-400 ml-1">(Feature in development)</span>
+              {t("Permanently delete this account and all associated compliance records.")}{' '}
+              <span className="text-rose-400 ml-1">{t("(Feature in development)")}</span>
             </p>
           </div>
           <button
             disabled
             className="px-4 py-2 text-sm font-semibold text-rose-400/50 border border-rose-900/30 bg-slate-900 rounded-xl cursor-not-allowed whitespace-nowrap"
           >
-            Delete Account
+            {t("Delete Account")}
           </button>
         </div>
       </div>
