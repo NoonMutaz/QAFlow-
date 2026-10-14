@@ -38,6 +38,8 @@ export interface AssignedBug {
   resolutionEvidenceUrl?: string;
   /** owner's reason when a fix was rejected */
   reviewComment?: string;
+  /** due date set by the owner, "YYYY-MM-DD" */
+  deadline?: string;
   testCase?: TestCaseRef;
   comments: BugComment[];
 }
@@ -87,6 +89,8 @@ export interface RawAssignedBug {
   ResolutionEvidenceUrl?: string;
   reviewComment?: string;
   ReviewComment?: string;
+  deadline?: string | null;
+  Deadline?: string | null;
   testCaseId?: number;
   TestCaseId?: number;
   testCase?: { title?: string };

@@ -7,7 +7,7 @@ import { useLanguage } from '../i18n/LanguageProvider';
 export default function Footer() {
   const { t } = useLanguage();
   return (
-    <footer className="relative py-8 px-6 border-t border-brand-800/70 bg-brand-950 backdrop-blur-md mt-auto z-10">
+    <footer className="no-print relative py-8 px-6 border-t border-brand-800/70 bg-brand-950 backdrop-blur-md mt-auto z-10">
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-start">
         <div>
           <p className="text-sm font-semibold text-slate-200">

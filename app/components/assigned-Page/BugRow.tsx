@@ -41,6 +41,7 @@ export default function BugRow({ bug, isUpdating, onStatusChange, onView, onReso
             <span className="font-semibold">{t("Fix rejected:")}</span> {bug.reviewComment}
           </p>
         )}
+        {bug.deadline && bug.status !== 'fixed' && <DeadlineChip deadline={bug.deadline} />}
         {bug.status === 'pendingReview' && (
           <p className="text-[11px] text-amber-700">{t("Fix submitted. Waiting for the owner's approval.")}</p>
         )}
@@ -91,5 +92,23 @@ export default function BugRow({ bug, isUpdating, onStatusChange, onView, onReso
         </Link>
       </div>
     </li>
+  );
+}
+
+/** Due date of the assignment; red when overdue, amber when due within two days. */
+function DeadlineChip({ deadline }: { deadline: string }) {
+  const { t, lang } = useLanguage();
+  const due = new Date(`${deadline.slice(0, 10)}T00:00:00`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = Math.round((due.getTime() - today.getTime()) / 86400000);
+  const date = due.toLocaleDateString(lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-GB', { day: 'numeric', month: 'short' });
+  const tone = days < 0 ? 'bg-red-50 text-red-700 border-red-200' : days <= 2 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-50 text-slate-600 border-slate-200';
+  const text =
+    days < 0 ? t('Overdue by {n} days', { n: -days }) : days === 0 ? t('Due today') : t('{n} days left', { n: days });
+  return (
+    <span className={`inline-flex w-fit items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold ${tone}`}>
+      {t('Due')} {date} · {text}
+    </span>
   );
 }

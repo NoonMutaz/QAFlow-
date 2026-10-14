@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useLanguage } from '../../i18n/LanguageProvider';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
@@ -22,9 +23,12 @@ interface Phase {
   startDate: string; // YYYY-MM-DD
   endDate: string;
   clauseIds: number[];
+  closedAt?: number | null;
+  closedByName?: string | null;
 }
 
-type PhaseState = 'completed' | 'current' | 'upcoming';
+/** closed: closed by the owner · overdue: end date passed but not closed (still locked) */
+type PhaseState = 'closed' | 'overdue' | 'current' | 'upcoming';
 type Draft = { id: number | null; name: string; description: string; startDate: string; endDate: string; clauseIds: number[] };
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -51,10 +55,13 @@ export default function ProjectTimeline({
   projectId,
   clauses,
   canEdit,
+  isOwner = false,
 }: {
   projectId: string | number;
   clauses: TimelineClause[];
   canEdit: boolean;
+  /** only the owner (consultant) closes phases */
+  isOwner?: boolean;
 }) {
   const { t, lang } = useLanguage();
   const [phases, setPhases] = useState<Phase[]>([]);
@@ -63,6 +70,8 @@ export default function ProjectTimeline({
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
+  const [closing, setClosing] = useState<number | null>(null);
+  const [phaseError, setPhaseError] = useState<{ id: number; text: string } | null>(null);
 
   const today = todayIso();
   const clauseById = useMemo(() => new Map(clauses.map((c) => [c.id, c])), [clauses]);
@@ -85,7 +94,8 @@ export default function ProjectTimeline({
     void load();
   }, [load]);
 
-  const stateOf = (p: Phase): PhaseState => (p.endDate < today ? 'completed' : p.startDate > today ? 'upcoming' : 'current');
+  const stateOf = (p: Phase): PhaseState =>
+    p.closedAt ? 'closed' : p.endDate < today ? 'overdue' : p.startDate > today ? 'upcoming' : 'current';
   const progressOf = (p: Phase) => {
     const total = p.clauseIds.length;
     const done = p.clauseIds.filter((id) => clauseState(clauseById.get(id)) === 'done').length;
@@ -127,6 +137,30 @@ export default function ProjectTimeline({
     }
   };
 
+  /** Owner closes the phase; the API refuses (409) while clauses are open, so the phase stays locked. */
+  const setClosed = async (p: Phase, close: boolean) => {
+    setClosing(p.id);
+    setPhaseError(null);
+    try {
+      const res = await fetch(`${API}/api/projects/${projectId}/phases/${p.id}/${close ? 'close' : 'reopen'}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken()}` },
+      });
+      if (res.status === 409) {
+        const data = await res.json().catch(() => ({}));
+        const open: string[] = data?.openClauses ?? [];
+        setPhaseError({ id: p.id, text: t('Still open: {list}', { list: open.join('، ') }) });
+        return;
+      }
+      if (!res.ok) throw new Error((await res.text()) || `${res.status}`);
+      await load();
+    } catch (err) {
+      setPhaseError({ id: p.id, text: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setClosing(null);
+    }
+  };
+
   const remove = async (id: number) => {
     const res = await fetch(`${API}/api/projects/${projectId}/phases/${id}`, {
       method: 'DELETE',
@@ -144,7 +178,8 @@ export default function ProjectTimeline({
   };
 
   const stateStyle: Record<PhaseState, { bar: string; pill: string; label: string }> = {
-    completed: { bar: 'bg-emerald-500', pill: 'bg-emerald-50 text-emerald-700', label: t('Completed') },
+    closed: { bar: 'bg-emerald-500', pill: 'bg-emerald-50 text-emerald-700', label: t('Closed') },
+    overdue: { bar: 'bg-amber-500', pill: 'bg-amber-50 text-amber-800', label: t('Ended · not closed') },
     current: { bar: 'bg-brand-600', pill: 'bg-brand-600 text-white', label: t('In progress') },
     upcoming: { bar: 'bg-slate-300', pill: 'bg-slate-100 text-slate-600', label: t('Upcoming') },
   };
@@ -267,6 +302,53 @@ export default function ProjectTimeline({
                       {t('{done} of {total} clauses done', { done: pr.done, total: pr.total })}
                     </span>
                   </div>
+                  <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs">
+                    {p.closedAt ? (
+                      <span className="font-medium text-emerald-700">
+                        ✓ {t('Closed by {name} on {date}', { name: p.closedByName ?? '—', date: fmt.format(new Date(p.closedAt)) })}
+                      </span>
+                    ) : pr.total > 0 && pr.done === pr.total ? (
+                      <span className="font-medium text-emerald-700">{t('All clauses done · ready to close')}</span>
+                    ) : (
+                      <span className="flex items-center gap-1 font-medium text-amber-800">
+                        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                          <rect x="5" y="11" width="14" height="10" rx="2" />
+                          <path d="M8 11V7a4 4 0 018 0v4" />
+                        </svg>
+                        {pr.total === 0
+                          ? t('Locked · add clauses to this phase')
+                          : t('Locked until {n} open clauses are done', { n: pr.total - pr.done })}
+                      </span>
+                    )}
+                    <span className="ms-auto flex items-center gap-2">
+                      <Link
+                        href={`/dashboard/${projectId}/phases/${p.id}/report`}
+                        className="rounded-md border border-slate-200 px-2.5 py-1 font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        {t('Phase report')}
+                      </Link>
+                      {isOwner &&
+                        (p.closedAt ? (
+                          <button type="button" onClick={() => void setClosed(p, false)} disabled={closing === p.id}
+                            className="rounded-md px-2.5 py-1 font-semibold text-slate-500 hover:text-slate-800">
+                            {t('Reopen')}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => void setClosed(p, true)}
+                            disabled={closing === p.id || pr.total === 0 || pr.done < pr.total}
+                            title={pr.done < pr.total ? t('Locked until {n} open clauses are done', { n: pr.total - pr.done }) : undefined}
+                            className="rounded-md bg-brand-700 px-2.5 py-1 font-semibold text-white hover:bg-brand-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
+                          >
+                            {closing === p.id ? t('Closing…') : t('Close phase')}
+                          </button>
+                        ))}
+                    </span>
+                  </div>
+                  {phaseError?.id === p.id && (
+                    <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">{phaseError.text}</p>
+                  )}
                 </li>
               );
             })}

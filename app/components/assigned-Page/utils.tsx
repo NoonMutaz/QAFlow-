@@ -64,6 +64,7 @@ export function normalizeBug(raw: RawAssignedBug): AssignedBug {
     attachmentUrl: raw.attachmentUrl ?? raw.AttachmentUrl,
     resolutionEvidenceUrl: raw.resolutionEvidenceUrl ?? raw.ResolutionEvidenceUrl,
     reviewComment: raw.reviewComment ?? raw.ReviewComment,
+    deadline: raw.deadline ?? raw.Deadline ?? undefined,
     testCase: normalizeTestCase(raw),
     comments: (raw.comments ?? raw.Comments ?? []).map(normalizeComment),
   };

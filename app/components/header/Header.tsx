@@ -106,7 +106,7 @@ export default function Header({ searchTerm, setSearchTerm }: HeaderProps) {
   const initial = user?.name?.trim()?.charAt(0)?.toUpperCase() ?? "?"
 
   return (
-    <header className="sticky top-0 z-50 bg-brand-950/90 backdrop-blur-md border-b border-brand-800/70 shadow-lg shadow-black/20 text-slate-100">
+    <header className="no-print sticky top-0 z-50 bg-brand-950/90 backdrop-blur-md border-b border-brand-800/70 shadow-lg shadow-black/20 text-slate-100">
       <div className="navbar px-4 md:px-8 py-3 max-w-7xl mx-auto flex items-center justify-between">
 
         {/* Mobile menu + brand */}

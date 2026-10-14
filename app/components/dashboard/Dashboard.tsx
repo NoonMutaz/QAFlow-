@@ -210,6 +210,7 @@ export default function Dashboard() {
         projectId={project.id}
         clauses={testCases}
         canEdit={project.role === 'owner' || project.role === 'member'}
+        isOwner={project.role === 'owner'}
       />
       <KpiSection queue={projectQueue} />
 
