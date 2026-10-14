@@ -68,15 +68,16 @@ function Hero() {
 
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-800">
             <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
-            {t("Inspection & compliance platform for the Saudi Building Code")}
+            {t("Site inspection platform for the Saudi Building Code")}
           </div>
 
           <h1 className="text-4xl font-bold leading-tight tracking-tight text-slate-900 md:text-5xl">
-            {t("Every finding linked to its")}{" "}<span className="text-brand-600">{t("SBC clause")}</span>{t(", every fix backed by evidence")}
+            <span className="block">{t("Every site finding linked to the right code clause.")}</span>
+            <span className="mt-2 block text-brand-600">{t("And every fix closed with proof.")}</span>
           </h1>
 
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-slate-600">
-            {t("Imtithal is an inspection platform for the Saudi Building Code. Engineers log site findings from a photo or a few words, AI suggests the matching SBC clause, and each non-conformity is tracked until it is fixed and verified with evidence.")}
+            {t("Imtithal is a platform for engineers who inspect construction sites. The engineer records a problem with a photo or a short description, and the AI suggests the Saudi Building Code clause it breaks. Each finding is then assigned, followed, and closed only after the fix is proven with a photo and approved.")}
           </p>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
@@ -95,7 +96,7 @@ function Hero() {
           </div>
 
           <p className="mt-5 text-xs text-slate-500">
-            {t("Built for inspectors, consultants, contractors and project managers.")}
+            {t("For site engineers, consultants, contractors and project managers.")}
           </p>
         </div>
 
@@ -190,7 +191,7 @@ function HowItWorks() {
   return (
     <section className="px-6 py-20">
       <div className="mx-auto max-w-6xl">
-        <SectionHeading eyebrow="How it works" title={t("One traceable path, from site to closure")} />
+        <SectionHeading eyebrow="How it works" title={t("How a finding moves from the site to closure")} />
         <ol className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {steps.map((step, i) => (
             <li key={step.title} className="relative rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -232,7 +233,7 @@ function Capabilities() {
   return (
     <section className="border-y border-slate-200 bg-white px-6 py-20">
       <div className="mx-auto max-w-6xl">
-        <SectionHeading eyebrow="Capabilities" title={t("Less lookup, more inspection")} />
+        <SectionHeading eyebrow="Capabilities" title={t("What Imtithal does for you")} />
         <div className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200 md:grid-cols-2 lg:grid-cols-4">
           {items.map((item) => (
             <div key={item.title} className="flex flex-col gap-2 bg-white p-6">
@@ -253,12 +254,12 @@ function MissionVision() {
   const cards = [
     {
       title: "Our mission",
-      text: "To make engineering inspection traceable and verifiable: every finding linked to its requirement, every closure backed by evidence.",
+      text: "Make site inspection faster and more reliable: every finding tied to the code clause it breaks, and every fix closed with proof.",
       icon: "M13 10V3L4 14h7v7l9-11h-7z",
     },
     {
       title: "Our vision",
-      text: "A construction workflow where every non-conformity is closed because it was verified, and the record can be reviewed by anyone who needs it.",
+      text: "Construction projects where every violation is fixed and checked before handover, with a clear record anyone can review.",
       icon: "M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z M15 12a3 3 0 11-6 0 3 3 0 016 0z",
     },
   ];
@@ -266,7 +267,7 @@ function MissionVision() {
   return (
     <section className="px-6 py-20">
       <div className="mx-auto max-w-6xl">
-        <SectionHeading eyebrow="Purpose" title={t("Why Imtithal exists")} />
+        <SectionHeading eyebrow="Purpose" title={t("Why we built Imtithal")} />
         <div className="mt-12 grid gap-6 md:grid-cols-2">
           {cards.map((card) => (
             <div key={card.title} className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
@@ -291,22 +292,22 @@ function Values() {
   const values = [
     {
       title: "Traceability",
-      text: "From requirement to inspection item to finding to closure, nothing loses its context.",
+      text: "From the code clause to the finding to the fix, everything stays connected.",
     },
     {
       title: "Accountability",
-      text: "Clear roles and a recorded history of who raised, fixed and verified each item.",
+      text: "Everyone knows who reported each finding, who fixed it and who approved it.",
     },
     {
       title: "Clarity",
-      text: "One shared record for the inspector, the contractor and the project manager.",
+      text: "One shared record for the engineer, the contractor and the project owner.",
     },
   ];
 
   return (
     <section className="border-t border-slate-200 bg-white px-6 py-20">
       <div className="mx-auto max-w-5xl">
-        <SectionHeading eyebrow="Values" title={t("Principles behind the product")} align="left" />
+        <SectionHeading eyebrow="Values" title={t("What we care about")} align="left" />
         <div className="mt-12 grid gap-10 md:grid-cols-3">
           {values.map((v, i) => (
             <div key={v.title} className="flex flex-col gap-3">
@@ -355,7 +356,7 @@ function Team() {
   return (
     <section className="px-6 py-20">
       <div className="mx-auto max-w-5xl">
-        <SectionHeading eyebrow="Team" title={t("Software, QA and architecture, in one team")} />
+        <SectionHeading eyebrow="Team" title={t("The team behind Imtithal")} />
         <div className="mt-12 grid gap-6 sm:grid-cols-3">
           {members.map((m) => (
             <div
@@ -395,7 +396,7 @@ function CallToAction() {
     <section className="bg-slate-900 px-6 py-16">
       <div className="mx-auto flex max-w-5xl flex-col items-center gap-6 text-center">
         <LogoMark className="h-14 w-14" />
-        <h2 className="text-2xl font-bold text-white md:text-3xl">{t("Run your next site inspection on Imtithal")}</h2>
+        <h2 className="text-2xl font-bold text-white md:text-3xl">{t("Try Imtithal on your next site inspection")}</h2>
         <p className="max-w-xl text-slate-400">
           {t("Start with one project and one team, and see every finding through to a verified fix.")}
         </p>

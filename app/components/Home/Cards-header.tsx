@@ -35,10 +35,10 @@ export default function CardsHeader() {
         <div className="text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-600">{t("How it works")}</p>
           <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
-            {t("One finding, four steps, fully traceable")}
+            {t("From the site to a verified fix, in four steps")}
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-slate-600">
-            {t("Engineers spend time looking up the right code clause for every observation. Imtithal does the lookup, so they can focus on the site.")}
+            {t("Today the engineer searches the code by hand for every finding. Imtithal finds the clause for them, so they can focus on the site.")}
           </p>
         </div>
 

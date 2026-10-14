@@ -48,7 +48,7 @@ export default function HomeHero() {
         <div>
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-gold-400/30 bg-brand-900/70 py-1 pe-3 ps-1 text-xs font-semibold text-gold-200 backdrop-blur">
             <AiBadge />
-            {t("AI-assisted inspection for the Saudi Building Code")}
+            {t("Smart site inspection for the Saudi Building Code")}
           </div>
 
           <h1 className="text-4xl font-bold leading-[1.1] tracking-tight text-white md:text-5xl lg:text-6xl">
@@ -60,7 +60,7 @@ export default function HomeHero() {
           </h1>
 
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-brand-100/80">
-            {t("Imtithal helps site engineers log non-conformities faster. Snap a photo, let AI describe the finding and suggest the matching Saudi Building Code clause, then track it to a verified fix.")}
+            {t("Imtithal helps engineers inspect construction sites. Take a photo of a problem: the AI describes it and finds the matching clause in the Saudi Building Code. Then assign the fix, follow it, and close it only when there is photo proof.")}
           </p>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
@@ -80,7 +80,7 @@ export default function HomeHero() {
           </div>
 
           <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-brand-200/70">
-            {['Arabic & English', 'Linked to SBC clauses', 'Evidence-backed closure'].map((item) => (
+            {['Arabic & English', 'Linked to the code', 'Closed only with photo proof'].map((item) => (
               <li key={item} className="flex items-center gap-2">
                 <svg className="h-4 w-4 text-gold-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                   <path fillRule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 111.4-1.4L8 12.6l7.3-7.3a1 1 0 011.4 0z" clipRule="evenodd" />

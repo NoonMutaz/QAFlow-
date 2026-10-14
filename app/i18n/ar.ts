@@ -812,4 +812,28 @@ export const ar: Record<string, string> = {
 
   // ── library status in suggestions ──
   "The SBC Library could not be loaded ({error}), so only the AI could answer.": "تعذّر تحميل مكتبة الكود ({error})، لذلك أجاب الذكاء الاصطناعي من معرفته فقط.",
+
+  // ── clearer intro copy (home, About Us) ──
+  "Smart site inspection for the Saudi Building Code": "تفتيش ميداني ذكي وفق كود البناء السعودي",
+  "Imtithal helps engineers inspect construction sites. Take a photo of a problem: the AI describes it and finds the matching clause in the Saudi Building Code. Then assign the fix, follow it, and close it only when there is photo proof.": "امتثال يساعد المهندسين في تفتيش مواقع البناء. صوّر المشكلة، فيصفها الذكاء الاصطناعي ويحدد البند المطابق لها في كود البناء السعودي. بعدها أسند الإصلاح لمسؤول وتابعه، ولا تُغلق الملاحظة إلا بصورة تثبت الإصلاح.",
+  "Linked to the code": "مرتبط ببنود الكود",
+  "Closed only with photo proof": "لا إغلاق بدون صورة إثبات",
+  "From the site to a verified fix, in four steps": "من الموقع إلى إصلاح موثّق في أربع خطوات",
+  "Today the engineer searches the code by hand for every finding. Imtithal finds the clause for them, so they can focus on the site.": "اليوم يبحث المهندس يدويًا في الكود عن بند كل ملاحظة. امتثال يجد البند عنه، ليتفرغ لعمله في الموقع.",
+  "Site inspection platform for the Saudi Building Code": "منصة تفتيش ميداني وفق كود البناء السعودي",
+  "Imtithal is a platform for engineers who inspect construction sites. The engineer records a problem with a photo or a short description, and the AI suggests the Saudi Building Code clause it breaks. Each finding is then assigned, followed, and closed only after the fix is proven with a photo and approved.": "امتثال منصة للمهندسين الذين يفتشون مواقع البناء. يسجّل المهندس المشكلة بصورة أو وصف قصير، فيقترح الذكاء الاصطناعي بند كود البناء السعودي الذي تخالفه. بعدها تُسند الملاحظة لمسؤول وتُتابَع، ولا تُغلق إلا بعد إثبات الإصلاح بصورة واعتماده.",
+  "For site engineers, consultants, contractors and project managers.": "لمهندسي المواقع والاستشاريين والمقاولين ومديري المشاريع.",
+  "How a finding moves from the site to closure": "كيف تنتقل الملاحظة من الموقع حتى الإغلاق",
+  "What Imtithal does for you": "ماذا يقدّم لك امتثال",
+  "Why we built Imtithal": "لماذا بنينا امتثال",
+  "What we care about": "ما نهتم به",
+  "The team behind Imtithal": "الفريق وراء امتثال",
+  "Make site inspection faster and more reliable: every finding tied to the code clause it breaks, and every fix closed with proof.": "أن يكون التفتيش الميداني أسرع وأدق: كل ملاحظة مرتبطة ببند الكود الذي تخالفه، وكل إصلاح يُغلق بدليل.",
+  "Construction projects where every violation is fixed and checked before handover, with a clear record anyone can review.": "مشاريع بناء تُصلح فيها كل مخالفة ويُتحقق منها قبل التسليم، بسجل واضح يمكن لأي شخص مراجعته.",
+  "From the code clause to the finding to the fix, everything stays connected.": "من بند الكود إلى الملاحظة إلى الإصلاح، كل شيء مرتبط ببعضه.",
+  "Everyone knows who reported each finding, who fixed it and who approved it.": "الجميع يعرف من سجّل كل ملاحظة ومن أصلحها ومن اعتمدها.",
+  "One shared record for the engineer, the contractor and the project owner.": "سجل واحد مشترك للمهندس والمقاول ومالك المشروع.",
+  "Try Imtithal on your next site inspection": "جرّب امتثال في تفتيشك القادم",
+  "Every site finding linked to the right code clause.": "كل ملاحظة في الموقع مرتبطة ببند الكود الصحيح.",
+  "And every fix closed with proof.": "وكل إصلاح يُغلق بدليل.",
 };
