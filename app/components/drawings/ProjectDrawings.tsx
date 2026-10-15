@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../../i18n/LanguageProvider';
 import { AiMark } from '../ui/Ai';
+import DrawingReviewPanel, { parseDrawingReview, type DrawingFinding } from './DrawingReviewPanel';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 export const DRAWING_ACCEPT = 'application/pdf,image/jpeg,image/png,image/webp';
@@ -20,9 +21,11 @@ interface Doc {
   contentType: string;
   size: number;
   aiSummary?: string | null;
+  aiReview?: string | null;
+  aiReviewedAt?: number | null;
 }
 
-type Step = 'uploading' | 'reading' | 'done' | 'error';
+type Step = 'uploading' | 'reading' | 'reviewing' | 'done' | 'error';
 interface Job {
   key: string;
   name: string;
@@ -42,17 +45,21 @@ export default function ProjectDrawings({
   pendingFiles,
   canEdit = true,
   onJobsDone,
+  onAddFinding,
 }: {
   projectId: string | number;
   /** files picked before the project existed (Create Project); uploaded once on mount */
   pendingFiles?: File[];
   canEdit?: boolean;
   onJobsDone?: () => void;
+  /** creates a finding from a point of the code comparison (the dashboard passes it) */
+  onAddFinding?: (finding: DrawingFinding) => Promise<number>;
 }) {
   const { t, lang } = useLanguage();
   const [docs, setDocs] = useState<Doc[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [open, setOpen] = useState<number | null>(null);
+  const [reviewOpen, setReviewOpen] = useState<number | null>(null);
   const [error, setError] = useState('');
   const started = useRef(false);
 
@@ -152,7 +159,31 @@ export default function ProjectDrawings({
     }
   };
 
-  const busy = jobs.some((j) => j.step === 'uploading' || j.step === 'reading');
+  /** Has the AI compare a drawing with the SBC; the result is stored on the drawing. */
+  const review = async (docId: number) => {
+    setError('');
+    const key = `rv-${docId}-${Date.now()}`;
+    const doc = docs.find((d) => d.id === docId);
+    setJobs((prev) => [...prev, { key, name: doc?.fileName ?? '', step: 'reviewing' }]);
+    try {
+      const res = await fetch('/api/drawing-review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken()}` },
+        body: JSON.stringify({ projectId: String(projectId), documentId: docId, lang }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error ?? `${res.status}`);
+      }
+      setJob(key, { step: 'done' });
+      await load();
+      setReviewOpen(docId);
+    } catch (err) {
+      setJob(key, { step: 'error', error: err instanceof Error ? err.message : String(err) });
+    }
+  };
+
+  const busy = jobs.some((j) => j.step === 'uploading' || j.step === 'reading' || j.step === 'reviewing');
 
   return (
     <div className="space-y-4">
@@ -162,7 +193,7 @@ export default function ProjectDrawings({
             <AiMark className="h-5 w-5 text-brand-600" /> {t('Project drawings')}
           </h3>
           <p className="mt-0.5 text-xs text-slate-500">
-            {t('The AI reads each drawing once and compares site findings with the design.')}
+            {t('The AI reads each drawing, compares it with the Saudi Building Code, and checks site findings against the design.')}
           </p>
         </div>
         {canEdit && (
@@ -198,6 +229,7 @@ export default function ProjectDrawings({
                 <span className={`ms-auto shrink-0 ${j.step === 'error' ? 'text-red-600' : 'text-brand-700'}`}>
                   {j.step === 'uploading' && t('Uploading…')}
                   {j.step === 'reading' && t('AI is reading the drawing… (up to a minute)')}
+                  {j.step === 'reviewing' && t('AI is comparing the drawing with the code… (up to a minute)')}
                   {j.step === 'error' && `${t('Failed')}: ${j.error}`}
                 </span>
               </li>
@@ -237,7 +269,27 @@ export default function ProjectDrawings({
                     )}
                   </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-2 text-xs font-semibold">
+                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 text-xs font-semibold">
+                  {d.aiReview ? (
+                    <button
+                      type="button"
+                      onClick={() => setReviewOpen(reviewOpen === d.id ? null : d.id)}
+                      className="rounded-md bg-brand-50 px-2 py-1 text-brand-800 hover:bg-brand-100"
+                    >
+                      {reviewOpen === d.id ? t('Hide comparison') : t('Code comparison')}
+                    </button>
+                  ) : (
+                    canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => void review(d.id)}
+                        disabled={busy}
+                        className="flex items-center gap-1 rounded-md bg-brand-700 px-2 py-1 text-white hover:bg-brand-800 disabled:opacity-50"
+                      >
+                        <AiMark className="h-3.5 w-3.5" /> {t('Compare with the code')}
+                      </button>
+                    )
+                  )}
                   {d.aiSummary && (
                     <button type="button" onClick={() => setOpen(open === d.id ? null : d.id)} className="text-brand-700 hover:underline">
                       {open === d.id ? t('Hide') : t('What the AI read')}
@@ -260,6 +312,30 @@ export default function ProjectDrawings({
                   {d.aiSummary}
                 </pre>
               )}
+              {reviewOpen === d.id &&
+                (() => {
+                  const parsed = parseDrawingReview(d.aiReview);
+                  return parsed ? (
+                    <>
+                      <DrawingReviewPanel
+                        review={parsed}
+                        fileName={d.fileName}
+                        reviewedAt={d.aiReviewedAt}
+                        onAddFinding={canEdit ? onAddFinding : undefined}
+                      />
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={() => void review(d.id)}
+                          disabled={busy}
+                          className="mt-2 text-[11px] font-semibold text-brand-700 hover:underline disabled:opacity-50"
+                        >
+                          {t('Compare again')}
+                        </button>
+                      )}
+                    </>
+                  ) : null;
+                })()}
             </li>
           ))}
         </ul>

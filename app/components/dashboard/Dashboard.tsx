@@ -226,7 +226,15 @@ export default function Dashboard() {
             <PieChart queue={projectQueue} />
           </div>
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <ProjectDrawings projectId={project.id} canEdit={project.role === 'owner' || project.role === 'member'} />
+            <ProjectDrawings
+              projectId={project.id}
+              canEdit={project.role === 'owner' || project.role === 'member'}
+              onAddFinding={async (finding) => {
+                const newBugId = await addQueue(String(project.id), finding);
+                await queryClient.invalidateQueries({ queryKey: ['bugs', id] });
+                return newBugId;
+              }}
+            />
           </div>
         </div>
 
