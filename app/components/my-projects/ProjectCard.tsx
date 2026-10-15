@@ -220,7 +220,7 @@ export default function ProjectCard({
                 {/* Progress Bar inside the metrics container for cohesion */}
                 <div className="mt-4 pt-4 border-t border-slate-200/60">
                   <div className="flex items-end justify-between text-xs font-semibold mb-2">
-                    <span className="text-slate-500 text-[11px]">Progress</span>
+                    <span className="text-slate-500 text-[11px]">{t("Progress")}</span>
                     <span className={isComplete ? 'text-emerald-600' : 'text-slate-700'}>
                       {bugCount === 0 ? '0%' : `${fixedPercent}%`}
                     </span>

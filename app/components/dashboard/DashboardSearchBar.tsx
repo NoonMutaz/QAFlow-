@@ -1,10 +1,12 @@
 import React from 'react'
+import { useLanguage } from '../../i18n/LanguageProvider';
 
 interface DashboardSearchBarPrpos {
   searchTerm: string;
   setSearchTerm: (value: string) => void;
 }
 export default function DashboardSearchBar({searchTerm,setSearchTerm}:DashboardSearchBarPrpos) {
+  const { t } = useLanguage();
   return (
   
       
@@ -17,7 +19,7 @@ export default function DashboardSearchBar({searchTerm,setSearchTerm}:DashboardS
          value={searchTerm}
     onChange={(e) => setSearchTerm(e.target.value)}
           type="text"
-          placeholder="Search user, bugs..."
+          placeholder={t("Search user, bugs...")}
           aria-label="Search research"
           className="w-full md:w-full px-4 bg-white py-2 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
         />

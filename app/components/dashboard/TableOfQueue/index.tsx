@@ -105,7 +105,7 @@ export default function TableOfQueue({
                 <th className="w-12 px-4 py-4"></th>
                 {COLUMNS.map((title) => (
                   <th key={title} className={TH}>
-                    {title}
+                    {t(title)}
                   </th>
                 ))}
               </tr>

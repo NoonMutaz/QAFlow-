@@ -836,4 +836,11 @@ export const ar: Record<string, string> = {
   "Try Imtithal on your next site inspection": "جرّب امتثال في تفتيشك القادم",
   "Every site finding linked to the right code clause.": "كل ملاحظة في الموقع مرتبطة ببند الكود الصحيح.",
   "And every fix closed with proof.": "وكل إصلاح يُغلق بدليل.",
+
+  // ── dashboard table and project card ──
+  "ID": "الرقم",
+  "Status": "الحالة",
+  "Assigned To": "المسؤول",
+  "Progress": "نسبة الإنجاز",
+  "Search user, bugs...": "ابحث بالاسم أو الملاحظة…",
 };
