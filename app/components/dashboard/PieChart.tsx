@@ -3,14 +3,14 @@
 import React, { useEffect, useRef } from "react";
 import ApexCharts from "apexcharts";
 import { useLanguage } from '../../i18n/LanguageProvider';
+import { FINDING_STATUSES } from '../../data/findingStatus';
 
-type Status = "notFixed" | "in-progress" | "fixed";
 
 interface Customer {
   id: number;
   name: string;
   priority: string;
-  status: Status;
+  status: string;
 }
 
 export default function PieChart({ queue }: { queue: Customer[] }) {
@@ -21,22 +21,21 @@ export default function PieChart({ queue }: { queue: Customer[] }) {
   useEffect(() => {
     if (!elRef.current) return;
 
-    const notFixed = queue.filter((c) => c.status === "notFixed").length;
-    const inProgress = queue.filter((c) => c.status === "in-progress").length;
-    const fixed = queue.filter((c) => c.status === "fixed").length;
+    const series = FINDING_STATUSES.map((st) => queue.filter((c) => c.status === st.value).length);
+    const labels = FINDING_STATUSES.map((st) => t(st.label));
 
     // If chart exists, just update it
     if (chartRef.current) {
-      chartRef.current.updateOptions({ labels: [t("Open"), t("Under Review"), t("Compliant")] }, false, false);
-      chartRef.current.updateSeries([notFixed, inProgress, fixed], true);
+      chartRef.current.updateOptions({ labels }, false, false);
+      chartRef.current.updateSeries(series, true);
       return;
     }
 
     //  create chart
     chartRef.current = new ApexCharts(elRef.current, {
-      series: [notFixed, inProgress, fixed],
-      labels: [t("Open"), t("Under Review"), t("Compliant")],
-      colors: ["#F59E0B", "#3B82F6", "#10B981"],
+      series,
+      labels,
+      colors: FINDING_STATUSES.map((st) => st.color),
       chart: { type: "pie", height: 380 },
       dataLabels: {
         enabled: true,

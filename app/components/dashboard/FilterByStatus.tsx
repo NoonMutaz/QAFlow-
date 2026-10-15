@@ -2,7 +2,9 @@
 
 import React from 'react'
 import { useLanguage } from '../../i18n/LanguageProvider';
-type Status = "notFixed" | "in-progress" | "fixed";
+import type { Status } from '../../context/QueueContext';
+import { FINDING_STATUSES } from '../../data/findingStatus';
+
 interface FilterByStatusPrpos {
  select: Status | "";
   setSelect: React.Dispatch<React.SetStateAction<Status | "">>;
@@ -22,10 +24,9 @@ export default function FilterByStatus({select,setSelect}:FilterByStatusPrpos) {
                       {t("Filter by status")}{" "}
                     </option>
                     <option value="">{t("All")}</option>
-                    <option value="notFixed"> 
-{t("Non-Conformities")}</option>
-                    <option value="in-progress">{t("In-progress")}</option>
-                    <option value="fixed">{t("Verified")}</option>
+                    {FINDING_STATUSES.map((s) => (
+                      <option key={s.value} value={s.value}>{t(s.label)}</option>
+                    ))}
                   </select>
                 </form>
     </div>

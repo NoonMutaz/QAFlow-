@@ -148,7 +148,8 @@ export default function ProjectCard({
           const projectQueue: QueueItem[] = queue?.[project.id] ?? [];
           const bugCount = projectQueue.length;
           const fixedCount = projectQueue.filter((item) => item.status === 'fixed').length;
-          const openCount = bugCount - fixedCount;
+          const pendingCount = projectQueue.filter((item) => item.status === 'pendingReview').length;
+          const openCount = bugCount - fixedCount - pendingCount;
           const fixedPercent = bugCount === 0 ? 0 : Math.round((fixedCount / bugCount) * 100);
           const owner = isOwner(project.role ?? '');
           const isComplete = fixedPercent === 100 && bugCount > 0;
@@ -207,6 +208,12 @@ export default function ProjectCard({
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{t("Open")}</span>
                     <span className={`mt-0.5 text-lg font-bold ${openCount > 0 ? 'text-red-600' : 'text-slate-900'}`}>
                       {openCount}
+                    </span>
+                  </div>
+                  <div className="flex flex-1 flex-col px-4">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{t("Awaiting approval")}</span>
+                    <span className={`mt-0.5 text-lg font-bold ${pendingCount > 0 ? 'text-amber-600' : 'text-slate-900'}`}>
+                      {pendingCount}
                     </span>
                   </div>
                   <div className="flex flex-1 flex-col ps-4">

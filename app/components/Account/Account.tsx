@@ -44,7 +44,7 @@ export default function Account() {
     const allBugs = Object.values(queue).flat() as Bug[];
     const total = allBugs.length;
     const fixed = allBugs.filter((b) => b.status === 'fixed').length;
-    const inProgress = allBugs.filter((b) => b.status === 'inProgress').length;
+    const inProgress = allBugs.filter((b) => b.status === 'in-progress').length;
     return {
       totalBugs: total,
       fixedBugs: fixed,
